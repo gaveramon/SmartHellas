@@ -1,4 +1,4 @@
-import { requireAuth, resolveTenantId, type AuthContext } from "../auth.ts";
+import { getUserId, requireAuth, requireTenant, type AuthContext } from "../auth.ts";
 import { createLogger, type LogContext } from "../logger.ts";
 import type { EdgeLogger } from "../core/types.ts";
 
@@ -14,14 +14,14 @@ export async function buildAuthenticatedContext(
   options?: { resolveTenant?: boolean },
 ): Promise<RequestMiddlewareResult> {
   let auth = await requireAuth(req);
+  let tenantId: string | undefined;
   if (options?.resolveTenant !== false) {
-    const tenantId = await resolveTenantId(req, auth);
-    auth = { ...auth, tenantId };
+    tenantId = await requireTenant(auth);
   }
   const logger = createLogger({
     ...logContext,
-    userId: auth.userId,
-    tenantId: auth.tenantId,
+    userId: getUserId(auth),
+    tenantId,
   });
   return { auth, logger };
 }

@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# Business Domain
+
+Airbnb automation SaaS.
+
+Core domains:
+tenants, properties, rooms, devices, bookings, locks,
+guests, onboarding, logistics, subscriptions, optimization, monetization
+
+Integrations:
+Aqara, TTLock, Shelly, Stripe, VivaWallet, Beds24, Zoho, generic
+
+Rules:
+- follow existing architecture
+- do not redesign unless necessary
+- keep domain model stable

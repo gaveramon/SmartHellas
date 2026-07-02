@@ -27,14 +27,14 @@ import type {
   WarehouseRow,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listLogisticsTemplates(
   auth: AuthContext,
 ): Promise<LogisticsTemplateRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<LogisticsTemplateRow[]>(
     auth,
     "logistics",
@@ -46,7 +46,7 @@ export async function getLogisticsTemplate(
   auth: AuthContext,
   id: string,
 ): Promise<LogisticsTemplateDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<LogisticsTemplateDetail>(
     auth,
     "logistics",
@@ -83,7 +83,7 @@ export async function deleteLogisticsTemplate(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_logistics_template", { id });
 }
 
@@ -91,7 +91,7 @@ export async function listPackageDefinitions(
   auth: AuthContext,
   templateId: string,
 ): Promise<PackageDefinitionRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PackageDefinitionRow[]>(
     auth,
     "logistics",
@@ -128,17 +128,17 @@ export async function deletePackageDefinition(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_package_definition", { id });
 }
 
 export async function listCarriers(auth: AuthContext): Promise<ShippingCarrierRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ShippingCarrierRow[]>(auth, "logistics", "list_carriers");
 }
 
 export async function getCarrier(auth: AuthContext, id: string): Promise<ShippingCarrierRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ShippingCarrierRow>(auth, "logistics", "get_carrier", { id });
 }
 
@@ -160,17 +160,17 @@ export async function deleteCarrier(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_carrier", { id });
 }
 
 export async function listWarehouses(auth: AuthContext): Promise<WarehouseRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<WarehouseRow[]>(auth, "logistics", "list_warehouses");
 }
 
 export async function getWarehouse(auth: AuthContext, id: string): Promise<WarehouseRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<WarehouseRow>(auth, "logistics", "get_warehouse", { id });
 }
 
@@ -192,7 +192,7 @@ export async function deleteWarehouse(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_warehouse", { id });
 }
 
@@ -200,7 +200,7 @@ export async function listLabelTemplates(
   auth: AuthContext,
   carrierId?: string,
 ): Promise<ShippingLabelTemplateRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ShippingLabelTemplateRow[]>(
     auth,
     "logistics",
@@ -237,12 +237,12 @@ export async function deleteLabelTemplate(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_label_template", { id });
 }
 
 export async function listShippingRules(auth: AuthContext): Promise<ShippingRuleRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ShippingRuleRow[]>(auth, "logistics", "list_shipping_rules");
 }
 
@@ -274,7 +274,7 @@ export async function deleteShippingRule(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_shipping_rule", { id });
 }
 
@@ -283,7 +283,7 @@ export async function listFulfilmentOrders(
   status?: string,
   propertyId?: string,
 ): Promise<FulfilmentOrderRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, string> = {};
   if (status) payload.status = status;
   if (propertyId) payload.property_id = propertyId;
@@ -299,7 +299,7 @@ export async function getFulfilmentOrder(
   auth: AuthContext,
   id: string,
 ): Promise<FulfilmentOrderRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<FulfilmentOrderRow>(
     auth,
     "logistics",
@@ -336,7 +336,7 @@ export async function deleteFulfilmentOrder(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "logistics", "delete_fulfilment_order", { id });
 }
 

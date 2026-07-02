@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+---
+
+# Production Rules
+
+Assume this database is production.
+
+Safety has priority over convenience.
+
+Never:
+
+- remove tables
+- rename tables
+- rename columns
+- drop constraints
+- drop enums
+- change PKs
+
+unless explicitly instructed.
+
+Prefer additive migrations.
+
+Protect data integrity.
+
+Protect backward compatibility.
+
+Protect production uptime.

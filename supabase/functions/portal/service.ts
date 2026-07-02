@@ -15,21 +15,21 @@ import type {
   UpsertPreferenceRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function getPortalBootstrap(
   auth: AuthContext,
 ): Promise<PortalBootstrapResponse> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PortalBootstrapResponse>(auth, "portal", "get_portal_bootstrap");
 }
 
 export async function getPortalSettings(
   auth: AuthContext,
 ): Promise<TenantPortalSettingsRow | null> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<TenantPortalSettingsRow | null>(
     auth,
     "portal",
@@ -50,12 +50,12 @@ export async function upsertPortalSettings(
 }
 
 export async function listDashboards(auth: AuthContext): Promise<DashboardConfigRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<DashboardConfigRow[]>(auth, "portal", "list_dashboards");
 }
 
 export async function getDashboard(auth: AuthContext, id: string): Promise<DashboardConfigRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<DashboardConfigRow>(auth, "portal", "get_dashboard", { id });
 }
 
@@ -77,14 +77,14 @@ export async function deleteDashboard(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "portal", "delete_dashboard", { id });
 }
 
 export async function listUserPreferences(
   auth: AuthContext,
 ): Promise<PortalUserPreferenceRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PortalUserPreferenceRow[]>(
     auth,
     "portal",
@@ -96,7 +96,7 @@ export async function getUserPreference(
   auth: AuthContext,
   preferenceKey: string,
 ): Promise<PortalUserPreferenceRow | null> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PortalUserPreferenceRow | null>(
     auth,
     "portal",
@@ -133,7 +133,7 @@ export async function deleteUserPreference(
   auth: AuthContext,
   preferenceKey: string,
 ): Promise<{ deleted: true; preference_key: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "portal", "delete_user_preference", {
     preference_key: preferenceKey,
   });
@@ -142,7 +142,7 @@ export async function deleteUserPreference(
 export async function listFeatureFlags(
   auth: AuthContext,
 ): Promise<PortalFeatureFlagRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PortalFeatureFlagRow[]>(auth, "portal", "list_feature_flags");
 }
 
@@ -174,6 +174,6 @@ export async function deleteFeatureFlag(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "portal", "delete_feature_flag", { id });
 }

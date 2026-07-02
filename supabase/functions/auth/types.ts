@@ -80,7 +80,6 @@ export interface SubscriptionDetail {
 }
 
 export interface UpdateSubscriptionRequest {
-  tier?: string;
   status?: string;
   current_period_start?: string;
   current_period_end?: string;

@@ -23,8 +23,8 @@ import type {
   UpdatePreconfigTemplateRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function createBlueprintStep(auth: AuthContext, input: CreateBlueprintStepRequest): Promise<OnboardingBlueprintStepRow> {
@@ -52,37 +52,37 @@ export async function createPreconfigTemplate(auth: AuthContext, input: CreatePr
 }
 
 export async function deleteBlueprintStep(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "preconfig", "delete_blueprint_step", { id: id });
 }
 
 export async function deleteBundleDevice(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "preconfig", "delete_bundle_device", { id: id });
 }
 
 export async function deleteDeviceBundle(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "preconfig", "delete_device_bundle", { id: id });
 }
 
 export async function deleteOnboardingBlueprint(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "preconfig", "delete_onboarding_blueprint", { id: id });
 }
 
 export async function deletePreconfigDeviceMap(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "preconfig", "delete_preconfig_device_map", { id: id });
 }
 
 export async function deletePreconfigTemplate(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "preconfig", "delete_preconfig_template", { id: id });
 }
 
 export async function getDeviceBundleByCode(auth: AuthContext, code: string, version?: number): Promise<DeviceBundleRow> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   payload.code = code;
   if (version !== undefined) payload.version = version;
@@ -90,37 +90,37 @@ export async function getDeviceBundleByCode(auth: AuthContext, code: string, ver
 }
 
 export async function getDeviceBundleById(auth: AuthContext, id: string): Promise<DeviceBundleRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<DeviceBundleRow>(auth, "preconfig", "get_device_bundle", { id: id });
 }
 
 export async function getOnboardingBlueprintByCode(auth: AuthContext, code: string): Promise<BlueprintDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<BlueprintDetail>(auth, "preconfig", "get_onboarding_blueprint", { code: code });
 }
 
 export async function getOnboardingBlueprintById(auth: AuthContext, id: string): Promise<BlueprintDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<BlueprintDetail>(auth, "preconfig", "get_onboarding_blueprint", { id: id });
 }
 
 export async function getPreconfigTemplate(auth: AuthContext, id: string): Promise<PreconfigTemplateDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PreconfigTemplateDetail>(auth, "preconfig", "get_preconfig_template", { id: id });
 }
 
 export async function listBlueprintSteps(auth: AuthContext, blueprintId: string): Promise<OnboardingBlueprintStepRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingBlueprintStepRow[]>(auth, "preconfig", "list_blueprint_steps", { blueprint_id: blueprintId });
 }
 
 export async function listBundleDevices(auth: AuthContext, bundleId: string): Promise<BundleDeviceRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<BundleDeviceRow[]>(auth, "preconfig", "list_bundle_devices", { bundle_id: bundleId });
 }
 
 export async function listDeviceBundles(auth: AuthContext, propertyType?: string, activeOnly?: boolean): Promise<DeviceBundleRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (propertyType !== undefined) payload.property_type = propertyType;
   if (activeOnly !== undefined) payload.active_only = activeOnly;
@@ -128,7 +128,7 @@ export async function listDeviceBundles(auth: AuthContext, propertyType?: string
 }
 
 export async function listOnboardingBlueprints(auth: AuthContext, propertyType?: string, activeOnly?: boolean): Promise<OnboardingBlueprintRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (propertyType !== undefined) payload.property_type = propertyType;
   if (activeOnly !== undefined) payload.active_only = activeOnly;
@@ -136,12 +136,12 @@ export async function listOnboardingBlueprints(auth: AuthContext, propertyType?:
 }
 
 export async function listPreconfigDeviceMap(auth: AuthContext, templateId: string): Promise<PreconfigDeviceMapRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PreconfigDeviceMapRow[]>(auth, "preconfig", "list_preconfig_device_map", { template_id: templateId });
 }
 
 export async function listPreconfigTemplates(auth: AuthContext, propertyType?: string, activeOnly?: boolean): Promise<PreconfigTemplateRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (propertyType !== undefined) payload.property_type = propertyType;
   if (activeOnly !== undefined) payload.active_only = activeOnly;

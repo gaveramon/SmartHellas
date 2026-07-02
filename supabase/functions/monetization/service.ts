@@ -19,8 +19,8 @@ import type {
   UpsellCampaignRow,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function createPackage(auth: AuthContext, input: CreatePackageRequest): Promise<MonetizationPackageRow> {
@@ -40,42 +40,42 @@ export async function createUpsellCampaign(auth: AuthContext, input: CreateUpsel
 }
 
 export async function deletePackage(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "monetization", "delete_package", { id: id });
 }
 
 export async function deleteProposal(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "monetization", "delete_proposal", { id: id });
 }
 
 export async function deleteProposalItem(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "monetization", "delete_proposal_item", { id: id });
 }
 
 export async function deleteUpsellCampaign(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "monetization", "delete_upsell_campaign", { id: id });
 }
 
 export async function getPackage(auth: AuthContext, id: string): Promise<MonetizationPackageRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<MonetizationPackageRow>(auth, "monetization", "get_package", { id: id });
 }
 
 export async function getProposal(auth: AuthContext, id: string): Promise<ProposalDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ProposalDetail>(auth, "monetization", "get_proposal", { id: id });
 }
 
 export async function getUpsellCampaign(auth: AuthContext, id: string): Promise<UpsellCampaignRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<UpsellCampaignRow>(auth, "monetization", "get_upsell_campaign", { id: id });
 }
 
 export async function listActivationState(auth: AuthContext, propertyId?: string, serviceType?: string): Promise<ServiceActivationStateRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (propertyId !== undefined) payload.property_id = propertyId;
   if (serviceType !== undefined) payload.service_type = serviceType;
@@ -83,7 +83,7 @@ export async function listActivationState(auth: AuthContext, propertyId?: string
 }
 
 export async function listConversionEvents(auth: AuthContext, proposalId?: string, eventType?: string, limit?: number): Promise<ConversionEventRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (proposalId !== undefined) payload.proposal_id = proposalId;
   if (eventType !== undefined) payload.event_type = eventType;
@@ -92,7 +92,7 @@ export async function listConversionEvents(auth: AuthContext, proposalId?: strin
 }
 
 export async function listConversionScores(auth: AuthContext, propertyId?: string, limit?: number): Promise<ConversionScoreRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (propertyId !== undefined) payload.property_id = propertyId;
   if (limit !== undefined) payload.limit = limit;
@@ -100,19 +100,19 @@ export async function listConversionScores(auth: AuthContext, propertyId?: strin
 }
 
 export async function listPackages(auth: AuthContext, activeOnly?: boolean): Promise<MonetizationPackageRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (activeOnly !== undefined) payload.active_only = activeOnly;
   return await callModuleApiAuth<MonetizationPackageRow[]>(auth, "monetization", "list_packages", payload);
 }
 
 export async function listProposalItems(auth: AuthContext, proposalId: string): Promise<ProposalItemRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ProposalItemRow[]>(auth, "monetization", "list_proposal_items", { proposal_id: proposalId });
 }
 
 export async function listProposals(auth: AuthContext, status?: string, propertyId?: string): Promise<CustomerProposalRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (status !== undefined) payload.status = status;
   if (propertyId !== undefined) payload.property_id = propertyId;
@@ -120,7 +120,7 @@ export async function listProposals(auth: AuthContext, status?: string, property
 }
 
 export async function listUpsellCampaigns(auth: AuthContext, triggerEvent?: string, activeOnly?: boolean): Promise<UpsellCampaignRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (triggerEvent !== undefined) payload.trigger_event = triggerEvent;
   if (activeOnly !== undefined) payload.active_only = activeOnly;

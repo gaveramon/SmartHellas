@@ -21,19 +21,21 @@ export const receiveHandler = async (ctx: HandlerContext) => {
   const rawBody = await readWebhookBody(req);
   const secret = webhookSecretForSource(source);
 
-  if (secret) {
-    const signature = req.headers.get("X-Webhook-Signature") ??
-      req.headers.get("X-Hub-Signature-256") ??
-      "";
-    if (!signature) {
-      throw new ValidationError("Webhook signature header required");
-    }
-    await requireWebhookSignature({
-      secret,
-      signatureHeader: signature,
-      payload: rawBody,
-    });
+  if (!secret) {
+    throw new Error("Webhook not configured");
   }
+
+  const signature = req.headers.get("X-Webhook-Signature") ??
+    req.headers.get("X-Hub-Signature-256") ??
+    "";
+  if (!signature) {
+    throw new ValidationError("Webhook signature header required");
+  }
+  await requireWebhookSignature({
+    secret,
+    signatureHeader: signature,
+    payload: rawBody,
+  });
 
   let payload: Record<string, unknown>;
   try {

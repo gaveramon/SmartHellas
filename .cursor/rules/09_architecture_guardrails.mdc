@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+
+# Architecture Guardrail
+
+The architecture is LOCKED.
+
+Cursor is an implementation tool.
+
+Not an architect.
+
+Never:
+
+- move ownership
+- merge modules
+- split modules
+- duplicate business logic
+- duplicate state
+- bypass SSOT
+
+If a requested change violates architecture:
+
+STOP
+
+Identify:
+
+- owning module
+- violated rule
+- compliant implementation
+
+Never silently redesign the database.
+
+Migration history must remain intact.

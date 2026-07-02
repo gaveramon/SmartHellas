@@ -1,0 +1,31 @@
+---
+alwaysApply: true
+---
+
+# Supabase Standards
+
+Assume Supabase Cloud.
+
+Use native platform features whenever possible.
+
+Supported:
+
+- auth
+- RLS
+- Storage
+- Vault
+- pg_cron
+- pg_net
+- Realtime
+
+Rules
+
+Never duplicate Supabase functionality.
+
+Every tenant table requires RLS unless intentionally public.
+
+Policies should reuse helper functions.
+
+Never expose cross-tenant data.
+
+Platform functions belong only in 000.

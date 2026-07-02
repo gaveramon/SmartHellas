@@ -19,17 +19,17 @@ import type {
   UpsellRuleRow,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listProductPlans(auth: AuthContext): Promise<ProductPlanRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<ProductPlanRow[]>(auth, "commerce", "list_product_plans");
 }
 
 export async function getProductPlan(auth: AuthContext, id: string): Promise<PlanDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PlanDetail>(auth, "commerce", "get_product_plan", { id });
 }
 
@@ -51,7 +51,7 @@ export async function deleteProductPlan(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "commerce", "delete_product_plan", { id });
 }
 
@@ -59,7 +59,7 @@ export async function listPlanPricing(
   auth: AuthContext,
   planId: string,
 ): Promise<PlanPricingRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PlanPricingRow[]>(auth, "commerce", "list_plan_pricing", {
     plan_id: planId,
   });
@@ -83,7 +83,7 @@ export async function deletePlanPricing(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "commerce", "delete_plan_pricing", { id });
 }
 
@@ -91,7 +91,7 @@ export async function listFeatureEntitlements(
   auth: AuthContext,
   planId?: string,
 ): Promise<FeatureEntitlementRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<FeatureEntitlementRow[]>(
     auth,
     "commerce",
@@ -128,7 +128,7 @@ export async function deleteFeatureEntitlement(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "commerce", "delete_feature_entitlement", { id });
 }
 
@@ -136,7 +136,7 @@ export async function listUpsellRules(
   auth: AuthContext,
   triggerEvent?: string,
 ): Promise<UpsellRuleRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<UpsellRuleRow[]>(
     auth,
     "commerce",
@@ -163,14 +163,14 @@ export async function deleteUpsellRule(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "commerce", "delete_upsell_rule", { id });
 }
 
 export async function getTenantEntitlements(
   auth: AuthContext,
 ): Promise<TenantEntitlementsResponse> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<TenantEntitlementsResponse>(
     auth,
     "commerce",

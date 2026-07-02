@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+
+# Multi-Tenant Rules
+
+Tenant isolation is mandatory.
+
+Every tenant-owned table must include:
+
+- tenant_id
+
+Index:
+
+(tenant_id, created_at)
+
+RLS is mandatory.
+
+No cross-tenant joins unless explicitly designed.
+
+Never rely solely on application filtering.
+
+Design for millions of rows.

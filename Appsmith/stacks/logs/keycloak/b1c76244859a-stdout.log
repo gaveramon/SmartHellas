@@ -1,0 +1,33 @@
+Appending additional Java properties to JAVA_OPTS
+INFO: The following run time options were found, but will be ignored during build time: kc.db-username, kc.db-password
+
+Updating the configuration and installing your custom providers, if any. Please wait.
+2026-06-29 08:42:43,388 INFO  [io.quarkus.deployment.QuarkusAugmentor] (main) Quarkus augmentation completed in 9104ms
+Server configuration updated and persisted. Run the following command to review the configuration:
+
+	kc.sh show-config
+
+Appending additional Java properties to JAVA_OPTS
+2026-06-29 08:42:46,158 INFO  [org.infinispan.CONTAINER] (main) ISPN000974: Virtual threads support: enabled
+2026-06-29 08:42:46,995 INFO  [org.hibernate.orm.jdbc.batch] (JPA Startup Thread) HHH100501: Automatic JDBC statement batching enabled (maximum batch size 32)
+2026-06-29 08:42:47,886 INFO  [org.keycloak.quarkus.runtime.storage.database.liquibase.QuarkusJpaUpdaterProvider] (main) Initializing database schema. Using changelog META-INF/jpa-changelog-master.xml
+2026-06-29 08:42:51,373 INFO  [org.keycloak.spi.infinispan.impl.embedded.JGroupsConfigurator] (main) JGroups JDBC_PING discovery enabled.
+2026-06-29 08:42:51,676 INFO  [org.keycloak.spi.infinispan.impl.embedded.JGroupsConfigurator] (main) JGroups Encryption enabled (mTLS).
+2026-06-29 08:42:52,049 INFO  [org.keycloak.jgroups.certificates.CertificateReloadManager] (main) Starting JGroups certificate reload manager
+2026-06-29 08:42:52,147 INFO  [org.infinispan.CONTAINER] (main) ISPN000556: Starting user marshaller 'org.infinispan.commons.marshall.ImmutableProtoStreamMarshaller'
+2026-06-29 08:42:52,221 INFO  [org.infinispan.CLUSTER] (main) ISPN000078: Starting JGroups channel `ISPN` with stack `jdbc-ping`
+2026-06-29 08:42:52,222 INFO  [org.jgroups.JChannel] (main) local_addr: 00000000-0000-0000-0000-000000000001(v=16.0.8), name: b1c76244859a-58442
+2026-06-29 08:42:52,228 INFO  [org.jgroups.protocols.FD_SOCK2] (main) server listening on *:57800
+2026-06-29 08:42:52,253 INFO  [org.infinispan.CLUSTER] (main) ISPN000094: Received new cluster view for channel ISPN: [b1c76244859a-58442(v=16.0.8)|0] (1) [b1c76244859a-58442(v=16.0.8)]
+2026-06-29 08:42:52,255 INFO  [org.keycloak.jgroups.certificates.CertificateReloadManager] (main) Reloading JGroups Certificate
+2026-06-29 08:42:52,296 INFO  [org.infinispan.CLUSTER] (main) ISPN000079: Channel `ISPN` local address is `b1c76244859a-58442`, physical addresses are `[172.19.0.2:7800]`
+2026-06-29 08:42:52,593 INFO  [org.keycloak.connections.infinispan.DefaultInfinispanConnectionProviderFactory] (main) Node name: b1c76244859a-58442, Site name: null
+2026-06-29 08:42:52,670 INFO  [org.keycloak.models.workflow.WorkflowsEventListenerFactory] (main) Workflow runner task scheduled: next execution at 20:42:52, then every PT12H
+2026-06-29 08:42:52,743 INFO  [org.keycloak.services] (main) KC-SERVICES0050: Initializing master realm
+2026-06-29 08:42:53,526 WARN  [org.keycloak.services] (main) KC-SERVICES0110: Environment variable 'KEYCLOAK_ADMIN' is deprecated, use 'KC_BOOTSTRAP_ADMIN_USERNAME' instead
+2026-06-29 08:42:53,526 WARN  [org.keycloak.services] (main) KC-SERVICES0110: Environment variable 'KEYCLOAK_ADMIN_PASSWORD' is deprecated, use 'KC_BOOTSTRAP_ADMIN_PASSWORD' instead
+2026-06-29 08:42:53,691 INFO  [org.keycloak.services] (main) KC-SERVICES0077: Created temporary admin user with username admin
+2026-06-29 08:42:53,791 INFO  [org.keycloak.services.resources.KeycloakApplication] (main) Bootstrap completed in 6.768000 seconds
+2026-06-29 08:42:53,877 INFO  [io.quarkus] (main) Keycloak 26.6.2 on JVM (powered by Quarkus 3.33.1.1) started in 10.363s. Listening on: http://0.0.0.0:8081
+2026-06-29 08:42:53,878 INFO  [io.quarkus] (main) Profile prod activated. 
+2026-06-29 08:42:53,878 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, jdbc-h2, keycloak, narayana-jta, opentelemetry, reactive-routes, rest, rest-jackson, smallrye-context-propagation, vertx]

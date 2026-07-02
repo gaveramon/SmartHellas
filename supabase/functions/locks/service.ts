@@ -10,15 +10,15 @@ import type {
   UpdateLockDeviceRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listLockDevices(
   auth: AuthContext,
   propertyId?: string,
 ): Promise<LockDeviceRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<LockDeviceRow[]>(
     auth,
     "locks",
@@ -28,7 +28,7 @@ export async function listLockDevices(
 }
 
 export async function getLockDevice(auth: AuthContext, id: string): Promise<LockDeviceRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<LockDeviceRow>(auth, "locks", "get_lock_device", { id });
 }
 
@@ -50,7 +50,7 @@ export async function deleteLockDevice(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "locks", "delete_lock_device", { id });
 }
 
@@ -58,7 +58,7 @@ export async function listCredentials(
   auth: AuthContext,
   bookingId?: string,
 ): Promise<AccessCredentialRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AccessCredentialRow[]>(
     auth,
     "locks",
@@ -71,7 +71,7 @@ export async function getCredential(
   auth: AuthContext,
   id: string,
 ): Promise<AccessCredentialRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AccessCredentialRow>(auth, "locks", "get_credential", { id });
 }
 

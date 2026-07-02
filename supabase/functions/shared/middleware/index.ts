@@ -1,8 +1,8 @@
 export { buildAuthenticatedContext } from "./request.ts";
 export {
+  getUserId,
   requireAuth,
   requireTenant,
-  verifyTenantAccess,
   resolveTenantId,
   type AuthContext,
 } from "../auth.ts";

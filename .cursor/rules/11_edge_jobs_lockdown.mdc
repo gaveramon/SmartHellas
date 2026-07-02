@@ -1,0 +1,161 @@
+---
+description: REV19 Edge/Jobs architecture lockdown — module_api only, SQL SSOT, zero orchestration leakage
+alwaysApply: true
+---
+
+# REV19 Architecture Lockdown Ruleset
+
+Edge and Jobs are transport layers. SQL owns all business logic, lifecycles, and authority.
+
+If a request violates these rules: STOP, identify the owning module, propose a compliant SQL + thin Edge path.
+
+---
+
+## 1. Edge Is Not a Workflow Engine
+
+Edge may ONLY:
+
+- call `{module}_api(op, payload)` via `callModuleApi` / `callModuleApiAuth` / `callModuleApiService`
+- pass through request/response
+- extract auth tokens
+- validate payload shape (types, required fields — not business rules)
+
+Edge must NEVER:
+
+- call multiple RPCs sequentially per request
+- implement business logic, workflows, or state interpretation
+- mutate JWT or tenant state
+- construct domain objects (credentials, bookings, payments)
+
+```typescript
+// GOOD — one module_api call, pass-through
+return await callModuleApiAuth<BookingRow>(auth, "booking", "create_booking", input);
+
+// BAD — orchestration, business logic, multi-RPC
+const booking = await callPublicRpc(client, "create_booking", input);
+await callPublicRpc(client, "grant_access", { booking_id: booking.id });
+```
+
+---
+
+## 2. Jobs Are Execution Only
+
+Jobs may ONLY:
+
+- fetch batch → process batch → complete batch
+- via `platform.*` RPCs (or thin wrappers in `shared/database.ts`)
+
+Jobs must NEVER:
+
+- make HTTP routing decisions
+- contain retry, routing, or provider logic
+- call multiple platform RPCs conditionally
+
+---
+
+## 3. SQL Is Single Source of Truth
+
+These lifecycles live ONLY in SQL:
+
+- booking, onboarding, OAuth, payment, notification
+
+Edge must NOT calculate, transform, decide, or validate business rules.
+
+Move logic into the owning domain module migration — never into Edge.
+
+---
+
+## 4. Module API Is the Only Edge Contract
+
+Allowed:
+
+- `{module}_api("op", payload)` — e.g. `booking_api`, `auth_api`, `integrations_api`
+
+Forbidden:
+
+- direct domain RPC calls (bypassing `{module}_api`)
+- helper RPC chaining from Edge
+- importing or invoking SQL helper functions from Edge
+
+---
+
+## 5. Authority Rule
+
+Tenant authority SSOT: `has_tenant_access` (SQL).
+
+Forbidden in Edge:
+
+- JWT mutation, tenant switching, auth state transitions
+
+All auth flows go through:
+
+```typescript
+await callModuleApiAuth(auth, "auth", op, payload);
+// or callModuleApiService("auth", op, payload) for service-role flows
+```
+
+---
+
+## 6. OAuth Rule
+
+OAuth completion is a single SQL operation routed through `auth_api("oauth_complete", payload)` or `integrations_api("oauth_complete", payload)`.
+
+Forbidden in Edge:
+
+- step-by-step OAuth orchestration
+- `credential_ref` construction
+- Vault writes
+- token exchange
+
+---
+
+## 7. Booking Rule
+
+Booking creation:
+
+```typescript
+await callModuleApiAuth(auth, "booking", "create_booking", payload);
+```
+
+Forbidden in Edge:
+
+- access window calculation
+- post-create chaining (access, locks, notifications)
+
+---
+
+## 8. Validation Gate (Review Criteria)
+
+Treat as FAIL when generating or reviewing Edge/Jobs code:
+
+- Edge calls more than one `{module}_api` per request
+- Edge makes HTTP calls outside `integrations/` or payment gateway handlers
+- Edge imports SQL helper functions or calls non-`{module}_api` RPCs
+- Jobs contain business logic, retries, or conditional multi-RPC flows
+- Edge modifies tenant identity or constructs domain objects
+
+HTTP exceptions: `integrations/`, `payments/`, `webhooks/` gateway layers only.
+
+---
+
+## 9. Success Criteria
+
+- Edge = pure router (one `{module}_api` per request)
+- Jobs = pure executors (platform batch RPCs only)
+- SQL = full business logic owner
+- Zero orchestration leakage
+- Zero multi-step workflows in Edge
+
+## 10. Infrastructure Guard Exception
+
+The following SQL RPCs are infrastructure authorization guards.
+
+They are NOT business APIs.
+
+They MAY be called directly from shared authentication middleware.
+
+- has_tenant_access
+- edge_require_manager
+- edge_require_admin
+
+They SHALL NOT be routed through module_api().

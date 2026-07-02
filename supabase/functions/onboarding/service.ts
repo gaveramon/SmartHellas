@@ -23,15 +23,15 @@ import type {
   LifecycleTransitionRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listOnboardingSessions(
   auth: AuthContext,
   propertyId?: string,
 ): Promise<OnboardingSessionRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingSessionRow[]>(
     auth,
     "onboarding",
@@ -44,7 +44,7 @@ export async function getOnboardingSession(
   auth: AuthContext,
   id: string,
 ): Promise<OnboardingSessionDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingSessionDetail>(
     auth,
     "onboarding",
@@ -81,7 +81,7 @@ export async function deleteOnboardingSession(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "onboarding", "delete_session", { id });
 }
 
@@ -89,7 +89,7 @@ export async function listStepStates(
   auth: AuthContext,
   sessionId: string,
 ): Promise<OnboardingStepStateRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingStepStateRow[]>(
     auth,
     "onboarding",
@@ -114,7 +114,7 @@ export async function listRoomMappings(
   auth: AuthContext,
   sessionId: string,
 ): Promise<OnboardingRoomMappingRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingRoomMappingRow[]>(
     auth,
     "onboarding",
@@ -151,7 +151,7 @@ export async function deleteRoomMapping(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "onboarding", "delete_room_mapping", { id });
 }
 
@@ -159,7 +159,7 @@ export async function listDeviceMappings(
   auth: AuthContext,
   sessionId: string,
 ): Promise<OnboardingDeviceMappingRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingDeviceMappingRow[]>(
     auth,
     "onboarding",
@@ -196,7 +196,7 @@ export async function deleteDeviceMapping(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "onboarding", "delete_device_mapping", { id });
 }
 
@@ -204,7 +204,7 @@ export async function listChecklistItems(
   auth: AuthContext,
   sessionId: string,
 ): Promise<OnboardingChecklistRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingChecklistRow[]>(
     auth,
     "onboarding",
@@ -241,7 +241,7 @@ export async function deleteChecklistItem(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "onboarding", "delete_checklist_item", { id });
 }
 
@@ -249,7 +249,7 @@ export async function listNotes(
   auth: AuthContext,
   sessionId: string,
 ): Promise<OnboardingNoteRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingNoteRow[]>(
     auth,
     "onboarding",
@@ -274,7 +274,7 @@ export async function deleteNote(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "onboarding", "delete_note", { id });
 }
 
@@ -282,7 +282,7 @@ export async function getOnboardingLifecycle(
   auth: AuthContext,
   propertyId: string,
 ): Promise<OnboardingLifecycleRow | null> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingLifecycleRow | null>(
     auth,
     "onboarding",
@@ -295,7 +295,7 @@ export async function listOnboardingLifecycleTransitions(
   auth: AuthContext,
   propertyId: string,
 ): Promise<OnboardingLifecycleTransitionRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OnboardingLifecycleTransitionRow[]>(
     auth,
     "onboarding",

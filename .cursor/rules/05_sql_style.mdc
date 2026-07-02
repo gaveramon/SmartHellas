@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+
+# SQL Style
+
+Use:
+
+- lowercase SQL
+- descriptive names
+- explicit constraint names
+- IF NOT EXISTS where supported
+
+Prefer:
+
+create table
+then indexes
+then constraints
+then triggers
+
+Comments only for non-obvious business rules.
+
+Keep SQL deterministic and readable.

@@ -21,8 +21,8 @@ import type {
   WorkflowTriggerRow,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function createSupportMessage(auth: AuthContext, input: CreateSupportMessageRequest): Promise<SupportMessageRow> {
@@ -50,52 +50,52 @@ export async function createWorkflowTrigger(auth: AuthContext, input: CreateWork
 }
 
 export async function deleteSupportTicket(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "operations", "delete_support_ticket", { id: id });
 }
 
 export async function deleteTemplate(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "operations", "delete_template", { id: id });
 }
 
 export async function deleteWorkflow(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "operations", "delete_workflow", { id: id });
 }
 
 export async function deleteWorkflowStep(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "operations", "delete_workflow_step", { id: id });
 }
 
 export async function deleteWorkflowTrigger(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "operations", "delete_workflow_trigger", { id: id });
 }
 
 export async function getSupportTicket(auth: AuthContext, id: string): Promise<SupportTicketRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<SupportTicketRow>(auth, "operations", "get_support_ticket", { id: id });
 }
 
 export async function getTemplate(auth: AuthContext, id: string): Promise<OperationTemplateRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OperationTemplateRow>(auth, "operations", "get_template", { id: id });
 }
 
 export async function getWorkflow(auth: AuthContext, id: string): Promise<WorkflowDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<WorkflowDetail>(auth, "operations", "get_workflow", { id: id });
 }
 
 export async function listSupportMessages(auth: AuthContext, ticketId: string): Promise<SupportMessageRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<SupportMessageRow[]>(auth, "operations", "list_support_messages", { ticket_id: ticketId });
 }
 
 export async function listSupportTickets(auth: AuthContext, status?: string, priority?: string): Promise<SupportTicketRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (status !== undefined) payload.status = status;
   if (priority !== undefined) payload.priority = priority;
@@ -103,22 +103,22 @@ export async function listSupportTickets(auth: AuthContext, status?: string, pri
 }
 
 export async function listTemplates(auth: AuthContext): Promise<OperationTemplateRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OperationTemplateRow[]>(auth, "operations", "list_templates");
 }
 
 export async function listWorkflowSteps(auth: AuthContext, workflowId: string): Promise<WorkflowStepRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<WorkflowStepRow[]>(auth, "operations", "list_workflow_steps", { workflow_id: workflowId });
 }
 
 export async function listWorkflowTriggers(auth: AuthContext, workflowId: string): Promise<WorkflowTriggerRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<WorkflowTriggerRow[]>(auth, "operations", "list_workflow_triggers", { workflow_id: workflowId });
 }
 
 export async function listWorkflows(auth: AuthContext): Promise<OperationWorkflowRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<OperationWorkflowRow[]>(auth, "operations", "list_workflows");
 }
 

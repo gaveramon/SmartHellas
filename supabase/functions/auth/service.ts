@@ -121,7 +121,6 @@ export async function updateSubscription(
   input: UpdateSubscriptionRequest,
 ): Promise<SubscriptionDetail> {
   const payload: Record<string, unknown> = {};
-  if (input.tier !== undefined) payload.tier = input.tier;
   if (input.status !== undefined) payload.status = input.status;
   if (input.current_period_start !== undefined) {
     payload.current_period_start = input.current_period_start;

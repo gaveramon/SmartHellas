@@ -1,0 +1,123 @@
+---
+alwaysApply: true
+---
+
+# Migration Rules
+
+Applied migrations are IMMUTABLE.
+
+Never modify an existing migration that may already have been executed.
+
+Instead:
+
+- create a new migration
+- preserve migration history
+- preserve upgrade path
+
+Only modify historical migrations when explicitly instructed for a full database reset.
+
+------------------------------------------------
+
+Every new migration must be:
+
+- idempotent where practical
+- backward compatible where practical
+- additive whenever possible
+
+------------------------------------------------
+
+Before creating a migration verify:
+
+- no duplicate object already exists
+- SSOT ownership remains unchanged
+- architecture remains unchanged
+
+------------------------------------------------
+
+# Domain Evolution
+
+Immutable migrations do NOT imply immutable domains.
+
+A domain may span multiple migrations.
+
+Example:
+
+003_devices_rev19.sql
+
+024_devices_extensions_rev19.sql
+
+041_devices_automation_rev20.sql
+
+These together form the Device Engine.
+
+Never move business logic into another module because an earlier migration is frozen.
+
+------------------------------------------------
+
+# Business Logic Placement
+
+Every SQL object must belong to exactly ONE domain.
+
+Before creating any function, trigger or workflow determine:
+
+1. Which module owns this business capability?
+2. Does that module already exist?
+3. If yes:
+   Create a NEW migration for THAT module.
+4. Never create business logic inside an unrelated module.
+
+------------------------------------------------
+
+# Edge SQL
+
+Edge migrations are infrastructure.
+
+Allowed:
+
+- RPC wrappers
+- Guards
+- Auth helpers
+- Permission helpers
+- Validation helpers
+- Logging
+- Context helpers
+
+Forbidden:
+
+- Business rules
+- Domain triggers
+- Domain workflows
+- Device functions
+- Booking functions
+- CRM functions
+- Logistics functions
+- Commerce functions
+- Lifecycle management
+
+Edge SQL should call domain functions.
+
+It must never become the implementation itself.
+
+------------------------------------------------
+
+# Migration Naming
+
+Extension migrations should clearly indicate their owning domain.
+
+Examples:
+
+024_devices_extensions_rev19.sql
+
+025_booking_extensions_rev19.sql
+
+026_logistics_extensions_rev19.sql
+
+027_commerce_extensions_rev19.sql
+
+028_crm_extensions_rev19.sql
+
+The migration number represents chronology.
+
+The filename represents ownership.
+
+Ownership must always remain obvious.

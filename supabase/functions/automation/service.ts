@@ -12,15 +12,15 @@ import type {
   UpsertSubscriptionRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listRuns(
   auth: AuthContext,
   workflowId?: string,
 ): Promise<AutomationRunRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AutomationRunRow[]>(
     auth,
     "automation",
@@ -30,7 +30,7 @@ export async function listRuns(
 }
 
 export async function getRun(auth: AuthContext, id: string): Promise<AutomationRunDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AutomationRunDetail>(auth, "automation", "get_run", { id });
 }
 
@@ -38,7 +38,7 @@ export async function listRunSteps(
   auth: AuthContext,
   runId: string,
 ): Promise<AutomationRunStepRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AutomationRunStepRow[]>(
     auth,
     "automation",
@@ -72,7 +72,7 @@ export async function listSubscriptions(
   auth: AuthContext,
   workflowId?: string,
 ): Promise<AutomationSubscriptionRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AutomationSubscriptionRow[]>(
     auth,
     "automation",
@@ -97,6 +97,6 @@ export async function deleteSubscription(
   auth: AuthContext,
   input: DeleteSubscriptionRequest,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "automation", "delete_subscription", { ...input });
 }

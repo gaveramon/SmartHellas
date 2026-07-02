@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+
+# PostgreSQL Standards
+
+Use:
+
+- snake_case
+- UUID PKs
+- timestamptz
+- explicit FK names
+- explicit constraint names
+- named indexes
+
+Normalize whenever practical.
+
+Enums belong ONLY to 001.
+
+Avoid:
+
+- duplicated data
+- duplicated constraints
+- unnecessary JSONB
+
+Every FK must have intentional ON DELETE behaviour.
+
+Every NOT NULL column must be justified.
+
+Generated columns must be deterministic.
+
+Indexes must support:
+
+- FK lookups
+- tenant filtering
+- common search paths
+
+Never sacrifice integrity for convenience.

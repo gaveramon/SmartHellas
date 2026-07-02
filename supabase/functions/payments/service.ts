@@ -7,8 +7,8 @@ import type {
   PaymentIntentRow,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function createCheckoutSession(
@@ -24,7 +24,7 @@ export async function createCheckoutSession(
 }
 
 export async function getPayment(auth: AuthContext, id: string): Promise<PaymentIntentRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PaymentIntentRow>(auth, "payment", "get_payment", { id });
 }
 
@@ -32,7 +32,7 @@ export async function listPayments(
   auth: AuthContext,
   filters?: { status?: string; target_type?: string; target_id?: string },
 ): Promise<PaymentIntentRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PaymentIntentRow[]>(
     auth,
     "payment",
@@ -52,7 +52,7 @@ export async function paymentHistory(
   auth: AuthContext,
   paymentIntentId: string,
 ): Promise<PaymentEventRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PaymentEventRow[]>(auth, "payment", "payment_history", {
     payment_intent_id: paymentIntentId,
   });

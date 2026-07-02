@@ -16,15 +16,15 @@ import type {
   UpsertAccessScheduleRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listBookings(
   auth: AuthContext,
   propertyId?: string,
 ): Promise<BookingRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<BookingRow[]>(
     auth,
     "booking",
@@ -34,7 +34,7 @@ export async function listBookings(
 }
 
 export async function getBooking(auth: AuthContext, id: string): Promise<BookingRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<BookingRow>(auth, "booking", "get_booking", { id });
 }
 
@@ -56,7 +56,7 @@ export async function deleteBooking(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "booking", "delete_booking", { id });
 }
 
@@ -64,7 +64,7 @@ export async function getAccessSchedule(
   auth: AuthContext,
   propertyId: string,
 ): Promise<PropertyAccessScheduleRow | null> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PropertyAccessScheduleRow | null>(
     auth,
     "booking",
@@ -89,7 +89,7 @@ export async function getBookingAccess(
   auth: AuthContext,
   bookingId: string,
 ): Promise<BookingAccessRow | null> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<BookingAccessRow | null>(
     auth,
     "booking",
@@ -102,23 +102,11 @@ export async function createBookingAccess(
   auth: AuthContext,
   input: CreateBookingAccessRequest,
 ): Promise<BookingAccessRow> {
-  if (input.valid_from !== undefined || input.valid_until !== undefined) {
-    return await callModuleApiAuth<BookingAccessRow>(
-      auth,
-      "booking",
-      "create_booking_access",
-      {
-        booking_id: input.booking_id,
-        valid_from: input.valid_from,
-        valid_until: input.valid_until,
-      },
-    );
-  }
   return await callModuleApiAuth<BookingAccessRow>(
     auth,
     "booking",
-    "generate_booking_access",
-    { booking_id: input.booking_id },
+    "create_booking_access",
+    { ...input },
   );
 }
 
@@ -126,7 +114,7 @@ export async function deleteBookingAccess(
   auth: AuthContext,
   bookingId: string,
 ): Promise<{ deleted: true; booking_id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "booking", "delete_booking_access", {
     booking_id: bookingId,
   });
@@ -136,7 +124,7 @@ export async function listAccessPolicies(
   auth: AuthContext,
   propertyId?: string,
 ): Promise<AccessPolicyRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AccessPolicyRow[]>(
     auth,
     "booking",
@@ -173,7 +161,7 @@ export async function deleteAccessPolicy(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "booking", "delete_access_policy", { id });
 }
 
@@ -181,7 +169,7 @@ export async function listAccessRules(
   auth: AuthContext,
   propertyId?: string,
 ): Promise<AccessRuleRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<AccessRuleRow[]>(
     auth,
     "booking",
@@ -208,6 +196,6 @@ export async function deleteAccessRule(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "booking", "delete_access_rule", { id });
 }

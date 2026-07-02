@@ -1,6 +1,4 @@
 import { type AuthContext } from "../shared/auth.ts";
-import { config } from "../shared/config.ts";
-import { ValidationError } from "../shared/errors.ts";
 import { callModuleApiAuth, callModuleApiService } from "../shared/edge-rpc.ts";
 import type {
   ConnectIntegrationRequest,
@@ -246,47 +244,19 @@ export async function startOAuth(
   auth: AuthContext,
   input: OAuthStartRequest,
 ): Promise<OAuthStartResponse> {
-  const registered = await callModuleApiAuth<{
-    state_token: string;
-    provider_code: string;
-  }>(auth, "integrations", "register_oauth_state", {
-    provider_code: input.provider_code,
-  });
-
-  const state = registered.state_token;
-  const redirectUri =
-    input.redirect_uri ??
-    `${config.supabaseUrl()}/functions/v1/integrations/oauth-callback`;
-
-  let authorizeUrl = "";
-
-  if (input.provider_code === "stripe") {
-    const clientId = Deno.env.get("STRIPE_CONNECT_CLIENT_ID");
-    if (!clientId) throw new ValidationError("STRIPE_CONNECT_CLIENT_ID not configured");
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: clientId,
-      scope: "read_write",
-      state,
-      redirect_uri: redirectUri,
-    });
-    authorizeUrl = `https://connect.stripe.com/oauth/authorize?${params}`;
-  } else {
-    const base = Deno.env.get(`OAUTH_AUTHORIZE_URL_${input.provider_code.toUpperCase()}`);
-    if (!base) {
-      throw new ValidationError(
-        `OAuth authorize URL not configured for ${input.provider_code}`,
-      );
-    }
-    const params = new URLSearchParams({ state, redirect_uri: redirectUri });
-    authorizeUrl = `${base}?${params}`;
-  }
-
-  return {
-    authorize_url: authorizeUrl,
-    state,
+  const payload: Record<string, unknown> = {
     provider_code: input.provider_code,
   };
+  if (input.redirect_uri !== undefined) {
+    payload.redirect_uri = input.redirect_uri;
+  }
+
+  return await callModuleApiAuth<OAuthStartResponse>(
+    auth,
+    "integrations",
+    "start_oauth",
+    payload,
+  );
 }
 
 export async function completeOAuthCallback(

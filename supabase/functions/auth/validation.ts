@@ -1,8 +1,5 @@
 import { ValidationError } from "../shared/errors.ts";
-import {
-  optionalEnum,
-  SUBSCRIPTION_TIERS,
-} from "../shared/validation.ts";
+import { optionalEnum } from "../shared/validation.ts";
 import type {
   CreateServiceAccountRequest,
   CreateTenantRequest,
@@ -176,8 +173,12 @@ export function parseUpdateSubscriptionBody(
   const record = body as Record<string, unknown>;
   const result: UpdateSubscriptionRequest = {};
 
-  const tier = optionalEnum(record.tier, "tier", SUBSCRIPTION_TIERS);
-  if (tier) result.tier = tier;
+  if (record.tier !== undefined) {
+    throw new ValidationError(
+      "tier changes must use the commerce change_plan endpoint with plan_id",
+      { field: "tier" },
+    );
+  }
 
   const status = optionalEnum(record.status, "status", SUBSCRIPTION_STATUSES);
   if (status) result.status = status;
@@ -197,7 +198,6 @@ export function parseUpdateSubscriptionBody(
   }
 
   if (
-    !result.tier &&
     !result.status &&
     !result.current_period_start &&
     !result.current_period_end

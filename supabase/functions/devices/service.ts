@@ -18,17 +18,17 @@ import type {
   UpsertDeviceConfigRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listProperties(auth: AuthContext): Promise<PropertyRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PropertyRow[]>(auth, "devices", "list_properties");
 }
 
 export async function getProperty(auth: AuthContext, propertyId: string): Promise<PropertyRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PropertyRow>(auth, "devices", "get_property", { id: propertyId });
 }
 
@@ -54,7 +54,7 @@ export async function deleteProperty(
 }
 
 export async function listRooms(auth: AuthContext, propertyId?: string): Promise<RoomRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<RoomRow[]>(
     auth,
     "devices",
@@ -64,7 +64,7 @@ export async function listRooms(auth: AuthContext, propertyId?: string): Promise
 }
 
 export async function getRoom(auth: AuthContext, roomId: string): Promise<RoomRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<RoomRow>(auth, "devices", "get_room", { id: roomId });
 }
 
@@ -84,7 +84,7 @@ export async function deleteRoom(
 }
 
 export async function listDeviceCategories(auth: AuthContext): Promise<DeviceCategoryRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<DeviceCategoryRow[]>(auth, "devices", "list_device_categories");
 }
 
@@ -93,7 +93,7 @@ export async function listDevices(
   propertyId?: string,
   roomId?: string,
 ): Promise<DeviceRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, string> = {};
   if (propertyId) payload.property_id = propertyId;
   if (roomId) payload.room_id = roomId;
@@ -101,7 +101,7 @@ export async function listDevices(
 }
 
 export async function getDevice(auth: AuthContext, deviceId: string): Promise<DeviceDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<DeviceDetail>(auth, "devices", "get_device", { id: deviceId });
 }
 
@@ -144,7 +144,7 @@ export async function getDeviceConfig(
   auth: AuthContext,
   deviceId: string,
 ): Promise<DeviceConfigurationRow | null> {
-  tid(auth);
+  await tid(auth);
   const result = await callModuleApiAuth<DeviceConfigurationRow | null>(
     auth,
     "devices",

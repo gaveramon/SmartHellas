@@ -10,12 +10,12 @@ import type {
   UpsertPreferenceRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function listTemplates(auth: AuthContext): Promise<NotificationTemplateRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<NotificationTemplateRow[]>(
     auth,
     "notification",
@@ -24,7 +24,7 @@ export async function listTemplates(auth: AuthContext): Promise<NotificationTemp
 }
 
 export async function getTemplate(auth: AuthContext, id: string): Promise<NotificationTemplateRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<NotificationTemplateRow>(auth, "notification", "get_template", {
     id,
   });
@@ -58,7 +58,7 @@ export async function deleteTemplate(
   auth: AuthContext,
   id: string,
 ): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth(auth, "notification", "delete_template", { id });
 }
 
@@ -66,7 +66,7 @@ export async function listPreferences(
   auth: AuthContext,
   userId?: string,
 ): Promise<NotificationPreferenceRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<NotificationPreferenceRow[]>(
     auth,
     "notification",
@@ -98,7 +98,7 @@ export async function listQueue(
   auth: AuthContext,
   status?: string,
 ): Promise<NotificationQueueRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<NotificationQueueRow[]>(
     auth,
     "notification",
@@ -111,7 +111,7 @@ export async function getNotification(
   auth: AuthContext,
   id: string,
 ): Promise<NotificationHistoryRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<NotificationHistoryRow>(auth, "notification", "get_notification", {
     id,
   });
@@ -121,7 +121,7 @@ export async function listHistory(
   auth: AuthContext,
   channel?: string,
 ): Promise<NotificationHistoryRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<NotificationHistoryRow[]>(
     auth,
     "notification",

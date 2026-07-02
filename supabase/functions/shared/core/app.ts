@@ -1,4 +1,4 @@
-import { requireAuth, resolveTenantId } from "../auth.ts";
+import { requireAuth, requireTenant } from "../auth.ts";
 import { ValidationError } from "../errors.ts";
 import { createLogger } from "../logger.ts";
 import { withErrorHandling } from "../response.ts";
@@ -17,7 +17,7 @@ export interface AuthenticatedAppConfig {
   /** Routes that skip JWT auth (e.g. OAuth callbacks). */
   publicRoutes?: ReadonlySet<string>;
   /**
-   * When true (default), resolve tenant from JWT app_metadata and verify access.
+   * When true (default), resolve tenant via resolve_active_tenant RPC only.
    * Disable for auth routes that manage tenant context explicitly.
    */
   resolveTenant?: boolean;
@@ -62,16 +62,16 @@ export function createAuthenticatedApp(config: AuthenticatedAppConfig) {
     }
 
     let auth = await requireAuth(req);
-    const resolveTenant = config.resolveTenant !== false;
-    if (resolveTenant) {
-      const tenantId = await resolveTenantId(req, auth);
-      auth = { ...auth, tenantId };
+    let tenantId: string | undefined;
+    const shouldResolveTenant = config.resolveTenant !== false;
+    if (shouldResolveTenant) {
+      tenantId = await requireTenant(auth);
     }
 
     const logger = createLogger({
       functionName: config.functionName,
       userId: auth.userId,
-      tenantId: auth.tenantId ?? undefined,
+      tenantId,
       route,
     });
 

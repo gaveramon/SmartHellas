@@ -58,8 +58,8 @@ import type {
   UpsertCustomFieldValueRequest,
 } from "./types.ts";
 
-function tid(auth: AuthContext): string {
-  return requireTenant(auth);
+async function tid(auth: AuthContext): Promise<string> {
+  return await requireTenant(auth);
 }
 
 export async function createCampaign(auth: AuthContext, input: CreateCampaignRequest): Promise<CrmCampaignRow> {
@@ -135,149 +135,149 @@ export async function createTask(auth: AuthContext, input: CreateTaskRequest): P
 }
 
 export async function deleteCampaign(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_campaign", { id: id });
 }
 
 export async function deleteCompany(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_company", { id: id });
 }
 
 export async function deleteCompanyTenant(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_company_tenant", { id: id });
 }
 
 export async function deleteContact(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_contact", { id: id });
 }
 
 export async function deleteContactCompany(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_contact_company", { id: id });
 }
 
 export async function deleteContactTenant(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_contact_tenant", { id: id });
 }
 
 export async function deleteCustomField(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_custom_field", { id: id });
 }
 
 export async function deleteCustomFieldValue(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_custom_field_value", { id: id });
 }
 
 export async function deleteLead(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_lead", { id: id });
 }
 
 export async function deleteList(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_list", { id: id });
 }
 
 export async function deleteListMember(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_list_member", { id: id });
 }
 
 export async function deleteNote(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_note", { id: id });
 }
 
 export async function deleteOpportunity(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_opportunity", { id: id });
 }
 
 export async function deletePipeline(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_pipeline", { id: id });
 }
 
 export async function deletePipelineStage(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_pipeline_stage", { id: id });
 }
 
 export async function deleteTag(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_tag", { id: id });
 }
 
 export async function deleteTagAssignment(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_tag_assignment", { id: id });
 }
 
 export async function deleteTask(auth: AuthContext, id: string): Promise<{ deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ deleted: true; id: string }>(auth, "crm", "delete_task", { id: id });
 }
 
 export async function getCampaign(auth: AuthContext, id: string): Promise<CrmCampaignRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmCampaignRow>(auth, "crm", "get_campaign", { id: id });
 }
 
 export async function getCompany(auth: AuthContext, id: string): Promise<CrmCompanyRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmCompanyRow>(auth, "crm", "get_company", { id: id });
 }
 
 export async function getContact(auth: AuthContext, id: string): Promise<CrmContactRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmContactRow>(auth, "crm", "get_contact", { id: id });
 }
 
 export async function getLead(auth: AuthContext, id: string): Promise<CrmLeadRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmLeadRow>(auth, "crm", "get_lead", { id: id });
 }
 
 export async function getList(auth: AuthContext, id: string): Promise<CrmListRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmListRow>(auth, "crm", "get_list", { id: id });
 }
 
 export async function getOpportunity(auth: AuthContext, id: string): Promise<CrmOpportunityRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmOpportunityRow>(auth, "crm", "get_opportunity", { id: id });
 }
 
 export async function getPipeline(auth: AuthContext, id: string): Promise<PipelineDetail> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<PipelineDetail>(auth, "crm", "get_pipeline", { id: id });
 }
 
 export async function getTask(auth: AuthContext, id: string): Promise<CrmTaskRow> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmTaskRow>(auth, "crm", "get_task", { id: id });
 }
 
 export async function listCampaigns(auth: AuthContext, status?: string): Promise<CrmCampaignRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (status !== undefined) payload.status = status;
   return await callModuleApiAuth<CrmCampaignRow[]>(auth, "crm", "list_campaigns", payload);
 }
 
 export async function listCompanies(auth: AuthContext): Promise<CrmCompanyRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmCompanyRow[]>(auth, "crm", "list_companies");
 }
 
 export async function listContactCompanies(auth: AuthContext, contactId?: string, companyId?: string): Promise<CrmContactCompanyRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (contactId !== undefined) payload.contact_id = contactId;
   if (companyId !== undefined) payload.company_id = companyId;
@@ -285,28 +285,28 @@ export async function listContactCompanies(auth: AuthContext, contactId?: string
 }
 
 export async function listContactTenants(auth: AuthContext, contactId?: string): Promise<CrmContactTenantRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (contactId !== undefined) payload.contact_id = contactId;
   return await callModuleApiAuth<CrmContactTenantRow[]>(auth, "crm", "list_contact_tenants", payload);
 }
 
 export async function listContacts(auth: AuthContext, status?: string): Promise<CrmContactRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (status !== undefined) payload.status = status;
   return await callModuleApiAuth<CrmContactRow[]>(auth, "crm", "list_contacts", payload);
 }
 
 export async function listCompanyTenants(auth: AuthContext, companyId?: string): Promise<CrmCompanyTenantRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (companyId !== undefined) payload.company_id = companyId;
   return await callModuleApiAuth<CrmCompanyTenantRow[]>(auth, "crm", "list_company_tenants", payload);
 }
 
 export async function listCustomFieldValues(auth: AuthContext, entityType?: string, entityId?: string, customFieldId?: string): Promise<CrmCustomFieldValueRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (entityType !== undefined) payload.entity_type = entityType;
   if (entityId !== undefined) payload.entity_id = entityId;
@@ -315,14 +315,14 @@ export async function listCustomFieldValues(auth: AuthContext, entityType?: stri
 }
 
 export async function listCustomFields(auth: AuthContext, appliesTo?: string): Promise<CrmCustomFieldRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (appliesTo !== undefined) payload.applies_to = appliesTo;
   return await callModuleApiAuth<CrmCustomFieldRow[]>(auth, "crm", "list_custom_fields", payload);
 }
 
 export async function listInteractions(auth: AuthContext, contactId?: string, leadId?: string, opportunityId?: string, companyId?: string, limit?: number): Promise<CrmInteractionRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (contactId !== undefined) payload.contact_id = contactId;
   if (leadId !== undefined) payload.lead_id = leadId;
@@ -333,7 +333,7 @@ export async function listInteractions(auth: AuthContext, contactId?: string, le
 }
 
 export async function listLeads(auth: AuthContext, status?: string, campaignId?: string): Promise<CrmLeadRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (status !== undefined) payload.status = status;
   if (campaignId !== undefined) payload.campaign_id = campaignId;
@@ -341,17 +341,17 @@ export async function listLeads(auth: AuthContext, status?: string, campaignId?:
 }
 
 export async function listListMembers(auth: AuthContext, listId: string): Promise<CrmListMemberRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmListMemberRow[]>(auth, "crm", "list_list_members", { list_id: listId });
 }
 
 export async function listLists(auth: AuthContext): Promise<CrmListRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmListRow[]>(auth, "crm", "list_lists");
 }
 
 export async function listNotes(auth: AuthContext, entityType: string, entityId: string): Promise<CrmNoteRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   payload.entity_type = entityType;
   payload.entity_id = entityId;
@@ -359,7 +359,7 @@ export async function listNotes(auth: AuthContext, entityType: string, entityId:
 }
 
 export async function listOpportunities(auth: AuthContext, pipelineId?: string, stageId?: string, status?: string): Promise<CrmOpportunityRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (pipelineId !== undefined) payload.pipeline_id = pipelineId;
   if (stageId !== undefined) payload.stage_id = stageId;
@@ -368,17 +368,17 @@ export async function listOpportunities(auth: AuthContext, pipelineId?: string, 
 }
 
 export async function listPipelineStages(auth: AuthContext, pipelineId: string): Promise<CrmPipelineStageRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmPipelineStageRow[]>(auth, "crm", "list_pipeline_stages", { pipeline_id: pipelineId });
 }
 
 export async function listPipelines(auth: AuthContext): Promise<CrmPipelineRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmPipelineRow[]>(auth, "crm", "list_pipelines");
 }
 
 export async function listTagAssignments(auth: AuthContext, entityType?: string, entityId?: string): Promise<CrmTagAssignmentRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (entityType !== undefined) payload.entity_type = entityType;
   if (entityId !== undefined) payload.entity_id = entityId;
@@ -386,12 +386,12 @@ export async function listTagAssignments(auth: AuthContext, entityType?: string,
 }
 
 export async function listTags(auth: AuthContext): Promise<CrmTagRow[]> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<CrmTagRow[]>(auth, "crm", "list_tags");
 }
 
 export async function listTasks(auth: AuthContext, targetType?: string, targetId?: string, status?: string): Promise<CrmTaskRow[]> {
-  tid(auth);
+  await tid(auth);
   const payload: Record<string, unknown> = {};
   if (targetType !== undefined) payload.target_type = targetType;
   if (targetId !== undefined) payload.target_id = targetId;
@@ -400,7 +400,7 @@ export async function listTasks(auth: AuthContext, targetType?: string, targetId
 }
 
 export async function softDeleteInteraction(auth: AuthContext, id: string): Promise<{ soft_deleted: true; id: string }> {
-  tid(auth);
+  await tid(auth);
   return await callModuleApiAuth<{ soft_deleted: true; id: string }>(auth, "crm", "soft_delete_interaction", { id: id });
 }
 
