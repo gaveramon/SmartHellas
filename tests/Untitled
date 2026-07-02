@@ -1,0 +1,8 @@
+Applying migration 049_production_audit_fixes_rev19.sql...
+ERROR: function public.commerce_change_subscription_plan(uuid) does not exist (SQLSTATE 42883)
+At statement: 10
+-- -----------------------------------------------------
+-- H1, H2, H4, H5, M1: revoke direct authenticated execute on standalone RPCs
+-- -----------------------------------------------------
+
+revoke all on function public.commerce_change_subscription_plan(uuid) from public, authenticated
