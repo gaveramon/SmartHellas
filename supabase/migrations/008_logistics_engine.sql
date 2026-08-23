@@ -593,21 +593,6 @@ end $$;
 
 
 
--- =====================================================
--- END 008 LOGISTICS ENGINE (CLEAN DOMAIN ONLY)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('008_logistics_engine_rev19', 'REV19.LOGISTICS', false)
-on conflict (version) do nothing;
-
-
--- 044_logistics_security_rev19.sql
--- 008 Logistics Engine security hardening
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('044_logistics_security_rev19', 'REV19.SECURITY.LOGISTICS', false)
-on conflict (version) do nothing;
 
 
 
@@ -2383,3 +2368,10 @@ before insert or update on public.fulfilment_orders
 for each row execute function public.enforce_fulfilment_order_consistency();
 
 
+-- =====================================================
+-- END 008 LOGISTICS ENGINE (CLEAN DOMAIN ONLY)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('008_logistics_engine', 'REV22.LOGISTICS', false)
+on conflict (version) do nothing;

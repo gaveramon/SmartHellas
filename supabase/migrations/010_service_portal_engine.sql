@@ -360,22 +360,6 @@ drop policy if exists portal_feature_flags_delete on public.portal_feature_flags
 
 
 
-
-
--- =====================================================
-
--- END 010 SERVICE & PORTAL ENGINE
-
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('010_service_portal_engine_rev19', 'REV19.SERVICE.PORTAL', false)
-on conflict (version) do nothing;
-
-
-
-
-
 -- =====================================================
 
 -- 5. TENANT CONSISTENCY GUARDS
@@ -956,3 +940,10 @@ before insert or update on public.portal_user_preferences
 for each row execute function public.enforce_portal_user_preference_membership();
 
 
+-- =====================================================
+-- END 010 SERVICE & PORTAL ENGINE
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('010_service_portal_engine', 'REV22.SERVICE.PORTAL', false)
+on conflict (version) do nothing;

@@ -425,16 +425,6 @@ alter table preconfig_device_map enable row level security;
 
 
 
--- =====================================================
-
--- END 007 PRECONFIG ENGINE (REV19)
-
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('007_preconfig_engine_rev19', 'REV19.PRECONFIG', false)
-on conflict (version) do nothing;
-
 
 
 
@@ -961,4 +951,12 @@ before update on preconfig_templates
 
 for each row execute function platform.set_updated_at();
 
+
+-- =====================================================
+-- END 007 PRECONFIG ENGINE (REV19)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('007_preconfig_engine', 'REV22.PRECONFIG', false)
+on conflict (version) do nothing;
 

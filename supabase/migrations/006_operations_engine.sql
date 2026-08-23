@@ -500,37 +500,6 @@ drop policy if exists support_messages_delete on public.support_messages;
 
 
 -- =====================================================
--- END 006 OPERATIONS ENGINE
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('006_operations_engine_rev19', 'REV19.OPERATIONS', false)
-on conflict (version) do nothing;
-
--- =====================================================
--- 027_module_extensions_rev19.sql
--- 010–011–012–013–006–007–005–002 module extensions
--- Domain SSOT: business logic extracted from Edge 021_edge_rpc_modules_rev19.sql
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('027_module_extensions_rev19', 'REV19.DOMAIN.MODULES.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 034 OPERATIONS NOTIFICATIONS (006 SSOT)
--- Queue-driven notification domain. Delivery via 000 platform workers.
--- Automation (016) enqueues only — never delivers.
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('034_operations_notifications_rev19', 'REV19.DOMAIN.OPERATIONS.NOTIFICATIONS', false)
-on conflict (version) do nothing;
-
-
-
--- =====================================================
 -- 1. TYPES
 -- =====================================================
 
@@ -1809,3 +1778,10 @@ before update on public.notification_queue
 for each row execute function platform.set_updated_at();
 
 
+-- =====================================================
+-- END 006 OPERATIONS ENGINE
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('006_operations_engine', 'REV22.OPERATIONS', false)
+on conflict (version) do nothing;

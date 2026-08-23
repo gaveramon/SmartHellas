@@ -433,15 +433,7 @@ exception
 end $$;
 
 
--- =====================================================
--- 026 ONBOARDING LIFECYCLE EXTENSIONS (011)
--- Adds missing FK, tenant consistency, Appsmith view, read RPCs
--- Does NOT modify prior migrations
--- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('026_onboarding_lifecycle_extensions_rev19', 'REV19.ONBOARDING.LIFECYCLE.EXT', false)
-on conflict (version) do nothing;
 
 
 
@@ -1523,3 +1515,10 @@ before insert or update on public.onboarding_lifecycle_transitions
 for each row execute function public.enforce_onboarding_lifecycle_transitions_consistency();
 
 
+-- =====================================================
+-- 011 ONBOARDING ENGINE
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('011_onboarding_engine', 'REV22.ONBOARDING.ENGINE', false)
+on conflict (version) do nothing;

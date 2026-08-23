@@ -494,6 +494,41 @@ create table if not exists platform.operation_contexts (
 );
 
 
+-- Bind 001 operation_context_type enum when available (idempotent; no-op until 001 applied).
+create or replace function platform.bind_operation_context_type_column()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if not exists (
+        select 1
+        from pg_type t
+        join pg_namespace n on n.oid = t.typnamespace
+        where n.nspname = 'public'
+          and t.typname = 'operation_context_type'
+    ) then
+        return;
+    end if;
+
+    if exists (
+        select 1
+        from information_schema.columns c
+        where c.table_schema = 'platform'
+          and c.table_name = 'operation_contexts'
+          and c.column_name = 'context_type'
+          and c.udt_name = 'operation_context_type'
+    ) then
+        return;
+    end if;
+
+    alter table platform.operation_contexts
+        alter column context_type type public.operation_context_type
+        using context_type::public.operation_context_type;
+end;
+$$;
+
 
 -- =====================================================
 -- 000.04 OPERATION LOG (COMMAND EXECUTION ENGINE)
@@ -1743,6 +1778,186 @@ comment on schema platform is '
 -- =====================================================
 
 -- =====================================================
+-- PART 8,5 RLS POLICY FACTORIES
+-- =====================================================
+
+create or replace function platform._apply_tenant_rls(p_table regclass)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_schema text;
+    v_table text;
+begin
+    select n.nspname, c.relname
+    into v_schema, v_table
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where c.oid = p_table;
+
+    execute format('alter table %I.%I enable row level security', v_schema, v_table);
+    execute format('alter table %I.%I force row level security', v_schema, v_table);
+
+    execute format('drop policy if exists %I on %I.%I', v_table || '_select', v_schema, v_table);
+    execute format('drop policy if exists %I on %I.%I', v_table || '_insert', v_schema, v_table);
+    execute format('drop policy if exists %I on %I.%I', v_table || '_update', v_schema, v_table);
+    execute format('drop policy if exists %I on %I.%I', v_table || '_delete', v_schema, v_table);
+
+    execute format(
+        'create policy %I on %I.%I for select to authenticated using (platform.rls_allow(tenant_id))',
+        v_table || '_select', v_schema, v_table
+    );
+    execute format(
+        'create policy %I on %I.%I for insert to authenticated with check (platform.rls_allow(tenant_id))',
+        v_table || '_insert', v_schema, v_table
+    );
+    execute format(
+        'create policy %I on %I.%I for update to authenticated using (platform.rls_allow(tenant_id)) with check (platform.rls_allow(tenant_id))',
+        v_table || '_update', v_schema, v_table
+    );
+    execute format(
+        'create policy %I on %I.%I for delete to authenticated using (platform.rls_allow(tenant_id))',
+        v_table || '_delete', v_schema, v_table
+    );
+end;
+$$;
+
+
+
+create or replace function platform._apply_tenant_rls_select_only(p_table regclass)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_schema text;
+    v_table text;
+begin
+    select n.nspname, c.relname
+    into v_schema, v_table
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where c.oid = p_table;
+
+    execute format('alter table %I.%I enable row level security', v_schema, v_table);
+    execute format('alter table %I.%I force row level security', v_schema, v_table);
+
+    execute format('drop policy if exists %I on %I.%I', v_table || '_select', v_schema, v_table);
+    execute format('drop policy if exists %I on %I.%I', v_table || '_insert', v_schema, v_table);
+    execute format('drop policy if exists %I on %I.%I', v_table || '_update', v_schema, v_table);
+    execute format('drop policy if exists %I on %I.%I', v_table || '_delete', v_schema, v_table);
+
+    execute format(
+        'create policy %I on %I.%I for select to authenticated using (platform.rls_allow(tenant_id))',
+        v_table || '_select', v_schema, v_table
+    );
+end;
+$$;
+
+
+
+create or replace function platform.apply_payment_status(
+    p_intent_id uuid,
+    p_new_status text,
+    p_source text,
+    p_event_type text default 'status_changed',
+    p_external_event_id text default null,
+    p_payload jsonb default '{}'::jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_old_status text;
+    v_tenant_id uuid;
+begin
+    select pi.status, pi.tenant_id
+    into v_old_status, v_tenant_id
+    from platform.payment_intents pi
+    where pi.id = p_intent_id
+    for update;
+
+    if not found then
+        raise exception 'payment_intent % not found', p_intent_id;
+    end if;
+
+    if p_external_event_id is not null and exists (
+        select 1
+        from platform.payment_events pe
+        where pe.payment_intent_id = p_intent_id
+          and pe.external_event_id = p_external_event_id
+    ) then
+        return;
+    end if;
+
+    begin
+        insert into platform.payment_events (
+            payment_intent_id,
+            tenant_id,
+            event_type,
+            old_status,
+            new_status,
+            source,
+            external_event_id,
+            payload
+        )
+        values (
+            p_intent_id,
+            v_tenant_id,
+            p_event_type,
+            v_old_status,
+            p_new_status,
+            p_source,
+            p_external_event_id,
+            coalesce(p_payload, '{}'::jsonb)
+        );
+    exception
+        when unique_violation then
+            return;
+    end;
+
+    update platform.payment_intents
+    set status = p_new_status
+    where id = p_intent_id;
+end;
+$$;
+
+create or replace function platform._apply_platform_admin_rls(p_table regclass)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_schema text;
+    v_table text;
+begin
+    select n.nspname, c.relname
+    into v_schema, v_table
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where c.oid = p_table;
+
+    execute format('alter table %I.%I enable row level security', v_schema, v_table);
+    execute format('alter table %I.%I force row level security', v_schema, v_table);
+
+    execute format('drop policy if exists %I on %I.%I', v_table || '_admin_all', v_schema, v_table);
+
+    execute format(
+        'create policy %I on %I.%I for all to authenticated using (platform.is_platform_admin()) with check (platform.is_platform_admin())',
+        v_table || '_admin_all', v_schema, v_table
+    );
+end;
+$$;
+
+
+
+-- =====================================================
 -- PART 9 - PLATFORM RLS BOOTSTRAP
 -- (Public domain RLS loop deferred to 014_platform_bootstrap_finale_rev19.sql)
 -- =====================================================
@@ -1931,13 +2146,10 @@ end $$;
 
 
 
-comment on function platform.storage_tenant_from_path(text) is
-    'Extract tenant_id from storage object path segment 1.';
 
 
 
-comment on function platform.storage_user_from_path(text) is
-    'Extract user_id from avatar path segment 1.';
+
 
 
 
@@ -1983,21 +2195,6 @@ drop policy if exists onboarding_docs_delete on storage.objects;
 
 
 
-comment on function platform.get_vault_secret(text) is
-    'Read named secret from Supabase Vault. service_role only. Returns null when vault is unavailable.';
-
-
-
-comment on function platform.enqueue_http_delivery(uuid, text, text, jsonb, jsonb, text, text) is
-    'Enqueue outbound HTTP work into platform.integration_queue. Worker dispatches via pg_net.';
-
-
-
-comment on function platform.dispatch_http_request(text, text, jsonb, jsonb, int) is
-    'Fire-and-forget HTTP via pg_net. service_role only. Returns net request id or null.';
-
-
-
 comment on schema platform is '
 000 PART 10-11 RULES:
 
@@ -2038,50 +2235,10 @@ drop view if exists public.v_tenant_events;
 drop view if exists public.v_tenant_audit;
 
 
--- =====================================================
--- END 028 PLATFORM VIEWS EXTENSIONS
--- =====================================================
-
--- 000 Platform + 002 Auth + 005 Integrations extensions (Edge REV19 compliance)
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('032_edge_platform_extensions_rev19', 'REV19.EDGE.PLATFORM.EXT', false)
-on conflict (version) do nothing;
-
-
-
-create index if not exists integration_oauth_states_pending_idx
-    on public.integration_oauth_states (expires_at)
-    where consumed_at is null;
-
-
-
-alter table public.integration_oauth_states enable row level security;
-
-
-
-revoke all on public.integration_oauth_states from public, authenticated;
-
-
-grant select, insert, update on public.integration_oauth_states to service_role;
-
-
-
 drop function if exists public.integrations_complete_oauth(uuid, text, text);
 
 
 drop function if exists public.integrations_oauth_complete(uuid, text, text);
-
-
--- =====================================================
--- 037 PLATFORM WEBHOOK PROCESSING (000 SSOT)
--- Single SQL pipeline: ingest → process → domain handlers.
--- Provider validation remains in Edge; event routing in SQL.
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('037_platform_webhook_processing_rev19', 'REV19.PLATFORM.WEBHOOK.PROCESSING', false)
-on conflict (version) do nothing;
 
 
 
@@ -2129,65 +2286,49 @@ where processing_status in ('pending', 'failed');
 drop function if exists platform.ingest_external_webhook(text, text, text, jsonb, uuid, text);
 
 
--- =====================================================
--- END 037 PLATFORM WEBHOOK PROCESSING
--- =====================================================
-
--- 039 Edge stabilization routing (017/002/005) — additive API ops only; no domain logic changes.
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('039_edge_stabilization_routing_rev19', 'REV19.EDGE.STABILIZATION', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 047_platform_security_rev19.sql
--- 000 Platform + 004 Booking — grant hardening + credential RLS
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('047_platform_security_rev19', 'REV19.SECURITY.PLATFORM', false)
-on conflict (version) do nothing;
-
-
-
 
 -- -----------------------------------------------------
--- Revoke direct *_domain execute from authenticated (API layer required)
--- Idempotent: only functions that exist at apply time (050 re-applies full lockdown)
+-- Revoke direct *_domain execute from authenticated
+-- (API layer required)
+-- Idempotent: only functions that exist at apply time
 -- -----------------------------------------------------
 
 do $block$
 declare
     r record;
+begin
 
+    for r in
+        select
+            n.nspname,
+            p.proname,
+            pg_get_function_identity_arguments(p.oid) as args
+        from pg_proc p
+        join pg_namespace n
+            on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.proname like '%\_domain'
+          escape '\'
+    loop
+
+        execute format(
+            'revoke execute on function %I.%I(%s) from authenticated',
+            r.nspname,
+            r.proname,
+            r.args
+        );
 
         execute format(
             'grant execute on function %I.%I(%s) to service_role',
-            r.nspname, r.proname, r.args
+            r.nspname,
+            r.proname,
+            r.args
         );
-
 
     end loop;
 
-
 end;
-
-
 $block$;
-
-
--- =====================================================
--- 050_rev20_baseline_consolidation.sql
--- REV20 production baseline: grant lockdown + SECURITY DEFINER hardening
--- + surgical production security fixes (locks, operations, OAuth, tenant create)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('050_rev20_baseline_consolidation', 'REV20.BASELINE.CONSOLIDATION', false)
-on conflict (version) do nothing;
-
-
 
 
 -- =====================================================
@@ -2278,20 +2419,10 @@ begin
             r.nspname, r.proname, r.args
         );
 
+    end loop;
 
-
-
--- Re-affirm authenticated *_api entrypoints (idempotent)
-
-do $block$
-declare
-    r record;
-
-
-        execute format(
-            'grant execute on function %I.%I(%s) to authenticated, service_role',
-            r.nspname, r.proname, r.args
-        );
+end;
+$block$;
 
 
 
@@ -2337,16 +2468,11 @@ begin
             r.nspname, r.proname, r.args
         );
 
+    end loop;
 
+end;
+$block$;
 
-
--- =====================================================
--- SECURITY DEFINER HARDENING
--- =====================================================
-
-do $block$
-declare
-    r record;
 
 
 
@@ -2383,188 +2509,6 @@ select
     e.created_at
 from platform.event_log e
 where e.tenant_id is not null;
-
-
-
-create or replace function platform._apply_platform_admin_rls(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_schema text;
-    v_table text;
-begin
-    select n.nspname, c.relname
-    into v_schema, v_table
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where c.oid = p_table;
-
-    execute format('alter table %I.%I enable row level security', v_schema, v_table);
-    execute format('alter table %I.%I force row level security', v_schema, v_table);
-
-    execute format('drop policy if exists %I on %I.%I', v_table || '_admin_all', v_schema, v_table);
-
-    execute format(
-        'create policy %I on %I.%I for all to authenticated using (platform.is_platform_admin()) with check (platform.is_platform_admin())',
-        v_table || '_admin_all', v_schema, v_table
-    );
-end;
-$$;
-
-
-
--- =====================================================
--- 000.03.04 RLS POLICY FACTORIES
--- =====================================================
-
-create or replace function platform._apply_tenant_rls(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_schema text;
-    v_table text;
-begin
-    select n.nspname, c.relname
-    into v_schema, v_table
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where c.oid = p_table;
-
-    execute format('alter table %I.%I enable row level security', v_schema, v_table);
-    execute format('alter table %I.%I force row level security', v_schema, v_table);
-
-    execute format('drop policy if exists %I on %I.%I', v_table || '_select', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_insert', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_update', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_delete', v_schema, v_table);
-
-    execute format(
-        'create policy %I on %I.%I for select to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_select', v_schema, v_table
-    );
-    execute format(
-        'create policy %I on %I.%I for insert to authenticated with check (platform.rls_allow(tenant_id))',
-        v_table || '_insert', v_schema, v_table
-    );
-    execute format(
-        'create policy %I on %I.%I for update to authenticated using (platform.rls_allow(tenant_id)) with check (platform.rls_allow(tenant_id))',
-        v_table || '_update', v_schema, v_table
-    );
-    execute format(
-        'create policy %I on %I.%I for delete to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_delete', v_schema, v_table
-    );
-end;
-$$;
-
-
-
-create or replace function platform._apply_tenant_rls_select_only(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_schema text;
-    v_table text;
-begin
-    select n.nspname, c.relname
-    into v_schema, v_table
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where c.oid = p_table;
-
-    execute format('alter table %I.%I enable row level security', v_schema, v_table);
-    execute format('alter table %I.%I force row level security', v_schema, v_table);
-
-    execute format('drop policy if exists %I on %I.%I', v_table || '_select', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_insert', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_update', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_delete', v_schema, v_table);
-
-    execute format(
-        'create policy %I on %I.%I for select to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_select', v_schema, v_table
-    );
-end;
-$$;
-
-
-
-create or replace function platform.apply_payment_status(
-    p_intent_id uuid,
-    p_new_status text,
-    p_source text,
-    p_event_type text default 'status_changed',
-    p_external_event_id text default null,
-    p_payload jsonb default '{}'::jsonb
-)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_old_status text;
-    v_tenant_id uuid;
-begin
-    select pi.status, pi.tenant_id
-    into v_old_status, v_tenant_id
-    from platform.payment_intents pi
-    where pi.id = p_intent_id
-    for update;
-
-    if not found then
-        raise exception 'payment_intent % not found', p_intent_id;
-    end if;
-
-    if p_external_event_id is not null and exists (
-        select 1
-        from platform.payment_events pe
-        where pe.payment_intent_id = p_intent_id
-          and pe.external_event_id = p_external_event_id
-    ) then
-        return;
-    end if;
-
-    begin
-        insert into platform.payment_events (
-            payment_intent_id,
-            tenant_id,
-            event_type,
-            old_status,
-            new_status,
-            source,
-            external_event_id,
-            payload
-        )
-        values (
-            p_intent_id,
-            v_tenant_id,
-            p_event_type,
-            v_old_status,
-            p_new_status,
-            p_source,
-            p_external_event_id,
-            coalesce(p_payload, '{}'::jsonb)
-        );
-    exception
-        when unique_violation then
-            return;
-    end;
-
-    update platform.payment_intents
-    set status = p_new_status
-    where id = p_intent_id;
-end;
-$$;
 
 
 
@@ -2609,40 +2553,6 @@ $$;
 
 
 
--- Bind 001 operation_context_type enum when available (idempotent; no-op until 001 applied).
-create or replace function platform.bind_operation_context_type_column()
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-    if not exists (
-        select 1
-        from pg_type t
-        join pg_namespace n on n.oid = t.typnamespace
-        where n.nspname = 'public'
-          and t.typname = 'operation_context_type'
-    ) then
-        return;
-    end if;
-
-    if exists (
-        select 1
-        from information_schema.columns c
-        where c.table_schema = 'platform'
-          and c.table_name = 'operation_contexts'
-          and c.column_name = 'context_type'
-          and c.udt_name = 'operation_context_type'
-    ) then
-        return;
-    end if;
-
-    alter table platform.operation_contexts
-        alter column context_type type public.operation_context_type
-        using context_type::public.operation_context_type;
-end;
-$$;
 
 
 
@@ -2660,72 +2570,6 @@ as $$
 $$;
 
 
-
-create or replace function platform.complete_notification_delivery(
-    p_queue_id uuid,
-    p_success boolean,
-    p_error jsonb default null
-)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_row public.notification_queue;
-    v_status public.notification_delivery_status;
-begin
-    select * into v_row
-    from public.notification_queue nq
-    where nq.id = p_queue_id
-    for update;
-
-    if not found then
-        raise exception 'notification queue item % not found', p_queue_id;
-    end if;
-
-    if p_success then
-        v_status := 'sent'::public.notification_delivery_status;
-        update public.notification_queue set
-            status = v_status,
-            last_error = null,
-            updated_at = now()
-        where id = p_queue_id;
-
-        insert into public.notification_history (
-            tenant_id, queue_id, channel, recipient, status, subject, body, payload, error
-        )
-        values (
-            v_row.tenant_id, v_row.id, v_row.channel, v_row.recipient, v_status,
-            v_row.subject, v_row.body, v_row.payload, null
-        );
-    else
-        if v_row.attempt_count >= v_row.max_attempts then
-            v_status := 'failed'::public.notification_delivery_status;
-            update public.notification_queue set
-                status = v_status,
-                last_error = coalesce(p_error, '{}'::jsonb),
-                updated_at = now()
-            where id = p_queue_id;
-
-            insert into public.notification_history (
-                tenant_id, queue_id, channel, recipient, status, subject, body, payload, error
-            )
-            values (
-                v_row.tenant_id, v_row.id, v_row.channel, v_row.recipient, v_status,
-                v_row.subject, v_row.body, v_row.payload, coalesce(p_error, '{}'::jsonb)
-            );
-        else
-            update public.notification_queue set
-                status = 'queued'::public.notification_delivery_status,
-                last_error = coalesce(p_error, '{}'::jsonb),
-                scheduled_at = now() + (interval '1 minute' * v_row.attempt_count),
-                updated_at = now()
-            where id = p_queue_id;
-        end if;
-    end if;
-end;
-$$;
 
 
 -- =====================================================
@@ -2894,6 +2738,8 @@ begin
 end;
 $$;
 
+comment on function platform.dispatch_http_request(text, text, jsonb, jsonb, int) is
+    'Fire-and-forget HTTP via pg_net. service_role only. Returns net request id or null.';
 
 
 create or replace function platform.drop_old_log_partitions(
@@ -3073,6 +2919,8 @@ begin
 end;
 $$;
 
+comment on function platform.enqueue_http_delivery(uuid, text, text, jsonb, jsonb, text, text) is
+    'Enqueue outbound HTTP work into platform.integration_queue. Worker dispatches via pg_net.';
 
 
 create or replace function platform.enqueue_shipment_dispatch(
@@ -3321,34 +3169,6 @@ $$;
 -- 8. PLATFORM DELIVERY WORKERS (000)
 -- =====================================================
 
-create or replace function platform.fetch_notification_batch(p_limit int default 50)
-returns setof public.notification_queue
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-    return query
-    with picked as (
-        select nq.id
-        from public.notification_queue nq
-        where nq.status = 'queued'::public.notification_delivery_status
-          and nq.scheduled_at <= now()
-        order by nq.scheduled_at
-        for update skip locked
-        limit greatest(p_limit, 1)
-    )
-    update public.notification_queue nq set
-        status = 'processing'::public.notification_delivery_status,
-        attempt_count = nq.attempt_count + 1,
-        updated_at = now()
-    from picked
-    where nq.id = picked.id
-    returning nq.*;
-end;
-$$;
-
-
 
 create or replace function platform.fetch_retry_task_batch(p_limit int default 50)
 returns table (
@@ -3566,6 +3386,9 @@ begin
 end;
 $$;
 
+
+comment on function platform.get_vault_secret(text) is
+    'Read named secret from Supabase Vault. service_role only. Returns null when vault is unavailable.';
 
 
 -- =====================================================
@@ -5260,6 +5083,8 @@ as $$
     select nullif(split_part(p_object_name, '/', 1), '')::uuid;
 $$;
 
+comment on function platform.storage_tenant_from_path(text) is
+    'Extract tenant_id from storage object path segment 1.';
 
 
 create or replace function platform.storage_user_from_path(p_object_name text)
@@ -5270,6 +5095,9 @@ set search_path = ''
 as $$
     select nullif(split_part(p_object_name, '/', 1), '')::uuid;
 $$;
+
+comment on function platform.storage_user_from_path(text) is
+    'Extract user_id from avatar path segment 1.';
 
 
 
@@ -5874,3 +5702,10 @@ values
 on conflict (id) do nothing;
 
 
+-- =====================================================
+-- END 000 SUPABASE PLATFORM
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('000_supabase_platform', 'REV22.SUPABASE.PLATFORM', false)
+on conflict (version) do nothing;

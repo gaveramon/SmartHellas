@@ -1,112 +1,7 @@
 -- REV22 greenfield baseline: 017_edge_rpc_foundation.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
--- =====================================================
--- 017 EDGE RPC FOUNDATION (REV19)
--- Edge orchestration guards only — no business logic
--- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('017_edge_rpc_foundation_rev19', 'REV19.EDGE.RPC.FOUNDATION', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 017 EDGE RPC FOUNDATION
--- =====================================================
-
--- =====================================================
--- 029_edge_api_thin_wrappers_rev19.sql
--- Pure Edge API layer: guards only, delegates to *_domain SSOT
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('029_edge_api_thin_wrappers_rev19', 'REV19.EDGE.API.THIN', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 030_edge_foundation_thin_rev19.sql
--- Thin Edge wrappers for 017 foundation business entrypoints + OAuth callback
--- Business SSOT lives in domain extension migrations 024–028
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('030_edge_foundation_thin_rev19', 'REV19.EDGE.FOUNDATION.THIN', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 030 EDGE FOUNDATION THIN
--- =====================================================
-
--- =====================================================
--- 025 FOUNDATION RPCs, UI VIEWS
--- Public entrypoints + UI-safe read contracts
--- Business SSOT remains in domain functions (018–022)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('025_foundation_rpcs_views_rev19', 'REV19.FOUNDATION.RPC.VIEWS', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 025 FOUNDATION RPCs + UI VIEWS
--- =====================================================
-
--- =====================================================
--- 029 EDGE AUTOMATION API EXTENSIONS (017/023)
--- Thin wrapper ops for 027 automation_domain extensions
--- Does NOT modify prior migrations
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('029_edge_automation_api_extensions_rev19', 'REV19.EDGE.AUTOMATION.API.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 029 EDGE AUTOMATION API EXTENSIONS
--- =====================================================
-
--- =====================================================
--- 030 EDGE ONBOARDING LIFECYCLE EXTENSIONS (017/023)
--- Thin Edge wrappers for 026 onboarding lifecycle domain
--- Does NOT modify prior migrations
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('030_edge_onboarding_lifecycle_extensions_rev19', 'REV19.EDGE.ONBOARDING.LIFECYCLE.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 030 EDGE ONBOARDING LIFECYCLE EXTENSIONS
--- =====================================================
-
--- =====================================================
--- 038 EDGE API ARCHITECTURE COMPLETION (017)
--- Extends thin wrappers for 034–037 without breaking existing routes.
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('038_edge_api_architecture_completion_rev19', 'REV19.EDGE.API.COMPLETION', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 038 EDGE API ARCHITECTURE COMPLETION
--- =====================================================
-
--- =====================================================
--- 046_edge_api_security_rev19.sql
--- 017 Edge — API allowlist completion + guard hardening
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('046_edge_api_security_rev19', 'REV19.SECURITY.EDGE.API', false)
-on conflict (version) do nothing;
 
 
 begin
@@ -1297,3 +1192,15 @@ end;
 $$;
 
 
+-- =====================================================
+-- 017 EDGE RPC FOUNDATION (REV19)
+-- Edge orchestration guards only — no business logic
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('017_edge_rpc_foundation', 'REV22.EDGE.RPC.FOUNDATION', false)
+on conflict (version) do nothing;
+
+-- =====================================================
+-- END 017 EDGE RPC FOUNDATION
+-- =====================================================

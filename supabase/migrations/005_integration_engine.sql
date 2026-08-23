@@ -1,82 +1,6 @@
--- REV22 greenfield baseline: 005_integration_engine.sql
+-- REV22 greenfield baseline: 004_integration_engine.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
-
--- =====================================================
--- 5. DEVICE INTEGRATION MAPPING (NO STATE, ONLY EXTERNAL IDS)
--- =====================================================
-
-create table if not exists public.device_integration_map (
-
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    device_id uuid not null references public.devices(id) on delete cascade,
-
-    provider_code text not null,
-
-    external_id text not null,
-
-    config jsonb not null default '{}'::jsonb,
-
-    created_at timestamptz not null default now(),
-
-    constraint uq_device_provider unique (device_id, provider_code)
-);
-
-
-
--- =====================================================
--- 4. INTEGRATION CAPABILITIES (PROVIDER FEATURES)
--- =====================================================
-
-create table if not exists public.integration_capabilities (
-
-    id uuid primary key default gen_random_uuid(),
-
-    provider_code text not null,
-
-    capability_code text not null,
-
-    description text,
-
-    is_supported boolean not null default true,
-
-    created_at timestamptz not null default now(),
-
-    constraint uq_provider_capability
-        unique (provider_code, capability_code)
-);
-
-
-
--- -----------------------------------------------------
--- 005 Integrations: OAuth state SSOT
--- -----------------------------------------------------
-
-create table if not exists public.integration_oauth_states (
-    id uuid primary key default gen_random_uuid(),
-    tenant_id uuid not null references public.tenants(id),
-    user_id uuid not null,
-    provider_code text not null,
-    state_token text not null,
-    expires_at timestamptz not null,
-    consumed_at timestamptz,
-    created_at timestamptz not null default now(),
-    constraint integration_oauth_states_state_token_key unique (state_token)
-);
-
-
--- =====================================================
--- 005 INTEGRATION ENGINE (REV19)
--- CLEAN DOMAIN LAYER — NO EXECUTION — NO RUNTIME STATE
--- =====================================================
---
--- SSOT: integration_providers catalog (code is stable identifier)
--- Domain tables use provider_code text → integration_providers(code)
--- Credentials: credentials_ref / signing_secret_ref → vault (000)
--- =====================================================
 
 -- =====================================================
 -- 1. INTEGRATION PROVIDERS (CATALOG / SSOT)
@@ -128,7 +52,6 @@ create table if not exists public.integration_providers (
 );
 
 
-
 -- =====================================================
 -- 2. TENANT INTEGRATIONS (CONNECTION CONFIG ONLY)
 -- =====================================================
@@ -153,7 +76,6 @@ create table if not exists public.tenant_integrations (
 
     constraint uq_tenant_provider unique (tenant_id, provider_code)
 );
-
 
 
 -- =====================================================
@@ -182,6 +104,146 @@ create table if not exists public.webhook_definitions (
 );
 
 
+-- =====================================================
+-- 4. INTEGRATION CAPABILITIES (PROVIDER FEATURES)
+-- =====================================================
+
+create table if not exists public.integration_capabilities (
+
+    id uuid primary key default gen_random_uuid(),
+
+    provider_code text not null,
+
+    capability_code text not null,
+
+    description text,
+
+    is_supported boolean not null default true,
+
+    created_at timestamptz not null default now(),
+
+    constraint uq_provider_capability
+        unique (provider_code, capability_code)
+);
+
+
+-- =====================================================
+-- 5. DEVICE INTEGRATION MAPPING (NO STATE, ONLY EXTERNAL IDS)
+-- =====================================================
+
+create table if not exists public.device_integration_map (
+
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    device_id uuid not null references public.devices(id) on delete cascade,
+
+    provider_code text not null,
+
+    external_id text not null,
+
+    config jsonb not null default '{}'::jsonb,
+
+    created_at timestamptz not null default now(),
+
+    constraint uq_device_provider unique (device_id, provider_code)
+);
+
+
+-- =====================================================
+-- 6. INTEGRATION OAUTH STATE (SSOT)
+-- =====================================================
+
+create table if not exists public.integration_oauth_states (
+    id uuid primary key default gen_random_uuid(),
+    tenant_id uuid not null references public.tenants(id),
+    user_id uuid not null,
+    provider_code text not null,
+    state_token text not null,
+    expires_at timestamptz not null,
+    consumed_at timestamptz,
+    created_at timestamptz not null default now(),
+    constraint integration_oauth_states_state_token_key unique (state_token)
+);
+
+create index if not exists integration_oauth_states_pending_idx
+    on public.integration_oauth_states (expires_at)
+    where consumed_at is null;
+
+
+-- =====================================================
+-- 7. INTEGRATION PROVIDERS SEED (CATALOG SSOT)
+-- =====================================================
+
+insert into public.integration_providers (
+    code,
+    name,
+    category,
+    valid_from,
+    supports_webhooks,
+    supports_oauth
+)
+values
+    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, false, false),
+    ('ttlock', 'TTLock', 'lock', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('shelly', 'Shelly', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('beds24', 'Beds24', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('stripe', 'Stripe', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('vivawallet', 'Viva Wallet', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('zoho', 'Zoho', 'crm', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('home_assistant', 'Home Assistant', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('generic', 'Generic', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, false, false),
+    ('airbnb', 'Airbnb', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('booking', 'Booking.com', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('expedia', 'Expedia', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('pricelabs', 'PriceLabs', 'pricing', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('hostaway', 'Hostaway', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('guesty', 'Guesty', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('smoobu', 'Smoobu', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('mailgun', 'Mailgun', 'email', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('postmark', 'Postmark', 'email', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('smtp', 'SMTP', 'email', '2026-01-01 00:00:00+00'::timestamptz, false, false),
+    ('twilio', 'Twilio', 'sms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('whatsapp', 'WhatsApp', 'messaging', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('firebase', 'Firebase', 'notification', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('openai', 'OpenAI', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false),
+    ('openrouter', 'OpenRouter', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false),
+    ('anthropic', 'Anthropic', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false)
+on conflict (code)
+do update set
+    name = excluded.name,
+    category = excluded.category,
+    supports_webhooks = excluded.supports_webhooks,
+    supports_oauth = excluded.supports_oauth,
+    valid_from = excluded.valid_from,
+    updated_at = now();
+
+
+
+insert into public.integration_capabilities (
+    provider_code,
+    capability_code,
+    is_supported
+)
+values
+    ('aqara', 'send_command', true),
+    ('aqara', 'receive_event', true),
+    ('ttlock', 'send_command', true),
+    ('ttlock', 'create_user', true),
+    ('shelly', 'receive_event', true),
+    ('beds24', 'sync_state', true),
+    ('stripe', 'receive_event', true),
+    ('zoho', 'send_command', true),
+    ('home_assistant', 'sync_state', true),
+    ('generic', 'send_command', true)
+on conflict (provider_code, capability_code)
+do nothing;
+
+
+-- =====================================================
+-- 8. INDEXES AND TABLE COMMENTS
+-- =====================================================
 
 create index if not exists idx_integration_providers_active
     on public.integration_providers (is_active);
@@ -274,7 +336,7 @@ comment on table public.device_integration_map is
 
 
 -- =====================================================
--- 8. FOREIGN KEYS (PROVIDER + TENANT SSOT)
+-- 9. FOREIGN KEYS (PROVIDER + TENANT SSOT)
 -- =====================================================
 
 do $$
@@ -368,7 +430,7 @@ end $$;
 
 
 -- =====================================================
--- 9. RLS
+-- 10. RLS CONFIGURATION
 -- =====================================================
 
 alter table public.integration_providers enable row level security;
@@ -444,104 +506,269 @@ drop policy if exists device_integration_map_delete on public.device_integration
 
 
 
-
--- END 005 INTEGRATION ENGINE (REV19)
+-- =====================================================
+-- 11. RLS POLICIES
 -- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('005_integration_engine_rev19', 'REV19.INTEGRATION', false)
-on conflict (version) do nothing;
+create policy device_integration_map_delete on public.device_integration_map
+    for delete to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_integration_map.device_id
+              and public.has_tenant_access(d.tenant_id)
+              and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy device_integration_map_insert on public.device_integration_map
+    for insert to authenticated
+    with check (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_integration_map.device_id
+              and public.has_tenant_access(d.tenant_id)
+              and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy device_integration_map_select on public.device_integration_map
+    for select to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_integration_map.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_integration_map_update on public.device_integration_map
+    for update to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_integration_map.device_id
+              and public.has_tenant_access(d.tenant_id)
+              and (platform.is_admin() or platform.has_role('manager'))
+        )
+    )
+    with check (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_integration_map.device_id
+              and public.has_tenant_access(d.tenant_id)
+              and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy integration_capabilities_select on public.integration_capabilities
+    for select to authenticated
+    using (true);
+
+
+
+create policy integration_capabilities_write on public.integration_capabilities
+    for all to authenticated
+    using (platform.is_platform_admin())
+    with check (platform.is_platform_admin());
+
+
+
+create policy integration_providers_select on public.integration_providers
+    for select to authenticated
+    using (true);
+
+
+
+create policy integration_providers_write on public.integration_providers
+    for all to authenticated
+    using (platform.is_platform_admin())
+    with check (platform.is_platform_admin());
+
+
+
+create policy tenant_integrations_delete on public.tenant_integrations
+    for delete to authenticated
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy tenant_integrations_insert on public.tenant_integrations
+    for insert to authenticated
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy tenant_integrations_select on public.tenant_integrations
+    for select to authenticated
+    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
+
+
+
+create policy tenant_integrations_update on public.tenant_integrations
+    for update to authenticated
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    )
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy webhook_definitions_delete on public.webhook_definitions
+    for delete to authenticated
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy webhook_definitions_insert on public.webhook_definitions
+    for insert to authenticated
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+
+create policy webhook_definitions_select on public.webhook_definitions
+    for select to authenticated
+    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
+
+
+
+create policy webhook_definitions_update on public.webhook_definitions
+    for update to authenticated
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    )
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
 
 
 -- =====================================================
--- 040 INTEGRATIONS OAUTH START (005 SSOT)
--- Moves OAuth authorize URL construction from Edge into SQL.
+-- 12. OAUTH STATE RLS
+-- Tenant-scoped OAuth state
+--
+-- Tenant authority:
+-- public.resolve_active_tenant(auth.uid())
+--
+-- RLS compatibility shim:
+-- platform.has_tenant_access(tenant_id)
 -- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('040_integrations_oauth_start_rev19', 'REV19.INTEGRATIONS.OAUTH.START', false)
-on conflict (version) do nothing;
+alter table public.integration_oauth_states
+    enable row level security;
+
+alter table public.integration_oauth_states
+    force row level security;
+
+
+drop policy if exists integration_oauth_states_select
+    on public.integration_oauth_states;
+
+drop policy if exists integration_oauth_states_insert
+    on public.integration_oauth_states;
+
+drop policy if exists integration_oauth_states_update
+    on public.integration_oauth_states;
+
+drop policy if exists integration_oauth_states_delete
+    on public.integration_oauth_states;
+
+
+create policy integration_oauth_states_select
+on public.integration_oauth_states
+for select
+to authenticated
+using (
+    platform.has_tenant_access(tenant_id)
+);
+
+
+create policy integration_oauth_states_insert
+on public.integration_oauth_states
+for insert
+to authenticated
+with check (
+    platform.has_tenant_access(tenant_id)
+);
+
+
+create policy integration_oauth_states_update
+on public.integration_oauth_states
+for update
+to authenticated
+using (
+    platform.has_tenant_access(tenant_id)
+)
+with check (
+    platform.has_tenant_access(tenant_id)
+);
 
 
 -- =====================================================
--- END 040 INTEGRATIONS OAUTH START
+-- 13. INTEGRATION DEVICE CONSISTENCY
 -- =====================================================
-
--- =====================================================
--- 045_integrations_oauth_security_rev19.sql
--- 005 Integration Engine — OAuth token exchange + SECURITY DEFINER hardening
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('045_integrations_oauth_security_rev19', 'REV19.SECURITY.INTEGRATIONS', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 045 INTEGRATIONS OAUTH SECURITY
--- =====================================================
-
--- =====================================================
--- 048_production_security_fixes_rev19.sql
--- Final audit fixes: API/domain guard alignment, device-map tenant ownership, dispatch grant hardening
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('048_production_security_fixes_rev19', 'REV19.SECURITY.PRODUCTION.FIXES', false)
-on conflict (version) do nothing;
-
-
-
 
 -- -----------------------------------------------------
--- 008 Logistics: close direct authenticated execute bypass on dispatch RPC
--- Idempotent: skip if function not yet created (050 re-applies lockdown)
--- -----------------------------------------------------
-
-do $block$
-declare
-    r record;
-
-
-begin
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public'
-          and p.proname = 'logistics_dispatch_fulfilment_order'
-    loop
-        execute format(
-            'revoke all on function %I.%I(%s) from public, authenticated',
-            r.nspname, r.proname, r.args
-        );
-
-
-        execute format(
-            'grant execute on function %I.%I(%s) to service_role',
-            r.nspname, r.proname, r.args
-        );
-
-
-    end loop;
-
-
-end;
-
-
-$block$;
-
-
-alter function public.integrations_resolve_oauth_state(text) set search_path = '';
-
-
-
-
--- -----------------------------------------------------
--- 005 Integrations: enforce active-tenant ownership on device-map writes
+-- 004 Integrations: enforce active-tenant ownership on device-map writes
 -- -----------------------------------------------------
 
 create or replace function public.enforce_device_integration_consistency()
@@ -581,97 +808,41 @@ $$;
 
 
 
-create or replace function public.integrations_complete_oauth(
-    p_tenant_id uuid,
-    p_provider_code text,
-    p_credentials_ref text,
-    p_state_token text
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_row public.tenant_integrations;
-    v_state public.integration_oauth_states;
-begin
-    if p_tenant_id is null or p_provider_code is null or p_credentials_ref is null then
-        raise exception 'tenant_id, provider_code, and credentials_ref are required';
-    end if;
+-- =====================================================
+-- 14. TRIGGERS
+-- =====================================================
 
-    if p_state_token is null or length(trim(p_state_token)) = 0 then
-        raise exception 'OAuth state token is required';
-    end if;
-
-    select * into v_state
-    from public.integration_oauth_states s
-    where s.state_token = p_state_token
-      and s.consumed_at is null
-      and s.expires_at > now()
-      and s.tenant_id = p_tenant_id
-      and s.provider_code = p_provider_code
-    for update;
-
-    if not found then
-        raise exception 'Invalid OAuth state for tenant/provider';
-    end if;
-
-    if not exists (
-        select 1 from public.integration_providers ip where ip.code = p_provider_code
-    ) then
-        raise exception 'Integration provider not found';
-    end if;
-
-    update public.integration_oauth_states
-    set consumed_at = now()
-    where id = v_state.id;
-
-    insert into public.tenant_integrations (
-        tenant_id,
-        provider_code,
-        credentials_ref,
-        config,
-        is_enabled
-    )
-    values (
-        p_tenant_id,
-        p_provider_code,
-        p_credentials_ref,
-        '{}'::jsonb,
-        true
-    )
-    on conflict (tenant_id, provider_code) do update
-        set credentials_ref = excluded.credentials_ref,
-            is_enabled = true,
-            updated_at = now()
-    returning
-        id,
-        tenant_id,
-        provider_code,
-        credentials_ref,
-        config,
-        is_enabled,
-        created_at,
-        updated_at
-    into v_row;
-
-    perform platform.log_audit(
-        'integration.oauth_completed',
-        'tenant_integration',
-        v_row.id,
-        jsonb_build_object('provider_code', p_provider_code)
-    );
-
-    return to_jsonb(v_row);
-end;
-$$;
+create trigger trg_integration_providers_updated_at
+before update on public.integration_providers
+for each row execute function platform.set_updated_at();
 
 
 
+create trigger trg_tenant_integrations_updated_at
+before update on public.tenant_integrations
+for each row execute function platform.set_updated_at();
+
+
+
+create trigger trg_webhook_definitions_updated_at
+before update on public.webhook_definitions
+for each row execute function platform.set_updated_at();
+
+
+
+create trigger trg_device_integration_consistency
+before insert or update on public.device_integration_map
+for each row execute function public.enforce_device_integration_consistency();
+
+
+
+
+-- =====================================================
+-- 15. INTEGRATION DOMAIN FUNCTIONS
+-- =====================================================
 
 -- -----------------------------------------------------
--- 005 Integrations: domain authorization hardening
+-- 004 Integrations: domain authorization hardening
 -- -----------------------------------------------------
 
 create or replace function public.integrations_domain(
@@ -888,7 +1059,7 @@ $$;
 
 
 -- -----------------------------------------------------
--- 005: extend integrations_domain_ext with start_oauth
+-- 004: extend integrations_domain_ext with start_oauth
 -- -----------------------------------------------------
 
 create or replace function public.integrations_domain_ext(
@@ -1005,9 +1176,292 @@ $$;
 
 
 
+-- -----------------------------------------------------
+-- 004 Integrations: OAuth state completion
+-- -----------------------------------------------------
+
+create or replace function public.integrations_complete_oauth(
+    p_tenant_id uuid,
+    p_provider_code text,
+    p_credentials_ref text,
+    p_state_token text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_row public.tenant_integrations;
+    v_state public.integration_oauth_states;
+begin
+    if p_tenant_id is null or p_provider_code is null or p_credentials_ref is null then
+        raise exception 'tenant_id, provider_code, and credentials_ref are required';
+    end if;
+
+    if p_state_token is null or length(trim(p_state_token)) = 0 then
+        raise exception 'OAuth state token is required';
+    end if;
+
+    select * into v_state
+    from public.integration_oauth_states s
+    where s.state_token = p_state_token
+      and s.consumed_at is null
+      and s.expires_at > now()
+      and s.tenant_id = p_tenant_id
+      and s.provider_code = p_provider_code
+    for update;
+
+    if not found then
+        raise exception 'Invalid OAuth state for tenant/provider';
+    end if;
+
+    if not exists (
+        select 1 from public.integration_providers ip where ip.code = p_provider_code
+    ) then
+        raise exception 'Integration provider not found';
+    end if;
+
+    update public.integration_oauth_states
+    set consumed_at = now()
+    where id = v_state.id;
+
+    insert into public.tenant_integrations (
+        tenant_id,
+        provider_code,
+        credentials_ref,
+        config,
+        is_enabled
+    )
+    values (
+        p_tenant_id,
+        p_provider_code,
+        p_credentials_ref,
+        '{}'::jsonb,
+        true
+    )
+    on conflict (tenant_id, provider_code) do update
+        set credentials_ref = excluded.credentials_ref,
+            is_enabled = true,
+            updated_at = now()
+    returning
+        id,
+        tenant_id,
+        provider_code,
+        credentials_ref,
+        config,
+        is_enabled,
+        created_at,
+        updated_at
+    into v_row;
+
+    perform platform.log_audit(
+        'integration.oauth_completed',
+        'tenant_integration',
+        v_row.id,
+        jsonb_build_object('provider_code', p_provider_code)
+    );
+
+    return to_jsonb(v_row);
+end;
+$$;
+
+
+
+-- =====================================================
+-- 16. OAUTH HELPERS
+-- =====================================================
 
 -- -----------------------------------------------------
--- 005 Integrations: OAuth token exchange (SSOT)
+-- 004: URL encode helper for OAuth query parameters
+-- -----------------------------------------------------
+
+create or replace function public.integrations_oauth_url_encode(p_value text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+    v_bytes bytea;
+    v_result text := '';
+    v_i int;
+    v_byte int;
+begin
+    if p_value is null then
+        return '';
+    end if;
+
+    v_bytes := convert_to(p_value, 'UTF8');
+    for v_i in 0..(length(v_bytes) - 1) loop
+        v_byte := get_byte(v_bytes, v_i);
+        if (v_byte >= 48 and v_byte <= 57)
+           or (v_byte >= 65 and v_byte <= 90)
+           or (v_byte >= 97 and v_byte <= 122)
+           or v_byte in (45, 46, 95, 126) then
+            v_result := v_result || chr(v_byte);
+        else
+            v_result := v_result || '%' || upper(to_hex(v_byte));
+        end if;
+    end loop;
+
+    return v_result;
+end;
+$$;
+
+
+
+-- -----------------------------------------------------
+-- 004: OAuth start (state registration + authorize URL)
+-- Vault secrets: supabase_url, stripe_connect_client_id,
+-- oauth_authorize_url_{provider_code}
+-- -----------------------------------------------------
+
+create or replace function public.integrations_start_oauth(p_payload jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_tid uuid;
+    v_uid uuid;
+    v_provider_code text;
+    v_state_token text;
+    v_expires_at timestamptz;
+    v_redirect_uri text;
+    v_supabase_url text;
+    v_authorize_url text;
+    v_base_url text;
+    v_client_id text;
+begin
+    p_payload := coalesce(p_payload, '{}'::jsonb);
+    v_tid := platform.current_tenant_id();
+    v_uid := auth.uid();
+
+    if p_payload->>'provider_code' is null then
+        raise exception 'provider_code is required';
+    end if;
+
+    v_provider_code := lower(trim(p_payload->>'provider_code'));
+
+    if not exists (
+        select 1 from public.integration_providers ip
+        where ip.code = v_provider_code
+          and ip.supports_oauth = true
+          and ip.is_active = true
+    ) then
+        raise exception 'Integration provider not found or does not support OAuth';
+    end if;
+
+    v_state_token := encode(extensions.gen_random_bytes(32), 'hex');
+    v_expires_at := now() + interval '10 minutes';
+
+    insert into public.integration_oauth_states (
+        tenant_id, user_id, provider_code, state_token, expires_at
+    )
+    values (
+        v_tid, v_uid, v_provider_code, v_state_token, v_expires_at
+    );
+
+    v_supabase_url := platform.get_vault_secret('supabase_url');
+    if v_supabase_url is null then
+        raise exception 'supabase_url not configured in vault';
+    end if;
+
+    v_redirect_uri := coalesce(
+        nullif(trim(p_payload->>'redirect_uri'), ''),
+        rtrim(v_supabase_url, '/') || '/functions/v1/integrations/oauth-callback'
+    );
+
+    if v_provider_code = 'stripe' then
+        v_client_id := platform.get_vault_secret('stripe_connect_client_id');
+        if v_client_id is null then
+            raise exception 'stripe_connect_client_id not configured in vault';
+        end if;
+
+        v_authorize_url :=
+            'https://connect.stripe.com/oauth/authorize?' ||
+            'response_type=code&' ||
+            'client_id=' || public.integrations_oauth_url_encode(v_client_id) || '&' ||
+            'scope=read_write&' ||
+            'state=' || public.integrations_oauth_url_encode(v_state_token) || '&' ||
+            'redirect_uri=' || public.integrations_oauth_url_encode(v_redirect_uri);
+    else
+        v_base_url := platform.get_vault_secret('oauth_authorize_url_' || v_provider_code);
+        if v_base_url is null then
+            raise exception 'OAuth authorize URL not configured for %', v_provider_code;
+        end if;
+
+        v_authorize_url :=
+            v_base_url || '?' ||
+            'state=' || public.integrations_oauth_url_encode(v_state_token) || '&' ||
+            'redirect_uri=' || public.integrations_oauth_url_encode(v_redirect_uri);
+    end if;
+
+    return jsonb_build_object(
+        'authorize_url', v_authorize_url,
+        'state', v_state_token,
+        'provider_code', v_provider_code
+    );
+end;
+$$;
+
+
+
+-- -----------------------------------------------------
+-- integrations_resolve_oauth_state: gate via current_tenant_id()
+-- -----------------------------------------------------
+
+create or replace function public.integrations_resolve_oauth_state(p_state_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_row public.integration_oauth_states;
+    v_uid uuid;
+    v_tid uuid;
+begin
+    if p_state_token is null or length(trim(p_state_token)) = 0 then
+        raise exception 'OAuth state token is required';
+    end if;
+
+    select * into v_row
+    from public.integration_oauth_states s
+    where s.state_token = p_state_token
+      and s.consumed_at is null
+      and s.expires_at > now()
+    for update;
+
+    if not found then
+        raise exception 'Invalid or expired OAuth state';
+    end if;
+
+    v_uid := (select auth.uid());
+    if v_uid is not null then
+        v_tid := platform.current_tenant_id();
+        if v_row.user_id <> v_uid then
+            raise exception 'unauthorized';
+        end if;
+        if v_tid is null or v_row.tenant_id <> v_tid then
+            raise exception 'unauthorized';
+        end if;
+    end if;
+
+    return jsonb_build_object(
+        'tenant_id', v_row.tenant_id,
+        'provider_code', v_row.provider_code,
+        'user_id', v_row.user_id
+    );
+end;
+$$;
+
+
+
+-- -----------------------------------------------------
+-- 004 Integrations: OAuth token exchange (SSOT)
 -- -----------------------------------------------------
 
 create or replace function public.integrations_exchange_oauth_tokens(
@@ -1128,9 +1582,8 @@ $$;
 
 
 
-
 -- -----------------------------------------------------
--- 005 Integrations: OAuth complete API (real token exchange)
+-- 004 Integrations: OAuth complete API (real token exchange)
 -- -----------------------------------------------------
 
 create or replace function public.integrations_oauth_complete_api(p_payload jsonb)
@@ -1177,478 +1630,60 @@ $$;
 
 
 
+-- =====================================================
+-- 17. FUNCTION SECURITY HARDENING
+-- =====================================================
+
+alter function public.integrations_resolve_oauth_state(text) set search_path = '';
+
+
+
 -- -----------------------------------------------------
--- 005: URL encode helper for OAuth query parameters
+-- 004 Logistics: close direct authenticated execute bypass on dispatch RPC
+-- Idempotent: skip if function not yet created (050 re-applies lockdown)
 -- -----------------------------------------------------
 
-create or replace function public.integrations_oauth_url_encode(p_value text)
-returns text
-language plpgsql
-immutable
-set search_path = ''
-as $$
+do $block$
 declare
-    v_bytes bytea;
-    v_result text := '';
-    v_i int;
-    v_byte int;
-begin
-    if p_value is null then
-        return '';
-    end if;
+    r record;
 
-    v_bytes := convert_to(p_value, 'UTF8');
-    for v_i in 0..(length(v_bytes) - 1) loop
-        v_byte := get_byte(v_bytes, v_i);
-        if (v_byte >= 48 and v_byte <= 57)
-           or (v_byte >= 65 and v_byte <= 90)
-           or (v_byte >= 97 and v_byte <= 122)
-           or v_byte in (45, 46, 95, 126) then
-            v_result := v_result || chr(v_byte);
-        else
-            v_result := v_result || '%' || upper(to_hex(v_byte));
-        end if;
+
+begin
+    for r in
+        select
+            n.nspname,
+            p.proname,
+            pg_get_function_identity_arguments(p.oid) as args
+        from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.proname = 'logistics_dispatch_fulfilment_order'
+    loop
+        execute format(
+            'revoke all on function %I.%I(%s) from public, authenticated',
+            r.nspname, r.proname, r.args
+        );
+
+
+        execute format(
+            'grant execute on function %I.%I(%s) to service_role',
+            r.nspname, r.proname, r.args
+        );
+
+
     end loop;
 
-    return v_result;
+
 end;
-$$;
 
 
-
-
--- -----------------------------------------------------
--- integrations_resolve_oauth_state: gate via current_tenant_id()
--- -----------------------------------------------------
-
-create or replace function public.integrations_resolve_oauth_state(p_state_token text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_row public.integration_oauth_states;
-    v_uid uuid;
-    v_tid uuid;
-begin
-    if p_state_token is null or length(trim(p_state_token)) = 0 then
-        raise exception 'OAuth state token is required';
-    end if;
-
-    select * into v_row
-    from public.integration_oauth_states s
-    where s.state_token = p_state_token
-      and s.consumed_at is null
-      and s.expires_at > now()
-    for update;
-
-    if not found then
-        raise exception 'Invalid or expired OAuth state';
-    end if;
-
-    v_uid := (select auth.uid());
-    if v_uid is not null then
-        v_tid := platform.current_tenant_id();
-        if v_row.user_id <> v_uid then
-            raise exception 'unauthorized';
-        end if;
-        if v_tid is null or v_row.tenant_id <> v_tid then
-            raise exception 'unauthorized';
-        end if;
-    end if;
-
-    return jsonb_build_object(
-        'tenant_id', v_row.tenant_id,
-        'provider_code', v_row.provider_code,
-        'user_id', v_row.user_id
-    );
-end;
-$$;
-
-
-
--- -----------------------------------------------------
--- 005: OAuth start (state registration + authorize URL)
--- Vault secrets: supabase_url, stripe_connect_client_id,
--- oauth_authorize_url_{provider_code}
--- -----------------------------------------------------
-
-create or replace function public.integrations_start_oauth(p_payload jsonb)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_uid uuid;
-    v_provider_code text;
-    v_state_token text;
-    v_expires_at timestamptz;
-    v_redirect_uri text;
-    v_supabase_url text;
-    v_authorize_url text;
-    v_base_url text;
-    v_client_id text;
-begin
-    p_payload := coalesce(p_payload, '{}'::jsonb);
-    v_tid := platform.current_tenant_id();
-    v_uid := auth.uid();
-
-    if p_payload->>'provider_code' is null then
-        raise exception 'provider_code is required';
-    end if;
-
-    v_provider_code := lower(trim(p_payload->>'provider_code'));
-
-    if not exists (
-        select 1 from public.integration_providers ip
-        where ip.code = v_provider_code
-          and ip.supports_oauth = true
-          and ip.is_active = true
-    ) then
-        raise exception 'Integration provider not found or does not support OAuth';
-    end if;
-
-    v_state_token := encode(extensions.gen_random_bytes(32), 'hex');
-    v_expires_at := now() + interval '10 minutes';
-
-    insert into public.integration_oauth_states (
-        tenant_id, user_id, provider_code, state_token, expires_at
-    )
-    values (
-        v_tid, v_uid, v_provider_code, v_state_token, v_expires_at
-    );
-
-    v_supabase_url := platform.get_vault_secret('supabase_url');
-    if v_supabase_url is null then
-        raise exception 'supabase_url not configured in vault';
-    end if;
-
-    v_redirect_uri := coalesce(
-        nullif(trim(p_payload->>'redirect_uri'), ''),
-        rtrim(v_supabase_url, '/') || '/functions/v1/integrations/oauth-callback'
-    );
-
-    if v_provider_code = 'stripe' then
-        v_client_id := platform.get_vault_secret('stripe_connect_client_id');
-        if v_client_id is null then
-            raise exception 'stripe_connect_client_id not configured in vault';
-        end if;
-
-        v_authorize_url :=
-            'https://connect.stripe.com/oauth/authorize?' ||
-            'response_type=code&' ||
-            'client_id=' || public.integrations_oauth_url_encode(v_client_id) || '&' ||
-            'scope=read_write&' ||
-            'state=' || public.integrations_oauth_url_encode(v_state_token) || '&' ||
-            'redirect_uri=' || public.integrations_oauth_url_encode(v_redirect_uri);
-    else
-        v_base_url := platform.get_vault_secret('oauth_authorize_url_' || v_provider_code);
-        if v_base_url is null then
-            raise exception 'OAuth authorize URL not configured for %', v_provider_code;
-        end if;
-
-        v_authorize_url :=
-            v_base_url || '?' ||
-            'state=' || public.integrations_oauth_url_encode(v_state_token) || '&' ||
-            'redirect_uri=' || public.integrations_oauth_url_encode(v_redirect_uri);
-    end if;
-
-    return jsonb_build_object(
-        'authorize_url', v_authorize_url,
-        'state', v_state_token,
-        'provider_code', v_provider_code
-    );
-end;
-$$;
-
-
-
-create policy device_integration_map_delete on public.device_integration_map
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy device_integration_map_insert on public.device_integration_map
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy device_integration_map_select on public.device_integration_map
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_integration_map_update on public.device_integration_map
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy integration_capabilities_select on public.integration_capabilities
-    for select to authenticated
-    using (true);
-
-
-
-create policy integration_capabilities_write on public.integration_capabilities
-    for all to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-
-create policy integration_providers_select on public.integration_providers
-    for select to authenticated
-    using (true);
-
-
-
-create policy integration_providers_write on public.integration_providers
-    for all to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-
-create policy tenant_integrations_delete on public.tenant_integrations
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy tenant_integrations_insert on public.tenant_integrations
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy tenant_integrations_select on public.tenant_integrations
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy tenant_integrations_update on public.tenant_integrations
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy webhook_definitions_delete on public.webhook_definitions
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy webhook_definitions_insert on public.webhook_definitions
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy webhook_definitions_select on public.webhook_definitions
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy webhook_definitions_update on public.webhook_definitions
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create trigger trg_integration_providers_updated_at
-before update on public.integration_providers
-for each row execute function platform.set_updated_at();
-
-
-
-create trigger trg_tenant_integrations_updated_at
-before update on public.tenant_integrations
-for each row execute function platform.set_updated_at();
-
-
-
-create trigger trg_webhook_definitions_updated_at
-before update on public.webhook_definitions
-for each row execute function platform.set_updated_at();
-
-
-
-create trigger trg_device_integration_consistency
-before insert or update on public.device_integration_map
-for each row execute function public.enforce_device_integration_consistency();
-
+$block$;
 
 
 -- =====================================================
--- 7. INTEGRATION PROVIDERS SEED (CATALOG SSOT)
+-- 18. MIGRATION REGISTRATION
 -- =====================================================
 
-insert into public.integration_providers (
-    code,
-    name,
-    category,
-    valid_from,
-    supports_webhooks,
-    supports_oauth
-)
-values
-    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('ttlock', 'TTLock', 'lock', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('shelly', 'Shelly', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('beds24', 'Beds24', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('stripe', 'Stripe', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('vivawallet', 'Viva Wallet', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('zoho', 'Zoho', 'crm', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('home_assistant', 'Home Assistant', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('generic', 'Generic', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('airbnb', 'Airbnb', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('booking', 'Booking.com', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('expedia', 'Expedia', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('pricelabs', 'PriceLabs', 'pricing', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('hostaway', 'Hostaway', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('guesty', 'Guesty', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('smoobu', 'Smoobu', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('mailgun', 'Mailgun', 'email', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('postmark', 'Postmark', 'email', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('smtp', 'SMTP', 'email', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('twilio', 'Twilio', 'sms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('whatsapp', 'WhatsApp', 'messaging', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('firebase', 'Firebase', 'notification', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('openai', 'OpenAI', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('openrouter', 'OpenRouter', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('anthropic', 'Anthropic', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false)
-on conflict (code)
-do update set
-    name = excluded.name,
-    category = excluded.category,
-    supports_webhooks = excluded.supports_webhooks,
-    supports_oauth = excluded.supports_oauth,
-    valid_from = excluded.valid_from,
-    updated_at = now();
-
-
-
-insert into public.integration_capabilities (
-    provider_code,
-    capability_code,
-    is_supported
-)
-values
-    ('aqara', 'send_command', true),
-    ('aqara', 'receive_event', true),
-    ('ttlock', 'send_command', true),
-    ('ttlock', 'create_user', true),
-    ('shelly', 'receive_event', true),
-    ('beds24', 'sync_state', true),
-    ('stripe', 'receive_event', true),
-    ('zoho', 'send_command', true),
-    ('home_assistant', 'sync_state', true),
-    ('generic', 'send_command', true)
-on conflict (provider_code, capability_code)
-do nothing;
-
-
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('004_integration_engine', 'REV22.INTEGRATION', false)
+on conflict (version) do nothing;

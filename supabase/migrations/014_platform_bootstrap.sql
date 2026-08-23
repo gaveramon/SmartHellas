@@ -19,9 +19,6 @@
 -- - This file applies public._apply_public_tenant_rls() ONLY when zero policies exist
 -- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('014_platform_bootstrap_finale', 'REV19.PLATFORM.BOOTSTRAP', false)
-on conflict (version) do nothing;
 
 
 
@@ -31,6 +28,107 @@ on conflict (version) do nothing;
 
 select platform.bind_operation_context_type_column();
 
+-- =====================================================
+-- 1.1. PLATFORM NOTIFICATION DELIVERY WORKERS
+-- Domain dependency: 006 Operations Engine
+--
+-- These functions are platform execution workers.
+-- The notification domain objects are owned by module 006.
+-- =====================================================
+
+create or replace function platform.complete_notification_delivery(
+    p_queue_id uuid,
+    p_success boolean,
+    p_error jsonb default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_row public.notification_queue;
+    v_status public.notification_delivery_status;
+begin
+    select * into v_row
+    from public.notification_queue nq
+    where nq.id = p_queue_id
+    for update;
+
+    if not found then
+        raise exception 'notification queue item % not found', p_queue_id;
+    end if;
+
+    if p_success then
+        v_status := 'sent'::public.notification_delivery_status;
+        update public.notification_queue set
+            status = v_status,
+            last_error = null,
+            updated_at = now()
+        where id = p_queue_id;
+
+        insert into public.notification_history (
+            tenant_id, queue_id, channel, recipient, status, subject, body, payload, error
+        )
+        values (
+            v_row.tenant_id, v_row.id, v_row.channel, v_row.recipient, v_status,
+            v_row.subject, v_row.body, v_row.payload, null
+        );
+    else
+        if v_row.attempt_count >= v_row.max_attempts then
+            v_status := 'failed'::public.notification_delivery_status;
+            update public.notification_queue set
+                status = v_status,
+                last_error = coalesce(p_error, '{}'::jsonb),
+                updated_at = now()
+            where id = p_queue_id;
+
+            insert into public.notification_history (
+                tenant_id, queue_id, channel, recipient, status, subject, body, payload, error
+            )
+            values (
+                v_row.tenant_id, v_row.id, v_row.channel, v_row.recipient, v_status,
+                v_row.subject, v_row.body, v_row.payload, coalesce(p_error, '{}'::jsonb)
+            );
+        else
+            update public.notification_queue set
+                status = 'queued'::public.notification_delivery_status,
+                last_error = coalesce(p_error, '{}'::jsonb),
+                scheduled_at = now() + (interval '1 minute' * v_row.attempt_count),
+                updated_at = now()
+            where id = p_queue_id;
+        end if;
+    end if;
+end;
+$$;
+
+
+create or replace function platform.fetch_notification_batch(p_limit int default 50)
+returns setof public.notification_queue
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    return query
+    with picked as (
+        select nq.id
+        from public.notification_queue nq
+        where nq.status = 'queued'::public.notification_delivery_status
+          and nq.scheduled_at <= now()
+        order by nq.scheduled_at
+        for update skip locked
+        limit greatest(p_limit, 1)
+    )
+    update public.notification_queue nq set
+        status = 'processing'::public.notification_delivery_status,
+        attempt_count = nq.attempt_count + 1,
+        updated_at = now()
+    from picked
+    where nq.id = picked.id
+    returning nq.*;
+end;
+$$;
 
 
 -- =====================================================
@@ -338,3 +436,6 @@ where not exists (
 );
 
 
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('014_platform_bootstrap_finale', 'REV22	.PLATFORM.BOOTSTRAP', false)
+on conflict (version) do nothing;

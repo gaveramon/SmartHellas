@@ -388,14 +388,6 @@ drop policy if exists energy_profiles_delete on public.energy_profiles;
 
 
 
--- =====================================================
--- END 012 OPTIMIZATION ENGINE (CLEAN INTELLIGENCE ONLY)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('012_optimization_engine_rev19', 'REV19.OPTIMIZATION', false)
-on conflict (version) do nothing;
-
 
 
 
@@ -755,4 +747,12 @@ create trigger trg_energy_profiles_property_tenant
 before insert or update on public.energy_profiles
 for each row execute function public.enforce_property_tenant_consistency();
 
+
+-- =====================================================
+-- END 012 OPTIMIZATION ENGINE (CLEAN INTELLIGENCE ONLY)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('012_optimization_engine', 'REV22.OPTIMIZATION', false)
+on conflict (version) do nothing;
 

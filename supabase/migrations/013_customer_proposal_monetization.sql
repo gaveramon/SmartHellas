@@ -483,16 +483,6 @@ drop policy if exists conversion_scores_delete on public.conversion_scores;
 
 
 
--- =====================================================
--- END 013 MONETIZATION ENGINE (CLEAN DOMAIN ONLY)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('013_customer_proposal_monetization_rev19', 'REV19.MONETIZATION', false)
-on conflict (version) do nothing;
-
-
-
 drop trigger if exists trg_customer_proposals_status_timestamps on public.customer_proposals;
 
 
@@ -1186,3 +1176,10 @@ before update of status on public.customer_proposals
 for each row execute function public.trg_customer_proposals_status_timestamps();
 
 
+-- =====================================================
+-- END 013 MONETIZATION ENGINE (CLEAN DOMAIN ONLY)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('013_customer_proposal_monetization', 'REV22.MONETIZATION', false)
+on conflict (version) do nothing;

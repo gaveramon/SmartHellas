@@ -3,46 +3,19 @@
 
 
 -- =====================================================
--- 3. SERVICE ACCOUNTS (SYSTEM INTEGRATIONS)
+-- 1. TENANTS (CORE MULTI-TENANCY ENTITY)
 -- =====================================================
 
-create table if not exists service_accounts (
+create table if not exists tenants (
     id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null references tenants(id) on delete cascade,
 
     name text not null,
 
-    provider_code text,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now()
-);
-
-
-
--- =====================================================
--- 4. SUBSCRIPTIONS (COMMERCIAL STATE ONLY)
--- =====================================================
-
-create table if not exists subscriptions (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null references tenants(id) on delete cascade,
-
-    tier subscription_tier not null,
-
-    status subscription_status not null default 'trial',
-
-    current_period_start timestamptz,
-    current_period_end timestamptz,
+    status tenant_status default 'active',
 
     created_at timestamptz default now(),
-
     updated_at timestamptz default now()
 );
-
 
 
 -- =====================================================
@@ -72,41 +45,60 @@ create table if not exists tenant_memberships (
 
 
 -- =====================================================
--- 002 CORE SAAS (CLEANED + 000 SEPARATION ALIGNED)
--- TENANCY + MEMBERSHIP + BILLING FOUNDATION ONLY
--- Identity SSOT: platform.profiles (000)
+-- 3. SERVICE ACCOUNTS (SYSTEM INTEGRATIONS)
 -- =====================================================
 
--- =====================================================
--- 1. TENANTS (CORE MULTI-TENANCY ENTITY)
--- =====================================================
-
-create table if not exists tenants (
+create table if not exists service_accounts (
     id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null references tenants(id) on delete cascade,
 
     name text not null,
 
-    status tenant_status default 'active',
+    provider_code text,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now()
+);
+
+
+-- =====================================================
+-- 4. SUBSCRIPTIONS (COMMERCIAL STATE ONLY)
+-- =====================================================
+
+create table if not exists subscriptions (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null references tenants(id) on delete cascade,
+
+    tier subscription_tier not null,
+
+    status subscription_status not null default 'trial',
+
+    current_period_start timestamptz,
+    current_period_end timestamptz,
 
     created_at timestamptz default now(),
+
     updated_at timestamptz default now()
 );
 
 
+-- =====================================================
+-- 5. CORE INDEXES
+-- =====================================================
 
 create index if not exists idx_tenants_status
 on tenants (status);
-
 
 
 create index if not exists idx_memberships_tenant
 on tenant_memberships (tenant_id);
 
 
-
 create index if not exists idx_memberships_user
 on tenant_memberships (user_id);
-
 
 
 create index if not exists idx_memberships_active
@@ -114,374 +106,27 @@ on tenant_memberships (tenant_id, is_active)
 where is_active = true;
 
 
-
 create index if not exists idx_memberships_user_tenant_active
 on tenant_memberships (user_id, tenant_id)
 where is_active = true;
-
 
 
 create index if not exists idx_service_accounts_tenant
 on service_accounts (tenant_id);
 
 
-
 create index if not exists idx_service_accounts_tenant_created
 on service_accounts (tenant_id, created_at desc);
-
 
 
 create index if not exists idx_subscriptions_tenant
 on subscriptions (tenant_id);
 
 
-
-comment on function platform.current_tenant_id() is
-    'Active tenant from JWT app_metadata.tenant_id only. No membership fallback — multi-tenant users must set tenant explicitly on switch.';
-
-
-
 -- =====================================================
--- 7. PUBLIC DOMAIN RLS (002 TABLES)
+-- 6. TENANT MEMBERSHIP RESOLUTION (SINGLE AUTHORITY)
+-- Internal membership resolver + active tenant resolver
 -- =====================================================
-
-alter table public.tenants enable row level security;
-
-
-alter table public.tenants force row level security;
-
-
-
-drop policy if exists tenants_select on public.tenants;
-
-
-drop policy if exists tenants_insert on public.tenants;
-
-
-drop policy if exists tenants_update on public.tenants;
-
-
-
-alter table public.tenant_memberships enable row level security;
-
-
-alter table public.tenant_memberships force row level security;
-
-
-
-drop policy if exists tenant_memberships_select on public.tenant_memberships;
-
-
-drop policy if exists tenant_memberships_insert on public.tenant_memberships;
-
-
-drop policy if exists tenant_memberships_update on public.tenant_memberships;
-
-
-drop policy if exists tenant_memberships_delete on public.tenant_memberships;
-
-
-
-alter table public.subscriptions enable row level security;
-
-
-alter table public.subscriptions force row level security;
-
-
-
-drop policy if exists subscriptions_select on public.subscriptions;
-
-
-drop policy if exists subscriptions_insert on public.subscriptions;
-
-
-drop policy if exists subscriptions_update on public.subscriptions;
-
-
-
-alter table public.service_accounts enable row level security;
-
-
-alter table public.service_accounts force row level security;
-
-
-
-drop policy if exists service_accounts_select on public.service_accounts;
-
-
-drop policy if exists service_accounts_insert on public.service_accounts;
-
-
-drop policy if exists service_accounts_update on public.service_accounts;
-
-
-drop policy if exists service_accounts_delete on public.service_accounts;
-
-
-
-
--- END 002 CORE SAAS (CLEAN DOMAIN ONLY)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('002_core_saas_rev19', 'REV19.CORE.SAAS', false)
-on conflict (version) do nothing;
-
-
--- 002 Core SaaS extensions: invite_member + validate_tenant_switch (auth_domain_ext only)
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('031_core_saas_auth_extensions_rev19', 'REV19.DOMAIN.CORE_SAAS.AUTH.EXT', false)
-on conflict (version) do nothing;
-
-
--- 002 Auth + 005 Integrations extensions (domain_ext only; SSOT in 002/005)
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('033_auth_integrations_extensions_rev19', 'REV19.EDGE.AUTH_INTEGRATIONS.EXT', false)
-on conflict (version) do nothing;
-
-
--- 002 Core SaaS: tenant switch validates membership before JWT update (no has_tenant_access gate)
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('041_core_saas_tenant_switch_rev19', 'REV19.DOMAIN.CORE_SAAS.TENANT_SWITCH', false)
-on conflict (version) do nothing;
-
-
-
-comment on function platform.has_tenant_membership(uuid, uuid) is
-    'Membership existence check. REV21 shim override in 051 delegates to resolve_active_tenant.';
-
-
--- =====================================================
--- 042_core_saas_auth_security_rev19.sql
--- 002 Core SaaS — SECURITY DEFINER authorization hardening
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('042_core_saas_auth_security_rev19', 'REV19.SECURITY.AUTH', false)
-on conflict (version) do nothing;
-
-
-begin
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public'
-          and p.proname = any (array[
-            'auth_domain_ext',
-            'auth_domain_ext_031',
-            'commerce_domain',
-            'booking_domain',
-            'locks_domain',
-            'crm_domain',
-            'preconfig_domain',
-            'portal_domain',
-            'onboarding_domain',
-            'optimization_domain',
-            'monetization_domain',
-            'operations_domain',
-            'automation_domain',
-            'automation_domain_ext',
-            'notification_domain',
-            'payment_domain'
-          ])
-    loop
-        execute format(
-            'revoke all on function %I.%I(%s) from public, authenticated',
-            r.nspname, r.proname, r.args
-        );
-
-
--- =====================================================
--- 049_production_audit_fixes_rev19.sql
--- Minimal fixes: C1, C2, H1, H2, H4, H5, H6, M1
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('049_production_audit_fixes_rev19', 'REV19.SECURITY.AUDIT.FIXES', false)
-on conflict (version) do nothing;
-
-
-
-
--- -----------------------------------------------------
--- H1, H2, H4, H5, M1: revoke direct authenticated execute on standalone RPCs
--- Idempotent: only functions that exist at apply time (050 re-applies lockdown)
--- -----------------------------------------------------
-
-do $block$
-declare
-    r record;
-
-
-begin
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public'
-          and p.proname = any (array[
-            'commerce_change_subscription_plan',
-            'commerce_create_subscription',
-            'automation_dispatch_event',
-            'automation_start_run',
-            'automation_cancel_run',
-            'automation_enqueue_notification',
-            'integrations_start_oauth',
-            'insert_event'
-          ])
-    loop
-        execute format(
-            'revoke all on function %I.%I(%s) from public, authenticated',
-            r.nspname, r.proname, r.args
-        );
-
-
-        execute format(
-            'grant execute on function %I.%I(%s) to service_role',
-            r.nspname, r.proname, r.args
-        );
-
-
-    end loop;
-
-
-end;
-
-
-$block$;
-
-
--- =====================================================
--- REV21 FINAL AUTHORITY FREEZE
--- =====================================================
-
--- SINGLE SOURCE OF TRUTH ENFORCEMENT NOTE
--- Tenant resolution MUST ONLY occur via:
--- public.resolve_active_tenant(auth.uid())
-
--- DO NOT introduce:
--- - JWT-based tenant resolution
--- - membership EXISTS checks outside resolver
--- - alternative tenant gates
-
--- Any deviation is considered architecture drift
--- =====================================================
-
--- =====================================================
--- 051_rev21_tenant_authority_core.sql
--- REV21: canonical tenant resolution SSOT
--- Extracted from 050_rev20_baseline_consolidation.sql
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('051_rev21_tenant_authority_core', 'REV21.TENANT.AUTHORITY.CORE', false)
-on conflict (version) do nothing;
-
-
-
-comment on function public.resolve_active_tenant(uuid, uuid) is
-    'REV21 sole tenant authority. All membership is_active evaluation occurs here only.';
-
-
-
-alter function public.resolve_active_tenant(uuid, uuid) set search_path = '';
-
-
-
-alter function platform._rev21_resolve_membership(uuid, uuid) set search_path = '';
-
-
-alter function platform.current_role() set search_path = '';
-
-
-alter function platform.has_role(text) set search_path = '';
-
-
-
-comment on function platform.has_tenant_membership(uuid, uuid) is
-    'Non-authoritative shim. Delegates to resolve_active_tenant(user_id, tenant_id).';
-
-
--- =====================================================
--- END 051 REV21 TENANT AUTHORITY CORE
--- =====================================================
-
--- =====================================================
--- REV21 AUTHORITY FREEZE
--- ONLY VALID TENANT AUTHORITY:
--- resolve_active_tenant(auth.uid())
--- DO NOT INTRODUCE:
--- - JWT tenant resolution
--- - membership EXISTS outside resolver
--- - alternative tenant gates
--- =====================================================
-
--- =====================================================
--- REV21 FINAL AUTHORITY FREEZE
--- =====================================================
-
--- SINGLE SOURCE OF TRUTH ENFORCEMENT NOTE
--- Tenant resolution MUST ONLY occur via:
--- public.resolve_active_tenant(auth.uid())
-
--- DO NOT introduce:
--- - JWT-based tenant resolution
--- - membership EXISTS checks outside resolver
--- - alternative tenant gates
-
--- Any deviation is considered architecture drift
--- =====================================================
-
--- =====================================================
--- 053_rev21_tenant_context.sql
--- REV21: domain tenant context (delegates to authority SSOT)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('053_rev21_tenant_context', 'REV21.TENANT.CONTEXT', false)
-on conflict (version) do nothing;
-
-
-
-comment on function platform.current_tenant_id() is
-    'Non-authoritative domain context reader. Delegates to resolve_active_tenant(auth.uid()) only.';
-
-
-
-alter function platform.current_tenant_id() set search_path = '';
-
-
--- =====================================================
--- END 053 REV21 TENANT CONTEXT
--- =====================================================
-
-
--- =====================================================
--- 5. USER-TO-TENANT CONTEXT VIEW
--- =====================================================
-
-create or replace view tenant_user_context as
-select
-    tm.user_id,
-    tm.tenant_id,
-    tm.role,
-    tm.is_active,
-    t.status as tenant_status
-from tenant_memberships tm
-join tenants t on t.id = tm.tenant_id;
-
-
-
 
 -- -----------------------------------------------------
 -- Internal membership resolution (ONLY table access point)
@@ -534,6 +179,31 @@ end;
 $$;
 
 
+-- -----------------------------------------------------
+-- resolve_active_tenant: sole tenant authority
+-- Membership SSOT
+-- -----------------------------------------------------
+
+create or replace function public.resolve_active_tenant(
+    p_user_id uuid,
+    p_verify_tenant_id uuid default null
+)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select m.tenant_id
+    from platform._rev21_resolve_membership(p_user_id, p_verify_tenant_id) m
+    limit 1;
+$$;
+
+
+-- =====================================================
+-- 7. TENANT CONTEXT AND ROLE FUNCTIONS
+-- Derived exclusively from the membership resolver
+-- =====================================================
 
 -- -----------------------------------------------------
 -- Role context: derived from resolver internal only
@@ -552,10 +222,9 @@ as $$
 $$;
 
 
-
-
 -- -----------------------------------------------------
--- platform.current_tenant_id: pure resolver wrapper (non-authoritative)
+-- platform.current_tenant_id: pure resolver wrapper
+-- Non-authoritative domain context reader
 -- -----------------------------------------------------
 
 create or replace function platform.current_tenant_id()
@@ -569,6 +238,9 @@ as $$
 $$;
 
 
+-- -----------------------------------------------------
+-- platform.has_role: derived from resolver internal only
+-- -----------------------------------------------------
 
 create or replace function platform.has_role(required_role text)
 returns boolean
@@ -585,10 +257,9 @@ as $$
 $$;
 
 
-
-
 -- -----------------------------------------------------
--- has_tenant_membership: REV21 shim (post-authority)
+-- has_tenant_membership: REV21 shim
+-- Post-authority compatibility wrapper
 -- -----------------------------------------------------
 
 create or replace function platform.has_tenant_membership(p_user_id uuid, p_tenant_id uuid)
@@ -602,8 +273,195 @@ as $$
 $$;
 
 
+-- =====================================================
+-- 8. USER-TO-TENANT CONTEXT VIEW
+-- =====================================================
 
--- 5. auth_domain: mirror tenants_insert RLS owner-invariant on create_tenant
+create or replace view tenant_user_context as
+select
+    tm.user_id,
+    tm.tenant_id,
+    tm.role,
+    tm.is_active,
+    t.status as tenant_status
+from tenant_memberships tm
+join tenants t on t.id = tm.tenant_id;
+
+
+-- =====================================================
+-- 9. TENANT SWITCHING AND AUTH DOMAIN
+-- =====================================================
+
+-- -----------------------------------------------------
+-- auth_resolve_tenant_switch: no direct membership reads
+-- -----------------------------------------------------
+
+create or replace function public.auth_resolve_tenant_switch(
+    p_user_id uuid,
+    p_target_tid uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_row record;
+begin
+    if p_user_id is null then
+        raise exception 'authentication required';
+    end if;
+    if p_target_tid is null then
+        raise exception 'tenant_id is required';
+    end if;
+
+    select m.tenant_id, m.role, m.tenant_status
+    into v_row
+    from platform._rev21_resolve_membership(p_user_id, p_target_tid) m
+    limit 1;
+
+    if v_row.tenant_id is null then
+        raise exception 'No active membership for tenant';
+    end if;
+
+    if v_row.tenant_status in ('suspended', 'deleted') then
+        raise exception 'Tenant is not available';
+    end if;
+
+    return jsonb_build_object(
+        'tenant_id', v_row.tenant_id,
+        'role', v_row.role,
+        'tenant_status', v_row.tenant_status
+    );
+end;
+$$;
+
+
+-- -----------------------------------------------------
+-- auth_domain_ext_031: tenant switching + invitations
+-- -----------------------------------------------------
+
+create or replace function public.auth_domain_ext_031(
+    p_op text,
+    p_payload jsonb default '{}'::jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_tid uuid;
+    v_uid uuid;
+    v_row record;
+    v_result jsonb;
+    v_target_tid uuid;
+begin
+    p_payload := coalesce(p_payload, '{}'::jsonb);
+    v_uid := (select auth.uid());
+
+    case p_op
+    when 'validate_tenant_switch' then
+        if v_uid is null then raise exception 'authentication required'; end if;
+        if p_payload->>'tenant_id' is null then raise exception 'tenant_id is required'; end if;
+        v_target_tid := (p_payload->>'tenant_id')::uuid;
+        v_result := public.auth_resolve_tenant_switch(v_uid, v_target_tid);
+
+    when 'invite_member' then
+        v_tid := platform.current_tenant_id();
+        if p_payload->>'user_id' is null then raise exception 'user_id is required'; end if;
+        if p_payload->>'role' is null then raise exception 'role is required'; end if;
+        if exists (
+            select 1
+            from public.tenant_memberships tm
+            where tm.tenant_id = v_tid
+              and tm.user_id = (p_payload->>'user_id')::uuid
+              and tm.is_active = true
+        ) then
+            raise exception 'User is already an active member of this tenant';
+        end if;
+        insert into public.tenant_memberships (tenant_id, user_id, role, is_active)
+        values (
+            v_tid,
+            (p_payload->>'user_id')::uuid,
+            (p_payload->>'role')::public.user_role,
+            true
+        )
+        returning id, user_id, tenant_id, role, is_active, revoked_at, created_at into v_row;
+        perform platform.log_audit(
+            'membership.created',
+            'tenant_membership',
+            v_row.id,
+            jsonb_build_object(
+                'tenant_id', v_tid,
+                'user_id', v_row.user_id,
+                'role', v_row.role,
+                'invited_by', v_uid
+            )
+        );
+        select jsonb_build_object(
+            'id', v_row.id,
+            'user_id', v_row.user_id,
+            'tenant_id', v_row.tenant_id,
+            'role', v_row.role,
+            'is_active', v_row.is_active,
+            'revoked_at', v_row.revoked_at,
+            'email', coalesce(p_payload->>'email', p.email),
+            'full_name', p.full_name,
+            'created_at', v_row.created_at
+        ) into v_result
+        from platform.profiles p
+        where p.id = v_row.user_id;
+
+    else
+        raise exception 'unknown auth_domain operation: %', p_op;
+    end case;
+
+    return v_result;
+end;
+$$;
+
+
+-- -----------------------------------------------------
+-- auth_domain_ext: extended auth router
+-- -----------------------------------------------------
+
+create or replace function public.auth_domain_ext(
+    p_op text,
+    p_payload jsonb default '{}'::jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_result jsonb;
+begin
+    p_payload := coalesce(p_payload, '{}'::jsonb);
+
+    case p_op
+    when 'resolve_user_by_email' then
+        if p_payload->>'email' is null then raise exception 'email is required'; end if;
+        select to_jsonb(t) into v_result from (
+            select p.id, p.email, p.full_name
+            from platform.profiles p
+            where lower(p.email) = lower(p_payload->>'email')
+            limit 1
+        ) t;
+        return v_result;
+
+    else
+        return public.auth_domain_ext_031(p_op, p_payload);
+    end case;
+end;
+$$;
+
+
+-- -----------------------------------------------------
+-- auth_domain: core tenant/member/subscription router
+-- -----------------------------------------------------
+
 create or replace function public.auth_domain(
     p_op text,
     p_payload jsonb default '{}'::jsonb
@@ -841,135 +699,8 @@ end;
 $$;
 
 
-
-
 -- -----------------------------------------------------
--- Ensure auth_domain_ext exists before grant lockdown
--- (router to auth_domain_ext_031; may be absent if 033 skipped)
--- -----------------------------------------------------
-
-create or replace function public.auth_domain_ext(
-    p_op text,
-    p_payload jsonb default '{}'::jsonb
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_result jsonb;
-begin
-    p_payload := coalesce(p_payload, '{}'::jsonb);
-
-    case p_op
-    when 'resolve_user_by_email' then
-        if p_payload->>'email' is null then raise exception 'email is required'; end if;
-        select to_jsonb(t) into v_result from (
-            select p.id, p.email, p.full_name
-            from platform.profiles p
-            where lower(p.email) = lower(p_payload->>'email')
-            limit 1
-        ) t;
-        return v_result;
-
-    else
-        return public.auth_domain_ext_031(p_op, p_payload);
-    end case;
-end;
-$$;
-
-
-
--- -----------------------------------------------------
--- validate_tenant_switch: same membership SSOT (033 fix)
--- -----------------------------------------------------
-
-create or replace function public.auth_domain_ext_031(
-    p_op text,
-    p_payload jsonb default '{}'::jsonb
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_uid uuid;
-    v_row record;
-    v_result jsonb;
-    v_target_tid uuid;
-begin
-    p_payload := coalesce(p_payload, '{}'::jsonb);
-    v_uid := (select auth.uid());
-
-    case p_op
-    when 'validate_tenant_switch' then
-        if v_uid is null then raise exception 'authentication required'; end if;
-        if p_payload->>'tenant_id' is null then raise exception 'tenant_id is required'; end if;
-        v_target_tid := (p_payload->>'tenant_id')::uuid;
-        v_result := public.auth_resolve_tenant_switch(v_uid, v_target_tid);
-
-    when 'invite_member' then
-        v_tid := platform.current_tenant_id();
-        if p_payload->>'user_id' is null then raise exception 'user_id is required'; end if;
-        if p_payload->>'role' is null then raise exception 'role is required'; end if;
-        if exists (
-            select 1
-            from public.tenant_memberships tm
-            where tm.tenant_id = v_tid
-              and tm.user_id = (p_payload->>'user_id')::uuid
-              and tm.is_active = true
-        ) then
-            raise exception 'User is already an active member of this tenant';
-        end if;
-        insert into public.tenant_memberships (tenant_id, user_id, role, is_active)
-        values (
-            v_tid,
-            (p_payload->>'user_id')::uuid,
-            (p_payload->>'role')::public.user_role,
-            true
-        )
-        returning id, user_id, tenant_id, role, is_active, revoked_at, created_at into v_row;
-        perform platform.log_audit(
-            'membership.created',
-            'tenant_membership',
-            v_row.id,
-            jsonb_build_object(
-                'tenant_id', v_tid,
-                'user_id', v_row.user_id,
-                'role', v_row.role,
-                'invited_by', v_uid
-            )
-        );
-        select jsonb_build_object(
-            'id', v_row.id,
-            'user_id', v_row.user_id,
-            'tenant_id', v_row.tenant_id,
-            'role', v_row.role,
-            'is_active', v_row.is_active,
-            'revoked_at', v_row.revoked_at,
-            'email', coalesce(p_payload->>'email', p.email),
-            'full_name', p.full_name,
-            'created_at', v_row.created_at
-        ) into v_result
-        from platform.profiles p
-        where p.id = v_row.user_id;
-
-    else
-        raise exception 'unknown auth_domain operation: %', p_op;
-    end case;
-
-    return v_result;
-end;
-$$;
-
-
-
-
--- -----------------------------------------------------
--- C1: auth_invite_member — admin gate + revoke direct authenticated execute
+-- auth_invite_member: admin-gated invitation wrapper
 -- -----------------------------------------------------
 
 create or replace function public.auth_invite_member(p_payload jsonb)
@@ -1005,56 +736,8 @@ end;
 $$;
 
 
-
-
 -- -----------------------------------------------------
--- auth_resolve_tenant_switch: no direct membership reads
--- -----------------------------------------------------
-
-create or replace function public.auth_resolve_tenant_switch(
-    p_user_id uuid,
-    p_target_tid uuid
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_row record;
-begin
-    if p_user_id is null then
-        raise exception 'authentication required';
-    end if;
-    if p_target_tid is null then
-        raise exception 'tenant_id is required';
-    end if;
-
-    select m.tenant_id, m.role, m.tenant_status
-    into v_row
-    from platform._rev21_resolve_membership(p_user_id, p_target_tid) m
-    limit 1;
-
-    if v_row.tenant_id is null then
-        raise exception 'No active membership for tenant';
-    end if;
-
-    if v_row.tenant_status in ('suspended', 'deleted') then
-        raise exception 'Tenant is not available';
-    end if;
-
-    return jsonb_build_object(
-        'tenant_id', v_row.tenant_id,
-        'role', v_row.role,
-        'tenant_status', v_row.tenant_status
-    );
-end;
-$$;
-
-
-
--- -----------------------------------------------------
--- auth_switch_tenant: membership gate only (039 fix)
+-- auth_switch_tenant: membership gate only
 -- -----------------------------------------------------
 
 create or replace function public.auth_switch_tenant(p_payload jsonb)
@@ -1090,10 +773,44 @@ end;
 $$;
 
 
+-- =====================================================
+-- 10. TENANT PROVISIONING AND OWNER INVARIANT
+-- =====================================================
 
--- =====================================================
--- 2C. OWNER INVARIANT (AT LEAST ONE ACTIVE OWNER)
--- =====================================================
+-- -----------------------------------------------------
+-- Tenant provisioning: creator becomes owner
+-- -----------------------------------------------------
+
+create or replace function public.handle_new_tenant()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if (select auth.uid()) is not null then
+        insert into public.tenant_memberships (
+            tenant_id,
+            user_id,
+            role,
+            is_active
+        )
+        values (
+            new.id,
+            (select auth.uid()),
+            'owner',
+            true
+        );
+    end if;
+
+    return new;
+end;
+$$;
+
+
+-- -----------------------------------------------------
+-- Owner invariant: at least one active owner
+-- -----------------------------------------------------
 
 create or replace function public.enforce_tenant_owner_invariant()
 returns trigger
@@ -1144,38 +861,10 @@ end;
 $$;
 
 
-
 -- =====================================================
--- 2B. TENANT PROVISIONING (CREATOR → OWNER)
+-- 11. INTEGRATIONS API AND EXTENSIONS
+-- Integration execution wrappers only
 -- =====================================================
-
-create or replace function public.handle_new_tenant()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-    if (select auth.uid()) is not null then
-        insert into public.tenant_memberships (
-            tenant_id,
-            user_id,
-            role,
-            is_active
-        )
-        values (
-            new.id,
-            (select auth.uid()),
-            'owner',
-            true
-        );
-    end if;
-
-    return new;
-end;
-$$;
-
-
 
 create or replace function public.integrations_api(
     p_op text,
@@ -1205,9 +894,8 @@ end;
 $$;
 
 
-
 -- -----------------------------------------------------
--- 005 Integrations: OAuth state + sync (extends integrations_domain via integrations_domain_ext)
+-- Integration OAuth state and synchronization extension
 -- -----------------------------------------------------
 
 create or replace function public.integrations_domain_ext(
@@ -1320,93 +1008,100 @@ end;
 $$;
 
 
+-- =====================================================
+-- 12. PUBLIC DOMAIN RLS (002 TABLES)
+-- RLS activation and policy definitions
+-- =====================================================
+
+alter table public.tenants enable row level security;
+
+alter table public.tenants force row level security;
+
+drop policy if exists tenants_select on public.tenants;
+
+drop policy if exists tenants_insert on public.tenants;
+
+drop policy if exists tenants_update on public.tenants;
+
+
+alter table public.tenant_memberships enable row level security;
+
+alter table public.tenant_memberships force row level security;
+
+drop policy if exists tenant_memberships_select on public.tenant_memberships;
+
+drop policy if exists tenant_memberships_insert on public.tenant_memberships;
+
+drop policy if exists tenant_memberships_update on public.tenant_memberships;
+
+drop policy if exists tenant_memberships_delete on public.tenant_memberships;
+
+
+alter table public.subscriptions enable row level security;
+
+alter table public.subscriptions force row level security;
+
+drop policy if exists subscriptions_select on public.subscriptions;
+
+drop policy if exists subscriptions_insert on public.subscriptions;
+
+drop policy if exists subscriptions_update on public.subscriptions;
+
+
+alter table public.service_accounts enable row level security;
+
+alter table public.service_accounts force row level security;
+
+drop policy if exists service_accounts_select on public.service_accounts;
+
+drop policy if exists service_accounts_insert on public.service_accounts;
+
+drop policy if exists service_accounts_update on public.service_accounts;
+
+drop policy if exists service_accounts_delete on public.service_accounts;
 
 
 -- -----------------------------------------------------
--- resolve_active_tenant: sole tenant authority (membership SSOT)
+-- Tenant policies
 -- -----------------------------------------------------
 
-create or replace function public.resolve_active_tenant(
-    p_user_id uuid,
-    p_verify_tenant_id uuid default null
-)
-returns uuid
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-    select m.tenant_id
-    from platform._rev21_resolve_membership(p_user_id, p_verify_tenant_id) m
-    limit 1;
-$$;
-
-
-
-create policy service_accounts_delete on public.service_accounts
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
-
-create policy service_accounts_insert on public.service_accounts
+create policy tenants_insert on public.tenants
     for insert to authenticated
     with check (
         platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+        or (
+            (select auth.uid()) is not null
+            and not exists (
+                select 1
+                from public.tenant_memberships tm
+                where tm.user_id = (select auth.uid())
+                  and tm.role = 'owner'
+                  and tm.is_active
+            )
+        )
     );
 
 
-
-create policy service_accounts_select on public.service_accounts
+create policy tenants_select on public.tenants
     for select to authenticated
-    using (public.has_tenant_access(tenant_id) or platform.is_platform_admin());
+    using (public.has_tenant_access(id) or platform.is_platform_admin());
 
 
-
-create policy service_accounts_update on public.service_accounts
+create policy tenants_update on public.tenants
     for update to authenticated
     using (
         platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+        or (public.has_tenant_access(id) and platform.is_admin())
     )
     with check (
         platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+        or (public.has_tenant_access(id) and platform.is_admin())
     );
 
 
-
-create policy subscriptions_insert on public.subscriptions
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
-
-create policy subscriptions_select on public.subscriptions
-    for select to authenticated
-    using (public.has_tenant_access(tenant_id) or platform.is_platform_admin());
-
-
-
-create policy subscriptions_update on public.subscriptions
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    )
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
+-- -----------------------------------------------------
+-- Tenant membership policies
+-- -----------------------------------------------------
 
 create policy tenant_memberships_delete on public.tenant_memberships
     for delete to authenticated
@@ -1420,7 +1115,6 @@ create policy tenant_memberships_delete on public.tenant_memberships
     );
 
 
-
 create policy tenant_memberships_insert on public.tenant_memberships
     for insert to authenticated
     with check (
@@ -1432,14 +1126,12 @@ create policy tenant_memberships_insert on public.tenant_memberships
     );
 
 
-
 create policy tenant_memberships_select on public.tenant_memberships
     for select to authenticated
     using (
         public.has_tenant_access(tenant_id)
         or platform.is_platform_admin()
     );
-
 
 
 create policy tenant_memberships_update on public.tenant_memberships
@@ -1460,48 +1152,79 @@ create policy tenant_memberships_update on public.tenant_memberships
     );
 
 
+-- -----------------------------------------------------
+-- Subscription policies
+-- -----------------------------------------------------
 
-create policy tenants_insert on public.tenants
+create policy subscriptions_insert on public.subscriptions
     for insert to authenticated
     with check (
         platform.is_platform_admin()
-        or (
-            (select auth.uid()) is not null
-            and not exists (
-                select 1
-                from public.tenant_memberships tm
-                where tm.user_id = (select auth.uid())
-                  and tm.role = 'owner'
-                  and tm.is_active
-            )
-        )
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
     );
 
 
-
-create policy tenants_select on public.tenants
+create policy subscriptions_select on public.subscriptions
     for select to authenticated
-    using (public.has_tenant_access(id) or platform.is_platform_admin());
+    using (public.has_tenant_access(tenant_id) or platform.is_platform_admin());
 
 
-
-create policy tenants_update on public.tenants
+create policy subscriptions_update on public.subscriptions
     for update to authenticated
     using (
         platform.is_platform_admin()
-        or (public.has_tenant_access(id) and platform.is_admin())
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
     )
     with check (
         platform.is_platform_admin()
-        or (public.has_tenant_access(id) and platform.is_admin())
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
     );
 
 
+-- -----------------------------------------------------
+-- Service account policies
+-- -----------------------------------------------------
+
+create policy service_accounts_delete on public.service_accounts
+    for delete to authenticated
+    using (
+        platform.is_platform_admin()
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+    );
+
+
+create policy service_accounts_insert on public.service_accounts
+    for insert to authenticated
+    with check (
+        platform.is_platform_admin()
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+    );
+
+
+create policy service_accounts_select on public.service_accounts
+    for select to authenticated
+    using (public.has_tenant_access(tenant_id) or platform.is_platform_admin());
+
+
+create policy service_accounts_update on public.service_accounts
+    for update to authenticated
+    using (
+        platform.is_platform_admin()
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+    )
+    with check (
+        platform.is_platform_admin()
+        or (public.has_tenant_access(tenant_id) and platform.is_admin())
+    );
+
+
+-- =====================================================
+-- 13. CORE UPDATED_AT AND PROVISIONING TRIGGERS
+-- =====================================================
 
 create trigger trg_tenants_updated_at
 before update on tenants
 for each row execute function platform.set_updated_at();
-
 
 
 create trigger trg_memberships_updated_at
@@ -1509,11 +1232,9 @@ before update on tenant_memberships
 for each row execute function platform.set_updated_at();
 
 
-
 create trigger trg_tenant_bootstrap_owner
 after insert on public.tenants
 for each row execute function public.handle_new_tenant();
-
 
 
 create trigger trg_memberships_owner_invariant
@@ -1521,9 +1242,163 @@ before update or delete on public.tenant_memberships
 for each row execute function public.enforce_tenant_owner_invariant();
 
 
-
 create trigger trg_subscriptions_updated_at
 before update on subscriptions
 for each row execute function platform.set_updated_at();
 
 
+-- =====================================================
+-- 14. FUNCTION SECURITY LOCKDOWN
+-- =====================================================
+
+do $block$
+declare
+    r record;
+begin
+
+    for r in
+        select
+            n.nspname,
+            p.proname,
+            pg_get_function_identity_arguments(p.oid) as args
+        from pg_proc p
+        join pg_namespace n
+            on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.proname = any (array[
+            'auth_domain_ext',
+            'auth_domain_ext_031',
+            'commerce_domain',
+            'booking_domain',
+            'locks_domain',
+            'crm_domain',
+            'preconfig_domain',
+            'portal_domain',
+            'onboarding_domain',
+            'optimization_domain',
+            'monetization_domain',
+            'operations_domain',
+            'automation_domain',
+            'automation_domain_ext',
+            'notification_domain',
+            'payment_domain'
+          ])
+    loop
+
+        execute format(
+            'revoke all on function %I.%I(%s) from public, authenticated',
+            r.nspname,
+            r.proname,
+            r.args
+        );
+
+    end loop;
+
+end;
+$block$;
+
+
+-- -----------------------------------------------------
+-- H1, H2, H4, H5, M1: revoke direct authenticated execute
+-- on standalone RPCs
+-- Idempotent: only functions that exist at apply time
+-- -----------------------------------------------------
+
+do $block$
+declare
+    r record;
+
+
+begin
+    for r in
+        select
+            n.nspname,
+            p.proname,
+            pg_get_function_identity_arguments(p.oid) as args
+        from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.proname = any (array[
+            'commerce_change_subscription_plan',
+            'commerce_create_subscription',
+            'automation_dispatch_event',
+            'automation_start_run',
+            'automation_cancel_run',
+            'automation_enqueue_notification',
+            'integrations_start_oauth',
+            'insert_event'
+          ])
+    loop
+        execute format(
+            'revoke all on function %I.%I(%s) from public, authenticated',
+            r.nspname, r.proname, r.args
+        );
+
+
+        execute format(
+            'grant execute on function %I.%I(%s) to service_role',
+            r.nspname, r.proname, r.args
+        );
+
+
+    end loop;
+
+
+end;
+
+
+$block$;
+
+
+-- =====================================================
+-- 15. FINAL FUNCTION SECURITY ATTRIBUTES
+-- =====================================================
+
+comment on function public.resolve_active_tenant(uuid, uuid) is
+    'REV21 sole tenant authority. All membership is_active evaluation occurs here only.';
+
+
+alter function public.resolve_active_tenant(uuid, uuid) set search_path = '';
+
+alter function platform._rev21_resolve_membership(uuid, uuid) set search_path = '';
+
+alter function platform.current_role() set search_path = '';
+
+alter function platform.has_role(text) set search_path = '';
+
+
+comment on function platform.has_tenant_membership(uuid, uuid) is
+    'Non-authoritative shim. Delegates to resolve_active_tenant(user_id, tenant_id).';
+
+
+comment on function platform.current_tenant_id() is
+    'Non-authoritative domain context reader. Delegates to resolve_active_tenant(auth.uid())';
+
+
+alter function platform.current_tenant_id() set search_path = '';
+
+
+-- =====================================================
+-- 16. REV21 FINAL TENANT AUTHORITY FREEZE
+-- =====================================================
+
+-- SINGLE SOURCE OF TRUTH ENFORCEMENT NOTE
+-- Tenant resolution MUST ONLY occur via:
+-- public.resolve_active_tenant(auth.uid())
+
+-- DO NOT introduce:
+-- - JWT-based tenant resolution
+-- - membership EXISTS checks outside resolver
+-- - alternative tenant gates
+
+-- Any deviation is considered architecture drift
+-- =====================================================
+
+
+-- =====================================================
+-- END 002 CORE SAAS (CLEAN DOMAIN ONLY)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('002_core_saas', 'REV22.CORE.SAAS', false)
+on conflict (version) do nothing;

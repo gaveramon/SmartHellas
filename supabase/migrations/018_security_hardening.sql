@@ -1,21 +1,48 @@
 -- REV22 greenfield baseline: 018_security_hardening.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
+begin;
+
+
+
+-- =====================================================
+-- 2. SECURITY DEFINER
+-- =====================================================
+
+do $$
+declare
+    r record;
 begin
+
     for r in
         select
             n.nspname,
             p.proname,
             pg_get_function_identity_arguments(p.oid) as args
         from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'platform'
-           or (n.nspname = 'public' and p.prosecdef)
+        join pg_namespace n 
+            on n.oid = p.pronamespace
+        where
+            p.prokind = 'f'
+            and
+            (
+                n.nspname = 'platform'
+                or
+                (n.nspname = 'public' and p.prosecdef)
+            )
     loop
+
         execute format(
             'alter function %I.%I(%s) set search_path = ''''',
-            r.nspname, r.proname, r.args
+            r.nspname,
+            r.proname,
+            r.args
         );
+
+    end loop;
+
+end;
+$$ language plpgsql;
 
 
 -- =====================================================
@@ -35,13 +62,9 @@ begin
 -- =====================================================
 
 -- =====================================================
--- 052_rev21_tenant_access_control.sql
 -- REV21: single authority gate + RLS compatibility shims
 -- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('052_rev21_tenant_access_control', 'REV21.TENANT.ACCESS.CONTROL', false)
-on conflict (version) do nothing;
 
 
 
@@ -58,14 +81,6 @@ alter function platform.has_tenant_access(uuid) set search_path = '';
 
 
 alter function public.has_tenant_access(uuid) set search_path = '';
-
-
-alter function public.integrations_api(text, jsonb) set search_path = '';
-
-
--- =====================================================
--- END 052 REV21 TENANT ACCESS CONTROL
--- =====================================================
 
 
 
@@ -96,4 +111,49 @@ as $$
     select p_public_tenant_id = public.resolve_active_tenant((select auth.uid()));
 $$;
 
+-- =====================================================
+-- 4. CHECK AFTER HARDENING
+-- =====================================================
 
+do $$
+declare
+    v_count integer;
+begin
+
+    select count(*)
+    into v_count
+    from pg_proc p
+    join pg_namespace n
+        on n.oid = p.pronamespace
+    where
+        p.prosecdef = true
+        and n.nspname in ('public','platform')
+        and
+        (
+            p.proconfig is null
+            or not exists
+            (
+                select 1
+                from unnest(p.proconfig) cfg
+                where cfg like 'search_path=%'
+            )
+        );
+
+    if v_count > 0 then
+        raise exception
+        '018 security hardening failed: SECURITY DEFINER functions without hardened search_path detected';
+    end if;
+
+end;
+$$ language plpgsql;
+
+
+-- =====================================================
+-- END 018 SECURITY HARDENING
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values (''018_security_hardening', 'REV22.SECURITY.HARDENING', false)
+on conflict (version) do nothing;
+
+commit;

@@ -1,5 +1,9 @@
+-- =====================================================
+-- =====================================================
 -- REV22 greenfield baseline: 001_core_types.sql
--- Consolidated from migrations_archive_rev19 (000-053)
+-- =====================================================
+-- =====================================================
+
 
 
 create type access_credential_status as enum (
@@ -671,3 +675,6 @@ select platform.bind_operation_context_type_column();
 -- END 001 CORE TYPES (SSOT COMPLETE)
 -- =====================================================
 
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('001_core_types', 'REV22.CORE.TYPES', false)
+on conflict (version) do nothing;

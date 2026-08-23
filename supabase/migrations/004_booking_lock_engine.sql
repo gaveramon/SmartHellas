@@ -3,7 +3,196 @@
 
 
 -- =====================================================
--- 6C. ACCESS CREDENTIALS (ISSUED GRANT METADATA — NO GENERATION)
+-- 004. BOOKING & LOCK ENGINE
+-- CLEAN DOMAIN RULE LAYER
+-- NO EXECUTION / NO QUEUES / NO NOTIFICATIONS / NO CODE GENERATION
+-- =====================================================
+--
+-- ACCESS MODEL (SSOT HIERARCHY)
+-- 1. property_access_schedules — property default check-in/out times (guest template)
+-- 2. booking_access           — resolved guest window per booking (stored outcome)
+-- 3. access_policies          — non-guest grants only (owner, emergency, temporary, scheduled)
+-- 4. access_rules             — property exceptions only (override, emergency_access)
+--
+-- Composition: booking dates + property_access_schedules → booking_access.valid_from/until
+-- 5. access_credentials       — issued grant metadata (vault ref, never plaintext codes)
+-- Door code generation remains in 000; 004 stores grant records and windows only.
+-- =====================================================
+
+
+-- =====================================================
+-- 004.1 BOOKINGS (CORE RESERVATION MODEL)
+-- =====================================================
+
+create table if not exists bookings (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    property_id uuid not null references properties(id) on delete cascade,
+
+    guest_name text,
+
+    guest_email text,
+
+    start_date date not null,
+
+    end_date date not null,
+
+    status booking_status default 'pending',
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    constraint chk_bookings_date_range check (start_date <= end_date)
+);
+
+
+-- =====================================================
+-- 004.2 PROPERTY ACCESS SCHEDULE (GUEST WINDOW TEMPLATE — SSOT)
+-- One row per property: default check-in/out times for guest stays.
+-- =====================================================
+
+create table if not exists property_access_schedules (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    property_id uuid not null references properties(id) on delete cascade,
+
+    check_in_time time not null default '15:00',
+
+    check_out_time time not null default '11:00',
+
+    early_check_in_minutes int not null default 0,
+
+    late_checkout_minutes int not null default 0,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    unique (property_id),
+
+    constraint chk_property_access_schedule_buffers check (
+        early_check_in_minutes >= 0
+        and late_checkout_minutes >= 0
+    )
+);
+
+
+-- =====================================================
+-- 004.3 BOOKING ACCESS (RESOLVED GUEST WINDOW PER BOOKING)
+-- Populated when a booking is confirmed — not generated here.
+-- =====================================================
+
+create table if not exists booking_access (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    booking_id uuid not null references bookings(id) on delete cascade,
+
+    access_type access_type not null default 'guest',
+
+    valid_from timestamptz not null,
+
+    valid_until timestamptz not null,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    unique (booking_id),
+
+    constraint chk_booking_access_guest_only check (access_type = 'guest'),
+
+    constraint chk_booking_access_window check (valid_from < valid_until)
+);
+
+
+-- =====================================================
+-- 004.4 ACCESS POLICIES (NON-GUEST GRANTS ONLY)
+-- Owner, emergency, temporary, and scheduled access outside bookings.
+-- =====================================================
+
+create table if not exists access_policies (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    property_id uuid not null references properties(id) on delete cascade,
+
+    access_type access_type not null,
+
+    valid_from timestamptz not null,
+
+    valid_until timestamptz not null,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    constraint chk_access_policies_non_guest check (access_type <> 'guest'),
+
+    constraint chk_access_policies_window check (valid_from < valid_until)
+);
+
+
+-- =====================================================
+-- 004.5 ACCESS RULES (PROPERTY EXCEPTIONS ONLY)
+-- Overrides and emergency rules — not the default guest schedule.
+-- =====================================================
+
+create table if not exists access_rules (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    property_id uuid not null references properties(id) on delete cascade,
+
+    rule_type access_rule_type not null,
+
+    rule_config jsonb,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    constraint chk_access_rules_exceptions_only check (
+        rule_type in ('override', 'emergency_access')
+    )
+);
+
+
+-- =====================================================
+-- 004.6 LOCK DEVICE MAPPING (NO EXECUTION)
+-- =====================================================
+
+create table if not exists lock_devices (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    device_id uuid not null references devices(id) on delete cascade,
+
+    property_id uuid not null references properties(id) on delete cascade,
+
+    is_primary boolean default false,
+
+    created_at timestamptz default now(),
+
+    unique (device_id)
+);
+
+
+-- =====================================================
+-- 004.7 ACCESS CREDENTIALS (ISSUED GRANT METADATA — NO GENERATION)
 -- Records what was issued to which lock for a booking. PIN stored in vault (000).
 -- =====================================================
 
@@ -44,198 +233,9 @@ create table if not exists access_credentials (
 );
 
 
-
 -- =====================================================
--- 4. ACCESS POLICIES (NON-GUEST GRANTS ONLY)
--- Owner, emergency, temporary, and scheduled access outside bookings.
+-- 004.8 INDEXES
 -- =====================================================
-
-create table if not exists access_policies (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    property_id uuid not null references properties(id) on delete cascade,
-
-    access_type access_type not null,
-
-    valid_from timestamptz not null,
-
-    valid_until timestamptz not null,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    constraint chk_access_policies_non_guest check (access_type <> 'guest'),
-
-    constraint chk_access_policies_window check (valid_from < valid_until)
-);
-
-
-
--- =====================================================
--- 5. ACCESS RULES (PROPERTY EXCEPTIONS ONLY)
--- Overrides and emergency rules — not the default guest schedule.
--- =====================================================
-
-create table if not exists access_rules (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    property_id uuid not null references properties(id) on delete cascade,
-
-    rule_type access_rule_type not null,
-
-    rule_config jsonb,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    constraint chk_access_rules_exceptions_only check (
-        rule_type in ('override', 'emergency_access')
-    )
-);
-
-
-
--- =====================================================
--- 3. BOOKING ACCESS (RESOLVED GUEST WINDOW PER BOOKING)
--- Populated when a booking is confirmed — not generated here.
--- =====================================================
-
-create table if not exists booking_access (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    booking_id uuid not null references bookings(id) on delete cascade,
-
-    access_type access_type not null default 'guest',
-
-    valid_from timestamptz not null,
-
-    valid_until timestamptz not null,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    unique (booking_id),
-
-    constraint chk_booking_access_guest_only check (access_type = 'guest'),
-
-    constraint chk_booking_access_window check (valid_from < valid_until)
-);
-
-
--- =====================================================
--- 004 BOOKING & LOCK ENGINE (CLEAN DOMAIN RULE LAYER)
--- NO EXECUTION / NO QUEUES / NO NOTIFICATIONS / NO CODE GENERATION
--- =====================================================
---
--- ACCESS MODEL (SSOT HIERARCHY)
--- 1. property_access_schedules — property default check-in/out times (guest template)
--- 2. booking_access           — resolved guest window per booking (stored outcome)
--- 3. access_policies          — non-guest grants only (owner, emergency, temporary, scheduled)
--- 4. access_rules             — property exceptions only (override, emergency_access)
---
--- Composition: booking dates + property_access_schedules → booking_access.valid_from/until
--- 5. access_credentials       — issued grant metadata (vault ref, never plaintext codes)
--- Door code generation remains in 000; 004 stores grant records and windows only.
--- =====================================================
-
--- =====================================================
--- 1. BOOKINGS (CORE RESERVATION MODEL)
--- =====================================================
-
-create table if not exists bookings (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    property_id uuid not null references properties(id) on delete cascade,
-
-    guest_name text,
-
-    guest_email text,
-
-    start_date date not null,
-
-    end_date date not null,
-
-    status booking_status default 'pending',
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    constraint chk_bookings_date_range check (start_date <= end_date)
-);
-
-
-
--- =====================================================
--- 6. LOCK DEVICE MAPPING (NO EXECUTION)
--- =====================================================
-
-create table if not exists lock_devices (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    device_id uuid not null references devices(id) on delete cascade,
-
-    property_id uuid not null references properties(id) on delete cascade,
-
-    is_primary boolean default false,
-
-    created_at timestamptz default now(),
-
-    unique (device_id)
-);
-
-
-
--- =====================================================
--- 2. PROPERTY ACCESS SCHEDULE (GUEST WINDOW TEMPLATE — SSOT)
--- One row per property: default check-in/out times for guest stays.
--- =====================================================
-
-create table if not exists property_access_schedules (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    property_id uuid not null references properties(id) on delete cascade,
-
-    check_in_time time not null default '15:00',
-
-    check_out_time time not null default '11:00',
-
-    early_check_in_minutes int not null default 0,
-
-    late_checkout_minutes int not null default 0,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    unique (property_id),
-
-    constraint chk_property_access_schedule_buffers check (
-        early_check_in_minutes >= 0
-        and late_checkout_minutes >= 0
-    )
-);
-
-
 
 create index if not exists idx_bookings_property
 on bookings (property_id);
@@ -267,11 +267,6 @@ on property_access_schedules (tenant_id, created_at desc);
 
 
 
-comment on table public.property_access_schedules is
-    'SSOT for guest stay window templates. Compose with booking dates to populate booking_access.';
-
-
-
 create index if not exists idx_booking_access_booking
 on booking_access (booking_id);
 
@@ -284,11 +279,6 @@ on booking_access (tenant_id, created_at desc);
 
 create index if not exists idx_booking_access_window
 on booking_access (valid_from, valid_until);
-
-
-
-comment on table public.booking_access is
-    'Resolved guest access window for a booking. valid_from/until = booking dates + property_access_schedules.';
 
 
 
@@ -308,11 +298,6 @@ on access_policies (tenant_id, created_at desc);
 
 
 
-comment on table public.access_policies is
-    'Non-guest access grants (owner, emergency, temporary, scheduled). Guest stays use booking_access.';
-
-
-
 create index if not exists idx_access_rules_property
 on access_rules (property_id);
 
@@ -325,16 +310,6 @@ on access_rules (property_id, rule_type);
 
 create index if not exists idx_access_rules_tenant_created
 on access_rules (tenant_id, created_at desc);
-
-
-
-comment on table public.access_rules is
-    'Property-level access exceptions. Default guest windows live in property_access_schedules.';
-
-
-
-comment on column public.access_rules.rule_config is
-    'Exception payload only. override: { reason, valid_from, valid_until }. emergency_access: { reason, contacts }.';
 
 
 
@@ -389,6 +364,34 @@ on access_credentials (booking_id, lock_device_id)
 where status in ('pending', 'active');
 
 
+-- =====================================================
+-- 004.9 TABLE & COLUMN COMMENTS
+-- =====================================================
+
+comment on table public.property_access_schedules is
+    'SSOT for guest stay window templates. Compose with booking dates to populate booking_access.';
+
+
+
+comment on table public.booking_access is
+    'Resolved guest access window for a booking. valid_from/until = booking dates + property_access_schedules.';
+
+
+
+comment on table public.access_policies is
+    'Non-guest access grants (owner, emergency, temporary, scheduled). Guest stays use booking_access.';
+
+
+
+comment on table public.access_rules is
+    'Property-level access exceptions. Default guest windows live in property_access_schedules.';
+
+
+
+comment on column public.access_rules.rule_config is
+    'Exception payload only. override: { reason, valid_from, valid_until }. emergency_access: { reason, contacts }.';
+
+
 
 comment on table public.access_credentials is
     'Issued door-code grant metadata per booking and lock. Never store plaintext PINs — use credential_ref (vault).';
@@ -409,9 +412,9 @@ comment on column public.access_credentials.external_credential_id is
     'Provider-side credential ID (e.g. TTLock keyboardPwdId) for revoke/sync in 000.';
 
 
-
 -- =====================================================
--- 8. TENANT FKs (DEFERRED — TENANTS EXIST FROM 002)
+-- 004.10 TENANT FOREIGN KEYS
+-- Deferred — tenants exist from 002.
 -- =====================================================
 
 do $$
@@ -490,235 +493,248 @@ exception
 end $$;
 
 
-
 -- =====================================================
--- 9. RLS
--- =====================================================
-
--- 9A. TENANT-TABLE RLS (select: member; mutate: admin/manager)
-alter table public.bookings enable row level security;
-
-
-
-drop policy if exists bookings_select on public.bookings;
-
-
-drop policy if exists bookings_insert on public.bookings;
-
-
-drop policy if exists bookings_update on public.bookings;
-
-
-drop policy if exists bookings_delete on public.bookings;
-
-
-
-alter table public.property_access_schedules enable row level security;
-
-
-
-drop policy if exists property_access_schedules_select on public.property_access_schedules;
-
-
-drop policy if exists property_access_schedules_insert on public.property_access_schedules;
-
-
-drop policy if exists property_access_schedules_update on public.property_access_schedules;
-
-
-drop policy if exists property_access_schedules_delete on public.property_access_schedules;
-
-
-
-alter table public.access_policies enable row level security;
-
-
-
-drop policy if exists access_policies_select on public.access_policies;
-
-
-drop policy if exists access_policies_insert on public.access_policies;
-
-
-drop policy if exists access_policies_update on public.access_policies;
-
-
-drop policy if exists access_policies_delete on public.access_policies;
-
-
-
-alter table public.access_rules enable row level security;
-
-
-
-drop policy if exists access_rules_select on public.access_rules;
-
-
-drop policy if exists access_rules_insert on public.access_rules;
-
-
-drop policy if exists access_rules_update on public.access_rules;
-
-
-drop policy if exists access_rules_delete on public.access_rules;
-
-
-
--- access_credentials: read for tenant members; writes platform admin only (000 workers use service_role)
-alter table public.access_credentials enable row level security;
-
-
-
-drop policy if exists access_credentials_select on public.access_credentials;
-
-
-drop policy if exists access_credentials_insert on public.access_credentials;
-
-
-drop policy if exists access_credentials_update on public.access_credentials;
-
-
-drop policy if exists access_credentials_delete on public.access_credentials;
-
-
-
--- 9B. CHILD-TABLE RLS (tenant_id DENORMALIZED)
+-- 004.11 CORE TENANT / PROPERTY / DEVICE CONSISTENCY FUNCTIONS
 -- =====================================================
 
-alter table public.booking_access enable row level security;
-
-
-
-drop policy if exists booking_access_select on public.booking_access;
-
-
-drop policy if exists booking_access_insert on public.booking_access;
-
-
-drop policy if exists booking_access_update on public.booking_access;
-
-
-drop policy if exists booking_access_delete on public.booking_access;
-
-
-
-alter table public.lock_devices enable row level security;
-
-
-
-drop policy if exists lock_devices_select on public.lock_devices;
-
-
-drop policy if exists lock_devices_insert on public.lock_devices;
-
-
-drop policy if exists lock_devices_update on public.lock_devices;
-
-
-drop policy if exists lock_devices_delete on public.lock_devices;
-
-
-
 -- =====================================================
--- END 004 BOOKING & LOCK ENGINE (CLEAN DOMAIN ONLY)
+-- 004.11A. BOOKING TENANT CONSISTENCY (PROPERTY ↔ TENANT)
 -- =====================================================
 
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('004_booking_lock_engine_rev19', 'REV19.BOOKING.LOCK', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 025_booking_locks_extensions_rev19.sql
--- 004 Booking & Lock Engine extensions
--- Domain SSOT: business logic extracted from Edge 019_edge_rpc_booking_locks_rev19.sql
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('025_booking_locks_extensions_rev19', 'REV19.DOMAIN.BOOKING_LOCKS.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 036 BOOKING ACCESS WINDOW (004 SSOT)
--- Window calculation from booking dates + property schedules + rules.
--- Edge must never compute timestamps.
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('036_booking_access_window_rev19', 'REV19.DOMAIN.BOOKING.ACCESS_WINDOW', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 036 BOOKING ACCESS WINDOW
--- =====================================================
-
-
-
--- -----------------------------------------------------
--- 004 Booking: restrict credential metadata to admin/manager
--- -----------------------------------------------------
-
-drop policy if exists access_credentials_select on public.access_credentials;
-
-
-
-create or replace view public.v_bookings_overview
-with (security_invoker = true)
-as
-select
-    b.id,
-    b.tenant_id,
-    b.property_id,
-    p.name as property_name,
-    b.guest_name,
-    b.guest_email,
-    b.start_date,
-    b.end_date,
-    b.status,
-    ba.valid_from,
-    ba.valid_until,
-    ac.status as credential_status,
-    b.created_at,
-    b.updated_at
-from public.bookings b
-join public.properties p on p.id = b.property_id
-left join public.booking_access ba on ba.booking_id = b.id
-left join public.access_credentials ac on ac.booking_id = b.id;
-
-
-
--- =====================================================
--- 2. BOOKING DOMAIN RPC HELPERS (004)
--- =====================================================
-
-create or replace function public.booking_calculate_access_window(p_booking_id uuid)
-returns jsonb
+create or replace function public.enforce_booking_tenant_consistency()
+returns trigger
 language plpgsql
-stable
-security definer
 set search_path = ''
 as $$
+declare
+    v_property_tenant uuid;
 begin
-    perform public.edge_require_tenant();
-    return (
-        select jsonb_build_object(
-            'booking_id', p_booking_id,
-            'valid_from', w.valid_from,
-            'valid_until', w.valid_until,
-            'property_id', w.property_id,
-            'timezone', w.timezone
-        )
-        from public.booking_compute_access_window(p_booking_id) w
-    );
+    select p.tenant_id
+    into v_property_tenant
+    from public.properties p
+    where p.id = new.property_id;
+
+    if not found then
+        raise exception 'property not found';
+    end if;
+
+    if new.tenant_id <> v_property_tenant then
+        raise exception 'booking tenant_id must match property tenant_id';
+    end if;
+
+    return new;
 end;
 $$;
 
 
+-- =====================================================
+-- 004.11B. PROPERTY TENANT CONSISTENCY (PROPERTY-SCOPED TABLES)
+-- =====================================================
+
+create or replace function public.enforce_property_tenant_consistency()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_property_tenant uuid;
+begin
+    if new.property_id is null then
+        return new;
+    end if;
+
+    select p.tenant_id
+    into v_property_tenant
+    from public.properties p
+    where p.id = new.property_id;
+
+    if not found then
+        raise exception 'property not found';
+    end if;
+
+    if new.tenant_id is distinct from v_property_tenant then
+        raise exception 'tenant_id must match property tenant_id';
+    end if;
+
+    return new;
+end;
+$$;
+
 
 -- =====================================================
--- 1. CORE CALCULATION (004 SSOT)
+-- 004.11C. BOOKING ACCESS CONSISTENCY (GUEST-ONLY)
+-- =====================================================
+
+create or replace function public.enforce_booking_access_consistency()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_booking record;
+begin
+    select b.property_id, b.tenant_id, b.status
+    into v_booking
+    from public.bookings b
+    where b.id = new.booking_id;
+
+    if not found then
+        raise exception 'booking not found';
+    end if;
+
+    if new.access_type <> 'guest' then
+        raise exception 'booking_access is guest-only; use access_policies for other access types';
+    end if;
+
+    new.tenant_id := v_booking.tenant_id;
+
+    return new;
+end;
+$$;
+
+
+-- =====================================================
+-- 004.11D. LOCK DEVICE INTEGRITY (CATEGORY + TENANT)
+-- =====================================================
+
+create or replace function public.enforce_lock_device_integrity()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_device record;
+    v_property_tenant uuid;
+begin
+    select d.tenant_id, dc.is_lock
+    into v_device
+    from public.devices d
+    join public.device_categories dc on dc.code = d.category_code
+    where d.id = new.device_id;
+
+    if not found then
+        raise exception 'device not found';
+    end if;
+
+    if not v_device.is_lock then
+        raise exception 'lock_devices requires device category with is_lock';
+    end if;
+
+    select p.tenant_id
+    into v_property_tenant
+    from public.properties p
+    where p.id = new.property_id;
+
+    if not found then
+        raise exception 'property not found';
+    end if;
+
+    if v_device.tenant_id <> v_property_tenant then
+        raise exception 'lock device and property must belong to the same tenant';
+    end if;
+
+    new.tenant_id := v_property_tenant;
+
+    if not exists (
+        select 1
+        from public.device_integration_map dim
+        where dim.device_id = new.device_id
+    ) then
+        raise exception 'lock device must have a provider mapping in device_integration_map (005)';
+    end if;
+
+    return new;
+end;
+$$;
+
+
+-- =====================================================
+-- 004.11E. ACCESS CREDENTIAL CONSISTENCY (BOOKING ↔ LOCK)
+-- =====================================================
+
+create or replace function public.enforce_access_credential_consistency()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_booking record;
+    v_lock record;
+    v_access record;
+    v_map_provider text;
+begin
+    select b.tenant_id, b.property_id
+    into v_booking
+    from public.bookings b
+    where b.id = new.booking_id;
+
+    if not found then
+        raise exception 'booking not found';
+    end if;
+
+    if new.tenant_id <> v_booking.tenant_id then
+        raise exception 'credential tenant_id must match booking tenant_id';
+    end if;
+
+    select ld.property_id, ld.device_id
+    into v_lock
+    from public.lock_devices ld
+    where ld.id = new.lock_device_id;
+
+    if not found then
+        raise exception 'lock device not found';
+    end if;
+
+    if v_lock.property_id <> v_booking.property_id then
+        raise exception 'lock device must belong to the booking property';
+    end if;
+
+    select dim.provider_code
+    into v_map_provider
+    from public.device_integration_map dim
+    where dim.device_id = v_lock.device_id
+    order by dim.created_at
+    limit 1;
+
+    if v_map_provider is null then
+        raise exception 'lock device must have provider mapping in device_integration_map (005)';
+    end if;
+
+    new.provider_code := v_map_provider;
+
+    if new.booking_access_id is not null then
+        select ba.booking_id, ba.valid_from, ba.valid_until
+        into v_access
+        from public.booking_access ba
+        where ba.id = new.booking_access_id;
+
+        if not found then
+            raise exception 'booking_access not found';
+        end if;
+
+        if v_access.booking_id <> new.booking_id then
+            raise exception 'booking_access must belong to the same booking';
+        end if;
+
+        new.valid_from := v_access.valid_from;
+        new.valid_until := v_access.valid_until;
+    end if;
+
+    if new.status = 'revoked' and new.revoked_at is null then
+        new.revoked_at := now();
+    end if;
+
+    return new;
+end;
+$$;
+
+
+-- =====================================================
+-- 004.12 BOOKING ACCESS CALCULATION
+-- =====================================================
+
+-- =====================================================
+-- 004.12A. CORE CALCULATION (004 SSOT)
 -- =====================================================
 
 create or replace function public.booking_compute_access_window(p_booking_id uuid)
@@ -831,11 +847,134 @@ end;
 $$;
 
 
+-- =====================================================
+-- 004.12B. ACCESS WINDOW CALCULATION RPC HELPER
+-- =====================================================
+
+create or replace function public.booking_calculate_access_window(p_booking_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+    perform public.edge_require_tenant();
+    return (
+        select jsonb_build_object(
+            'booking_id', p_booking_id,
+            'valid_from', w.valid_from,
+            'valid_until', w.valid_until,
+            'property_id', w.property_id,
+            'timezone', w.timezone
+        )
+        from public.booking_compute_access_window(p_booking_id) w
+    );
+end;
+$$;
 
 
--- -----------------------------------------------------
--- C2: booking_create_booking_access — tenant ownership on manual path + revoke direct execute
--- -----------------------------------------------------
+-- =====================================================
+-- 004.12C. BOOKING ACCESS GENERATION
+-- =====================================================
+
+create or replace function public.booking_generate_booking_access(p_booking_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_tid uuid;
+    v_window record;
+    v_row record;
+begin
+    perform public.edge_require_manager();
+    v_tid := platform.current_tenant_id();
+
+    select * into v_window from public.booking_compute_access_window(p_booking_id);
+
+    insert into public.booking_access (
+        tenant_id, booking_id, access_type, valid_from, valid_until
+    )
+    values (
+        v_tid, p_booking_id, 'guest'::public.access_type,
+        v_window.valid_from, v_window.valid_until
+    )
+    on conflict (booking_id) do nothing
+    returning id, tenant_id, booking_id, access_type, valid_from, valid_until,
+              created_at, updated_at into v_row;
+
+    if not found then
+        select ba.id, ba.tenant_id, ba.booking_id, ba.access_type, ba.valid_from,
+               ba.valid_until, ba.created_at, ba.updated_at
+        into v_row
+        from public.booking_access ba
+        where ba.booking_id = p_booking_id and ba.tenant_id = v_tid;
+    else
+        perform platform.log_audit('booking_access.generated', 'booking_access', v_row.id);
+    end if;
+
+    return to_jsonb(v_row);
+end;
+$$;
+
+
+-- =====================================================
+-- 004.12D. BOOKING ACCESS REGENERATION
+-- =====================================================
+
+create or replace function public.booking_regenerate_booking_access(p_booking_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_tid uuid;
+    v_window record;
+    v_row record;
+begin
+    perform public.edge_require_manager();
+    v_tid := platform.current_tenant_id();
+
+    select * into v_window from public.booking_compute_access_window(p_booking_id);
+
+    update public.booking_access ba set
+        valid_from = v_window.valid_from,
+        valid_until = v_window.valid_until,
+        updated_at = now()
+    where ba.booking_id = p_booking_id and ba.tenant_id = v_tid
+    returning ba.id, ba.tenant_id, ba.booking_id, ba.access_type, ba.valid_from,
+              ba.valid_until, ba.created_at, ba.updated_at into v_row;
+
+    if not found then
+        insert into public.booking_access (
+            tenant_id, booking_id, access_type, valid_from, valid_until
+        )
+        values (
+            v_tid, p_booking_id, 'guest'::public.access_type,
+            v_window.valid_from, v_window.valid_until
+        )
+        returning id, tenant_id, booking_id, access_type, valid_from, valid_until,
+                  created_at, updated_at into v_row;
+    end if;
+
+    perform platform.log_audit(
+        'booking_access.regenerated',
+        'booking_access',
+        v_row.id,
+        jsonb_build_object('booking_id', p_booking_id)
+    );
+
+    return to_jsonb(v_row);
+end;
+$$;
+
+
+-- =====================================================
+-- 004.12E. MANUAL BOOKING ACCESS CREATION
+-- =====================================================
 
 create or replace function public.booking_create_booking_access(p_payload jsonb)
 returns jsonb
@@ -905,7 +1044,9 @@ end;
 $$;
 
 
-
+-- =====================================================
+-- 004.13 BOOKING DOMAIN RPC
+-- =====================================================
 
 create or replace function public.booking_domain(
     p_op text,
@@ -1518,336 +1659,9 @@ end;
 $$;
 
 
-
-create or replace function public.booking_generate_booking_access(p_booking_id uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_window record;
-    v_row record;
-begin
-    perform public.edge_require_manager();
-    v_tid := platform.current_tenant_id();
-
-    select * into v_window from public.booking_compute_access_window(p_booking_id);
-
-    insert into public.booking_access (
-        tenant_id, booking_id, access_type, valid_from, valid_until
-    )
-    values (
-        v_tid, p_booking_id, 'guest'::public.access_type,
-        v_window.valid_from, v_window.valid_until
-    )
-    on conflict (booking_id) do nothing
-    returning id, tenant_id, booking_id, access_type, valid_from, valid_until,
-              created_at, updated_at into v_row;
-
-    if not found then
-        select ba.id, ba.tenant_id, ba.booking_id, ba.access_type, ba.valid_from,
-               ba.valid_until, ba.created_at, ba.updated_at
-        into v_row
-        from public.booking_access ba
-        where ba.booking_id = p_booking_id and ba.tenant_id = v_tid;
-    else
-        perform platform.log_audit('booking_access.generated', 'booking_access', v_row.id);
-    end if;
-
-    return to_jsonb(v_row);
-end;
-$$;
-
-
-
-create or replace function public.booking_regenerate_booking_access(p_booking_id uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_window record;
-    v_row record;
-begin
-    perform public.edge_require_manager();
-    v_tid := platform.current_tenant_id();
-
-    select * into v_window from public.booking_compute_access_window(p_booking_id);
-
-    update public.booking_access ba set
-        valid_from = v_window.valid_from,
-        valid_until = v_window.valid_until,
-        updated_at = now()
-    where ba.booking_id = p_booking_id and ba.tenant_id = v_tid
-    returning ba.id, ba.tenant_id, ba.booking_id, ba.access_type, ba.valid_from,
-              ba.valid_until, ba.created_at, ba.updated_at into v_row;
-
-    if not found then
-        insert into public.booking_access (
-            tenant_id, booking_id, access_type, valid_from, valid_until
-        )
-        values (
-            v_tid, p_booking_id, 'guest'::public.access_type,
-            v_window.valid_from, v_window.valid_until
-        )
-        returning id, tenant_id, booking_id, access_type, valid_from, valid_until,
-                  created_at, updated_at into v_row;
-    end if;
-
-    perform platform.log_audit(
-        'booking_access.regenerated',
-        'booking_access',
-        v_row.id,
-        jsonb_build_object('booking_id', p_booking_id)
-    );
-
-    return to_jsonb(v_row);
-end;
-$$;
-
-
-
 -- =====================================================
--- 6D. ACCESS CREDENTIAL CONSISTENCY (BOOKING ↔ LOCK)
+-- 004.14 LOCKS DOMAIN RPC
 -- =====================================================
-
-create or replace function public.enforce_access_credential_consistency()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-declare
-    v_booking record;
-    v_lock record;
-    v_access record;
-    v_map_provider text;
-begin
-    select b.tenant_id, b.property_id
-    into v_booking
-    from public.bookings b
-    where b.id = new.booking_id;
-
-    if not found then
-        raise exception 'booking not found';
-    end if;
-
-    if new.tenant_id <> v_booking.tenant_id then
-        raise exception 'credential tenant_id must match booking tenant_id';
-    end if;
-
-    select ld.property_id, ld.device_id
-    into v_lock
-    from public.lock_devices ld
-    where ld.id = new.lock_device_id;
-
-    if not found then
-        raise exception 'lock device not found';
-    end if;
-
-    if v_lock.property_id <> v_booking.property_id then
-        raise exception 'lock device must belong to the booking property';
-    end if;
-
-    select dim.provider_code
-    into v_map_provider
-    from public.device_integration_map dim
-    where dim.device_id = v_lock.device_id
-    order by dim.created_at
-    limit 1;
-
-    if v_map_provider is null then
-        raise exception 'lock device must have provider mapping in device_integration_map (005)';
-    end if;
-
-    new.provider_code := v_map_provider;
-
-    if new.booking_access_id is not null then
-        select ba.booking_id, ba.valid_from, ba.valid_until
-        into v_access
-        from public.booking_access ba
-        where ba.id = new.booking_access_id;
-
-        if not found then
-            raise exception 'booking_access not found';
-        end if;
-
-        if v_access.booking_id <> new.booking_id then
-            raise exception 'booking_access must belong to the same booking';
-        end if;
-
-        new.valid_from := v_access.valid_from;
-        new.valid_until := v_access.valid_until;
-    end if;
-
-    if new.status = 'revoked' and new.revoked_at is null then
-        new.revoked_at := now();
-    end if;
-
-    return new;
-end;
-$$;
-
-
-
--- =====================================================
--- 3B. BOOKING ACCESS CONSISTENCY (GUEST-ONLY)
--- =====================================================
-
-create or replace function public.enforce_booking_access_consistency()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-declare
-    v_booking record;
-begin
-    select b.property_id, b.tenant_id, b.status
-    into v_booking
-    from public.bookings b
-    where b.id = new.booking_id;
-
-    if not found then
-        raise exception 'booking not found';
-    end if;
-
-    if new.access_type <> 'guest' then
-        raise exception 'booking_access is guest-only; use access_policies for other access types';
-    end if;
-
-    new.tenant_id := v_booking.tenant_id;
-
-    return new;
-end;
-$$;
-
-
-
--- =====================================================
--- 1B. BOOKING TENANT CONSISTENCY (PROPERTY ↔ TENANT)
--- =====================================================
-
-create or replace function public.enforce_booking_tenant_consistency()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-declare
-    v_property_tenant uuid;
-begin
-    select p.tenant_id
-    into v_property_tenant
-    from public.properties p
-    where p.id = new.property_id;
-
-    if not found then
-        raise exception 'property not found';
-    end if;
-
-    if new.tenant_id <> v_property_tenant then
-        raise exception 'booking tenant_id must match property tenant_id';
-    end if;
-
-    return new;
-end;
-$$;
-
-
-
--- =====================================================
--- 6B. LOCK DEVICE INTEGRITY (CATEGORY + TENANT)
--- =====================================================
-
-create or replace function public.enforce_lock_device_integrity()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-declare
-    v_device record;
-    v_property_tenant uuid;
-begin
-    select d.tenant_id, dc.is_lock
-    into v_device
-    from public.devices d
-    join public.device_categories dc on dc.code = d.category_code
-    where d.id = new.device_id;
-
-    if not found then
-        raise exception 'device not found';
-    end if;
-
-    if not v_device.is_lock then
-        raise exception 'lock_devices requires device category with is_lock';
-    end if;
-
-    select p.tenant_id
-    into v_property_tenant
-    from public.properties p
-    where p.id = new.property_id;
-
-    if not found then
-        raise exception 'property not found';
-    end if;
-
-    if v_device.tenant_id <> v_property_tenant then
-        raise exception 'lock device and property must belong to the same tenant';
-    end if;
-
-    new.tenant_id := v_property_tenant;
-
-    if not exists (
-        select 1
-        from public.device_integration_map dim
-        where dim.device_id = new.device_id
-    ) then
-        raise exception 'lock device must have a provider mapping in device_integration_map (005)';
-    end if;
-
-    return new;
-end;
-$$;
-
-
-
--- =====================================================
--- 7. TENANT CONSISTENCY (PROPERTY-SCOPED TABLES)
--- =====================================================
-
-create or replace function public.enforce_property_tenant_consistency()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-declare
-    v_property_tenant uuid;
-begin
-    if new.property_id is null then
-        return new;
-    end if;
-
-    select p.tenant_id
-    into v_property_tenant
-    from public.properties p
-    where p.id = new.property_id;
-
-    if not found then
-        raise exception 'property not found';
-    end if;
-
-    if new.tenant_id is distinct from v_property_tenant then
-        raise exception 'tenant_id must match property tenant_id';
-    end if;
-
-    return new;
-end;
-$$;
-
-
-
 
 create or replace function public.locks_domain(
     p_op text,
@@ -2282,6 +2096,180 @@ end;
 $$;
 
 
+-- =====================================================
+-- 004.15 BOOKING OVERVIEW VIEW
+-- =====================================================
+
+create or replace view public.v_bookings_overview
+with (security_invoker = true)
+as
+select
+    b.id,
+    b.tenant_id,
+    b.property_id,
+    p.name as property_name,
+    b.guest_name,
+    b.guest_email,
+    b.start_date,
+    b.end_date,
+    b.status,
+    ba.valid_from,
+    ba.valid_until,
+    ac.status as credential_status,
+    b.created_at,
+    b.updated_at
+from public.bookings b
+join public.properties p on p.id = b.property_id
+left join public.booking_access ba on ba.booking_id = b.id
+left join public.access_credentials ac on ac.booking_id = b.id;
+
+
+-- =====================================================
+-- 004.16 ROW LEVEL SECURITY
+-- =====================================================
+
+-- =====================================================
+-- 004.16A. TENANT-TABLE RLS
+-- select: member; mutate: admin/manager
+-- =====================================================
+
+alter table public.bookings enable row level security;
+
+
+
+drop policy if exists bookings_select on public.bookings;
+
+
+drop policy if exists bookings_insert on public.bookings;
+
+
+drop policy if exists bookings_update on public.bookings;
+
+
+drop policy if exists bookings_delete on public.bookings;
+
+
+
+alter table public.property_access_schedules enable row level security;
+
+
+
+drop policy if exists property_access_schedules_select on public.property_access_schedules;
+
+
+drop policy if exists property_access_schedules_insert on public.property_access_schedules;
+
+
+drop policy if exists property_access_schedules_update on public.property_access_schedules;
+
+
+drop policy if exists property_access_schedules_delete on public.property_access_schedules;
+
+
+
+alter table public.access_policies enable row level security;
+
+
+
+drop policy if exists access_policies_select on public.access_policies;
+
+
+drop policy if exists access_policies_insert on public.access_policies;
+
+
+drop policy if exists access_policies_update on public.access_policies;
+
+
+drop policy if exists access_policies_delete on public.access_policies;
+
+
+
+alter table public.access_rules enable row level security;
+
+
+
+drop policy if exists access_rules_select on public.access_rules;
+
+
+drop policy if exists access_rules_insert on public.access_rules;
+
+
+drop policy if exists access_rules_update on public.access_rules;
+
+
+drop policy if exists access_rules_delete on public.access_rules;
+
+
+-- =====================================================
+-- 004.16B. ACCESS CREDENTIAL RLS
+-- read for tenant members; writes platform admin only
+-- =====================================================
+
+alter table public.access_credentials enable row level security;
+
+
+
+drop policy if exists access_credentials_select on public.access_credentials;
+
+
+drop policy if exists access_credentials_insert on public.access_credentials;
+
+
+drop policy if exists access_credentials_update on public.access_credentials;
+
+
+drop policy if exists access_credentials_delete on public.access_credentials;
+
+
+-- =====================================================
+-- 004.16C. CHILD-TABLE RLS
+-- tenant_id DENORMALIZED
+-- =====================================================
+
+alter table public.booking_access enable row level security;
+
+
+
+drop policy if exists booking_access_select on public.booking_access;
+
+
+drop policy if exists booking_access_insert on public.booking_access;
+
+
+drop policy if exists booking_access_update on public.booking_access;
+
+
+drop policy if exists booking_access_delete on public.booking_access;
+
+
+
+alter table public.lock_devices enable row level security;
+
+
+
+drop policy if exists lock_devices_select on public.lock_devices;
+
+
+drop policy if exists lock_devices_insert on public.lock_devices;
+
+
+drop policy if exists lock_devices_update on public.lock_devices;
+
+
+drop policy if exists lock_devices_delete on public.lock_devices;
+
+
+-- =====================================================
+-- 004.16D. BOOKING CREDENTIAL RLS RESTRICTION
+-- restrict credential metadata to admin/manager
+-- =====================================================
+
+drop policy if exists access_credentials_select on public.access_credentials;
+
+
+-- =====================================================
+-- 004.17 RLS POLICIES
+-- =====================================================
 
 create policy access_credentials_delete on public.access_credentials
     for delete to authenticated
@@ -2546,7 +2534,7 @@ create policy lock_devices_update on public.lock_devices
         platform.is_platform_admin()
         or (
             public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
+        and (platform.is_admin() or platform.has_role('manager'))
         )
     )
     with check (
@@ -2607,6 +2595,9 @@ create policy property_access_schedules_update on public.property_access_schedul
     );
 
 
+-- =====================================================
+-- 004.18 TRIGGERS
+-- =====================================================
 
 create trigger trg_bookings_updated_at
 before update on bookings
@@ -2679,3 +2670,10 @@ before insert or update on public.access_rules
 for each row execute function public.enforce_property_tenant_consistency();
 
 
+-- =====================================================
+-- 004.19 END 004 BOOKING & LOCK ENGINE
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('004_booking_lock_engine', 'REV22.BOOKING.LOCK', false)
+on conflict (version) do nothing;

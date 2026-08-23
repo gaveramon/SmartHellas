@@ -1327,27 +1327,6 @@ end $$;
 
 
 
--- =====================================================
--- END 015 CRM ENGINE
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('015_crm_engine_rev19', 'REV19.CRM', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 028_crm_extensions_rev19.sql
--- 015 CRM Engine extensions
--- Domain SSOT: business logic extracted from Edge 022_edge_rpc_crm_rev19.sql
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('028_crm_extensions_rev19', 'REV19.DOMAIN.CRM.EXT', false)
-on conflict (version) do nothing;
-
-
-
 drop trigger if exists trg_crm_contacts_consent_timestamps on public.crm_contacts;
 
 
@@ -3608,3 +3587,10 @@ before update of body on public.crm_notes
 for each row execute function public.trg_crm_notes_version_increment();
 
 
+-- =====================================================
+-- END 015 CRM ENGINE
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('015_crm_engine', 'REV22.CRM', false)
+on conflict (version) do nothing;

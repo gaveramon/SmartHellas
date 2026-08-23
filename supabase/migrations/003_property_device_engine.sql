@@ -3,39 +3,62 @@
 
 
 -- =====================================================
--- 4. DEVICE ASSIGNMENT (DEVICE ↔ ROOM LINK)
+-- 1. PROPERTIES (AIRBNB UNITS)
 -- =====================================================
 
-create table if not exists device_assignments (
+create table if not exists properties (
     id uuid primary key default gen_random_uuid(),
 
-    device_id uuid not null references devices(id) on delete cascade,
+    tenant_id uuid not null,
 
-    room_id uuid not null references rooms(id) on delete cascade,
+    name text not null,
 
-    assigned_at timestamptz default now(),
+    address text,
 
-    unique (device_id)
+    property_type property_type not null,
+
+    timezone text default 'UTC',
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now()
 );
 
 
 
 -- =====================================================
--- 5. DEVICE CONFIGURATION (STATIC SETUP ONLY)
+-- 2. ROOMS (LOGICAL STRUCTURE INSIDE PROPERTY)
 -- =====================================================
 
-create table if not exists device_configurations (
+create table if not exists rooms (
     id uuid primary key default gen_random_uuid(),
 
-    device_id uuid not null references devices(id) on delete cascade,
+    property_id uuid not null references properties(id) on delete cascade,
 
-    config jsonb not null,
+    name text not null,
 
-    created_at timestamptz default now(),
+    room_type room_type not null,
 
-    updated_at timestamptz default now(),
+    floor int,
 
-    unique (device_id)
+    created_at timestamptz default now()
+);
+
+
+
+-- =====================================================
+-- 3. DEVICE CATEGORIES (HARDWARE TAXONOMY / SSOT)
+-- =====================================================
+
+create table if not exists public.device_categories (
+    code text primary key,
+    name text not null,
+    description text,
+    is_gateway boolean not null default false,
+    is_lock boolean not null default false,
+    is_active boolean not null default true,
+    sort_order int not null default 0,
+    created_at timestamptz not null default now()
 );
 
 
@@ -70,70 +93,46 @@ create table if not exists devices (
 
 
 -- =====================================================
--- 003 PROPERTY & DEVICE ENGINE (CLEAN DOMAIN MODEL)
--- NO RUNTIME / NO LOGGING / NO EXECUTION STATE
+-- 5. DEVICE ASSIGNMENT (DEVICE ↔ ROOM LINK)
 -- =====================================================
 
--- =====================================================
--- 1. PROPERTIES (AIRBNB UNITS)
--- =====================================================
-
-create table if not exists properties (
+create table if not exists device_assignments (
     id uuid primary key default gen_random_uuid(),
 
-    tenant_id uuid not null,
+    device_id uuid not null references devices(id) on delete cascade,
 
-    name text not null,
+    room_id uuid not null references rooms(id) on delete cascade,
 
-    address text,
+    assigned_at timestamptz default now(),
 
-    property_type property_type not null,
+    unique (device_id)
+);
 
-    timezone text default 'UTC',
+
+
+-- =====================================================
+-- 6. DEVICE CONFIGURATION (STATIC SETUP ONLY)
+-- =====================================================
+
+create table if not exists device_configurations (
+    id uuid primary key default gen_random_uuid(),
+
+    device_id uuid not null references devices(id) on delete cascade,
+
+    config jsonb not null,
 
     created_at timestamptz default now(),
 
-    updated_at timestamptz default now()
+    updated_at timestamptz default now(),
+
+    unique (device_id)
 );
 
 
 
 -- =====================================================
--- 3. DEVICE CATEGORIES (HARDWARE TAXONOMY / SSOT)
+-- 7. INDEXES
 -- =====================================================
-
-create table if not exists public.device_categories (
-    code text primary key,
-    name text not null,
-    description text,
-    is_gateway boolean not null default false,
-    is_lock boolean not null default false,
-    is_active boolean not null default true,
-    sort_order int not null default 0,
-    created_at timestamptz not null default now()
-);
-
-
-
--- =====================================================
--- 2. ROOMS (LOGICAL STRUCTURE INSIDE PROPERTY)
--- =====================================================
-
-create table if not exists rooms (
-    id uuid primary key default gen_random_uuid(),
-
-    property_id uuid not null references properties(id) on delete cascade,
-
-    name text not null,
-
-    room_type room_type not null,
-
-    floor int,
-
-    created_at timestamptz default now()
-);
-
-
 
 create index if not exists idx_properties_tenant
 on properties (tenant_id);
@@ -197,7 +196,7 @@ comment on table public.device_configurations is
 
 
 -- =====================================================
--- 6. PLATFORM EXECUTION BINDING + TENANT FKs
+-- 8. PLATFORM EXECUTION BINDING + TENANT FKs
 -- Links domain registry to platform.device_commands (000)
 -- =====================================================
 
@@ -240,10 +239,10 @@ comment on constraint fk_device_commands_device on platform.device_commands is
 
 
 -- =====================================================
--- 7. RLS
+-- 9. RLS
 -- =====================================================
 
--- 7A. GLOBAL CATALOG (device_categories)
+-- 9A. GLOBAL CATALOG (device_categories)
 alter table public.device_categories enable row level security;
 
 
@@ -255,7 +254,7 @@ drop policy if exists device_categories_write on public.device_categories;
 
 
 
--- 7B. TENANT-TABLE RLS (properties, devices)
+-- 9B. TENANT-TABLE RLS (properties, devices)
 alter table public.properties enable row level security;
 
 
@@ -290,7 +289,7 @@ drop policy if exists devices_delete on public.devices;
 
 
 
--- 7C. CHILD-TABLE RLS (NO tenant_id COLUMN — EXPLICIT POLICIES)
+-- 9C. CHILD-TABLE RLS (NO tenant_id COLUMN — EXPLICIT POLICIES)
 -- =====================================================
 
 alter table public.rooms enable row level security;
@@ -345,35 +344,8 @@ drop policy if exists device_configurations_delete on public.device_configuratio
 
 
 -- =====================================================
--- END 003 PROPERTY & DEVICE ENGINE (CLEAN DOMAIN ONLY)
+-- 10. DEVICE OVERVIEW
 -- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('003_property_device_engine_rev19', 'REV19.PROPERTY.DEVICE', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 024_devices_extensions_rev19.sql
--- 003 Property & Device Engine extensions
--- Domain SSOT: business logic extracted from Edge 018_edge_rpc_devices_rev19.sql
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('024_devices_extensions_rev19', 'REV19.DOMAIN.DEVICES.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 043_devices_security_rev19.sql
--- 003 Property & Device Engine — SECURITY DEFINER hardening
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('043_devices_security_rev19', 'REV19.SECURITY.DEVICES', false)
-on conflict (version) do nothing;
-
-
 
 create or replace view public.v_devices_overview
 with (security_invoker = true)
@@ -392,23 +364,18 @@ select
     r.name as room_name,
     r.property_id,
     p.name as property_name,
-    dus.score as latest_usage_score,
     d.created_at
 from public.devices d
 left join public.device_categories dc on dc.code = d.category_code
 left join public.device_assignments da on da.device_id = d.id
 left join public.rooms r on r.id = da.room_id
-left join public.properties p on p.id = r.property_id
-left join lateral (
-    select s.score
-    from public.device_usage_scores s
-    where s.device_id = d.id
-    order by s.calculated_at desc
-    limit 1
-) dus on true;
+left join public.properties p on p.id = r.property_id;
 
 
 
+-- =====================================================
+-- 11. DEVICE ASSIGNMENT WORKFLOW
+-- =====================================================
 
 -- -----------------------------------------------------
 -- Standalone device workflow (003 SSOT)
@@ -478,6 +445,9 @@ $$;
 
 
 
+-- =====================================================
+-- 12. DEVICES DOMAIN API
+-- =====================================================
 
 create or replace function public.devices_domain(
     p_op text,
@@ -871,7 +841,7 @@ $$;
 
 
 -- =====================================================
--- 4B. ASSIGNMENT TENANT CONSISTENCY (DEVICE ↔ ROOM)
+-- 13. DEVICE ASSIGNMENT TENANT CONSISTENCY
 -- =====================================================
 
 create or replace function public.enforce_device_assignment_tenant_consistency()
@@ -913,7 +883,7 @@ $$;
 
 
 -- =====================================================
--- 4B. DEVICE HIERARCHY INVARIANT (GATEWAY → CHILD)
+-- 14. DEVICE HIERARCHY INVARIANT
 -- =====================================================
 
 create or replace function public.enforce_device_hierarchy()
@@ -970,70 +940,9 @@ $$;
 
 
 
-create policy device_assignments_delete on public.device_assignments
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_assignments_insert on public.device_assignments
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_assignments_select on public.device_assignments
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_assignments_update on public.device_assignments
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
+-- =====================================================
+-- 15. DEVICE CATEGORY POLICIES
+-- =====================================================
 
 create policy device_categories_select on public.device_categories
     for select to authenticated
@@ -1048,70 +957,9 @@ create policy device_categories_write on public.device_categories
 
 
 
-create policy device_configurations_delete on public.device_configurations
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_configurations_insert on public.device_configurations
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_configurations_select on public.device_configurations
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_configurations_update on public.device_configurations
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
+-- =====================================================
+-- 16. DEVICE POLICIES
+-- =====================================================
 
 create policy devices_delete on public.devices
     for delete to authenticated
@@ -1138,6 +986,10 @@ create policy devices_update on public.devices
 
 
 
+-- =====================================================
+-- 17. PROPERTY POLICIES
+-- =====================================================
+
 create policy properties_delete on public.properties
     for delete to authenticated
     using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
@@ -1162,6 +1014,10 @@ create policy properties_update on public.properties
     with check (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
 
 
+
+-- =====================================================
+-- 18. ROOM POLICIES
+-- =====================================================
 
 create policy rooms_delete on public.rooms
     for delete to authenticated
@@ -1228,6 +1084,148 @@ create policy rooms_update on public.rooms
 
 
 
+-- =====================================================
+-- 19. DEVICE ASSIGNMENT POLICIES
+-- =====================================================
+
+create policy device_assignments_delete on public.device_assignments
+    for delete to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_assignments.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_assignments_insert on public.device_assignments
+    for insert to authenticated
+    with check (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_assignments.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_assignments_select on public.device_assignments
+    for select to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_assignments.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_assignments_update on public.device_assignments
+    for update to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_assignments.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    )
+    with check (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_assignments.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+-- =====================================================
+-- 20. DEVICE CONFIGURATION POLICIES
+-- =====================================================
+
+create policy device_configurations_delete on public.device_configurations
+    for delete to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_configurations.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_configurations_insert on public.device_configurations
+    for insert to authenticated
+    with check (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_configurations.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_configurations_select on public.device_configurations
+    for select to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_configurations.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+create policy device_configurations_update on public.device_configurations
+    for update to authenticated
+    using (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_configurations.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    )
+    with check (
+        platform.is_platform_admin()
+        or exists (
+            select 1
+            from public.devices d
+            where d.id = device_configurations.device_id
+              and public.has_tenant_access(d.tenant_id)
+        )
+    );
+
+
+
+-- =====================================================
+-- 21. TRIGGERS
+-- =====================================================
+
 create trigger trg_properties_updated_at
 before update on properties
 for each row execute function platform.set_updated_at();
@@ -1252,6 +1250,10 @@ for each row execute function platform.set_updated_at();
 
 
 
+-- =====================================================
+-- 22. DEVICE CATEGORY SEED
+-- =====================================================
+
 insert into public.device_categories (code, name, is_gateway, is_lock, sort_order)
 values
     ('sensor', 'Sensor', false, false, 10),
@@ -1268,3 +1270,10 @@ on conflict (code) do update set
     sort_order = excluded.sort_order;
 
 
+-- =====================================================
+-- END 003 PROPERTY & DEVICE ENGINE (CLEAN DOMAIN ONLY)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('003_property_device_engine', 'REV22.PROPERTY.DEVICE', false)
+on conflict (version) do nothing;

@@ -199,25 +199,6 @@ select public._apply_public_tenant_rls('public.automation_event_subscriptions'::
 
 
 -- =====================================================
--- END 016 AUTOMATION ENGINE
--- =====================================================
-
--- =====================================================
--- 027 AUTOMATION EXTENSIONS (016)
--- Subscription domain ops + UI view (extends automation_domain_ext only)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('027_automation_extensions_rev19', 'REV19.AUTOMATION.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 027 AUTOMATION EXTENSIONS
--- =====================================================
-
-
--- =====================================================
 -- 2. UI VIEW (Appsmith read contract)
 -- =====================================================
 
@@ -721,3 +702,10 @@ before insert or update on public.automation_event_subscriptions
 for each row execute function public.enforce_automation_subscription_consistency();
 
 
+-- =====================================================
+-- END 016 AUTOMATION ENGINE
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('016_automation_engine', 'REV22.AUTOMATION.ENGINE', false)
+on conflict (version) do nothing;

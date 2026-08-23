@@ -263,40 +263,6 @@ drop policy if exists upsell_rules_delete on public.upsell_rules;
 
 
 
--- =====================================================
--- END 009 COMMERCE ENGINE (CLEAN DOMAIN ONLY)
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('009_commerce_engine_rev19', 'REV19.COMMERCE', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 026_commerce_logistics_extensions_rev19.sql
--- 009 Commerce + 008 Logistics extensions
--- Domain SSOT: business logic extracted from Edge 020_edge_rpc_commerce_logistics_rev19.sql
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('026_commerce_logistics_extensions_rev19', 'REV19.DOMAIN.COMMERCE_LOGISTICS.EXT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- 035 COMMERCE PAYMENT API (009 SSOT)
--- Checkout session creation + payment reads. Execution state in 000 platform tables.
--- Workers confirm via platform.apply_payment_status (000).
--- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('035_commerce_payment_api_rev19', 'REV19.DOMAIN.COMMERCE.PAYMENT', false)
-on conflict (version) do nothing;
-
-
--- =====================================================
--- END 035 COMMERCE PAYMENT API
--- =====================================================
 
 
 create or replace view public.v_subscription_overview
@@ -1514,3 +1480,10 @@ before insert or update on public.subscriptions
 for each row execute function public.enforce_subscription_plan_required();
 
 
+-- =====================================================
+-- END 009 COMMERCE ENGINE (CLEAN DOMAIN ONLY)
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('009_commerce_engine', 'REV22.COMMERCE', false)
+on conflict (version) do nothing;
