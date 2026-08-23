@@ -1,0 +1,1431 @@
+-- =====================================================
+-- 028_crm_extensions_rev19.sql
+-- 015 CRM Engine extensions
+-- Domain SSOT: business logic extracted from Edge 022_edge_rpc_crm_rev19.sql
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('028_crm_extensions_rev19', 'REV19.DOMAIN.CRM.EXT', false)
+on conflict (version) do nothing;
+
+
+create or replace function public.crm_domain(
+    p_op text,
+    p_payload jsonb default '{}'::jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_tid uuid;
+    v_result jsonb;
+    v_row record;
+    v_stages jsonb;
+    v_limit int;
+begin
+    p_payload := coalesce(p_payload, '{}'::jsonb);
+
+    case p_op
+
+    -- =================================================
+    -- PIPELINES
+    -- =================================================
+
+    when 'list_pipelines' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.name), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                p.id, p.tenant_id, p.name, p.description, p.is_default, p.is_active,
+                p.created_at, p.updated_at, p.deleted_at
+            from public.crm_pipelines p
+            where p.tenant_id = v_tid and p.deleted_at is null
+        ) t;
+
+    when 'get_pipeline' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                p.id, p.tenant_id, p.name, p.description, p.is_default, p.is_active,
+                p.created_at, p.updated_at, p.deleted_at
+            from public.crm_pipelines p
+            where p.id = (p_payload->>'id')::uuid
+              and p.tenant_id = v_tid
+              and p.deleted_at is null
+        ) t;
+        if v_result is null then
+            raise exception 'Pipeline not found';
+        end if;
+        select coalesce(jsonb_agg(to_jsonb(s) order by s.stage_order), '[]'::jsonb)
+        into v_stages
+        from (
+            select
+                ps.id, ps.tenant_id, ps.pipeline_id, ps.name, ps.stage_order, ps.probability,
+                ps.is_terminal, ps.terminal_outcome, ps.created_at, ps.updated_at, ps.deleted_at
+            from public.crm_pipeline_stages ps
+            where ps.pipeline_id = (p_payload->>'id')::uuid
+              and ps.tenant_id = v_tid
+              and ps.deleted_at is null
+        ) s;
+        v_result := jsonb_build_object('pipeline', v_result, 'stages', v_stages);
+
+    when 'create_pipeline' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_pipelines (tenant_id, name, description, is_default, is_active)
+        values (
+            v_tid,
+            p_payload->>'name',
+            case when p_payload ? 'description' then p_payload->>'description' else null end,
+            coalesce((p_payload->>'is_default')::boolean, false),
+            coalesce((p_payload->>'is_active')::boolean, true)
+        )
+        returning
+            id, tenant_id, name, description, is_default, is_active,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_pipeline.created', 'crm_pipeline', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_pipeline' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_pipelines p set
+            name = case when p_payload ? 'name' then p_payload->>'name' else p.name end,
+            description = case when p_payload ? 'description' then p_payload->>'description' else p.description end,
+            is_default = case when p_payload ? 'is_default' then (p_payload->>'is_default')::boolean else p.is_default end,
+            is_active = case when p_payload ? 'is_active' then (p_payload->>'is_active')::boolean else p.is_active end
+        where p.id = (p_payload->>'id')::uuid
+          and p.tenant_id = v_tid
+          and p.deleted_at is null
+        returning
+            p.id, p.tenant_id, p.name, p.description, p.is_default, p.is_active,
+            p.created_at, p.updated_at, p.deleted_at
+        into v_row;
+        if not found then raise exception 'Pipeline not found'; end if;
+        perform platform.log_audit('crm_pipeline.updated', 'crm_pipeline', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_pipeline' then
+        v_result := public.crm_soft_delete_row('public.crm_pipelines'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_pipeline.deleted', 'crm_pipeline', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- PIPELINE STAGES
+    -- =================================================
+
+    when 'list_pipeline_stages' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.stage_order), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                ps.id, ps.tenant_id, ps.pipeline_id, ps.name, ps.stage_order, ps.probability,
+                ps.is_terminal, ps.terminal_outcome, ps.created_at, ps.updated_at, ps.deleted_at
+            from public.crm_pipeline_stages ps
+            where ps.pipeline_id = (p_payload->>'pipeline_id')::uuid
+              and ps.tenant_id = v_tid
+              and ps.deleted_at is null
+        ) t;
+
+    when 'create_pipeline_stage' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_pipeline_stages (
+            tenant_id, pipeline_id, name, stage_order, probability, is_terminal, terminal_outcome
+        )
+        values (
+            v_tid,
+            (p_payload->>'pipeline_id')::uuid,
+            p_payload->>'name',
+            (p_payload->>'stage_order')::int,
+            coalesce((p_payload->>'probability')::numeric, 0),
+            coalesce((p_payload->>'is_terminal')::boolean, false),
+            case
+                when p_payload ? 'terminal_outcome' and p_payload->>'terminal_outcome' is not null
+                then (p_payload->>'terminal_outcome')::public.crm_terminal_outcome
+                else null
+            end
+        )
+        returning
+            id, tenant_id, pipeline_id, name, stage_order, probability,
+            is_terminal, terminal_outcome, created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_pipeline_stage.created', 'crm_pipeline_stage', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_pipeline_stage' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_pipeline_stages ps set
+            name = case when p_payload ? 'name' then p_payload->>'name' else ps.name end,
+            stage_order = case when p_payload ? 'stage_order' then (p_payload->>'stage_order')::int else ps.stage_order end,
+            probability = case when p_payload ? 'probability' then (p_payload->>'probability')::numeric else ps.probability end,
+            is_terminal = case when p_payload ? 'is_terminal' then (p_payload->>'is_terminal')::boolean else ps.is_terminal end,
+            terminal_outcome = case
+                when p_payload ? 'terminal_outcome' then
+                    case when p_payload->>'terminal_outcome' is null then null
+                    else (p_payload->>'terminal_outcome')::public.crm_terminal_outcome end
+                else ps.terminal_outcome
+            end
+        where ps.id = (p_payload->>'id')::uuid
+          and ps.tenant_id = v_tid
+          and ps.deleted_at is null
+        returning
+            ps.id, ps.tenant_id, ps.pipeline_id, ps.name, ps.stage_order, ps.probability,
+            ps.is_terminal, ps.terminal_outcome, ps.created_at, ps.updated_at, ps.deleted_at
+        into v_row;
+        if not found then raise exception 'Pipeline stage not found'; end if;
+        perform platform.log_audit('crm_pipeline_stage.updated', 'crm_pipeline_stage', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_pipeline_stage' then
+        v_result := public.crm_soft_delete_row('public.crm_pipeline_stages'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_pipeline_stage.deleted', 'crm_pipeline_stage', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- CAMPAIGNS
+    -- =================================================
+
+    when 'list_campaigns' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                c.id, c.tenant_id, c.name, c.description, c.campaign_type, c.status,
+                c.start_date, c.end_date, c.budget, c.created_at, c.updated_at, c.deleted_at
+            from public.crm_campaigns c
+            where c.tenant_id = v_tid
+              and c.deleted_at is null
+              and (not p_payload ? 'status' or c.status = (p_payload->>'status')::public.crm_campaign_status)
+        ) t;
+
+    when 'get_campaign' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                c.id, c.tenant_id, c.name, c.description, c.campaign_type, c.status,
+                c.start_date, c.end_date, c.budget, c.created_at, c.updated_at, c.deleted_at
+            from public.crm_campaigns c
+            where c.id = (p_payload->>'id')::uuid
+              and c.tenant_id = v_tid
+              and c.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'Campaign not found'; end if;
+
+    when 'create_campaign' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_campaigns (
+            tenant_id, name, description, campaign_type, status, start_date, end_date, budget
+        )
+        values (
+            v_tid,
+            p_payload->>'name',
+            case when p_payload ? 'description' then p_payload->>'description' else null end,
+            coalesce((p_payload->>'campaign_type')::public.crm_campaign_type, 'other'::public.crm_campaign_type),
+            coalesce((p_payload->>'status')::public.crm_campaign_status, 'draft'::public.crm_campaign_status),
+            case when p_payload ? 'start_date' and p_payload->>'start_date' is not null then (p_payload->>'start_date')::date else null end,
+            case when p_payload ? 'end_date' and p_payload->>'end_date' is not null then (p_payload->>'end_date')::date else null end,
+            case when p_payload ? 'budget' and p_payload->>'budget' is not null then (p_payload->>'budget')::numeric else null end
+        )
+        returning
+            id, tenant_id, name, description, campaign_type, status,
+            start_date, end_date, budget, created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_campaign.created', 'crm_campaign', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_campaign' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_campaigns c set
+            name = case when p_payload ? 'name' then p_payload->>'name' else c.name end,
+            description = case when p_payload ? 'description' then p_payload->>'description' else c.description end,
+            campaign_type = case when p_payload ? 'campaign_type' then (p_payload->>'campaign_type')::public.crm_campaign_type else c.campaign_type end,
+            status = case when p_payload ? 'status' then (p_payload->>'status')::public.crm_campaign_status else c.status end,
+            start_date = case when p_payload ? 'start_date' then case when p_payload->>'start_date' is null then null else (p_payload->>'start_date')::date end else c.start_date end,
+            end_date = case when p_payload ? 'end_date' then case when p_payload->>'end_date' is null then null else (p_payload->>'end_date')::date end else c.end_date end,
+            budget = case when p_payload ? 'budget' then case when p_payload->>'budget' is null then null else (p_payload->>'budget')::numeric end else c.budget end
+        where c.id = (p_payload->>'id')::uuid
+          and c.tenant_id = v_tid
+          and c.deleted_at is null
+        returning
+            c.id, c.tenant_id, c.name, c.description, c.campaign_type, c.status,
+            c.start_date, c.end_date, c.budget, c.created_at, c.updated_at, c.deleted_at
+        into v_row;
+        if not found then raise exception 'Campaign not found'; end if;
+        perform platform.log_audit('crm_campaign.updated', 'crm_campaign', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_campaign' then
+        v_result := public.crm_soft_delete_row('public.crm_campaigns'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_campaign.deleted', 'crm_campaign', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- TAGS
+    -- =================================================
+
+    when 'list_tags' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.name), '[]'::jsonb)
+        into v_result
+        from (
+            select t2.id, t2.tenant_id, t2.name, t2.color, t2.created_at, t2.deleted_at
+            from public.crm_tags t2
+            where t2.tenant_id = v_tid and t2.deleted_at is null
+        ) t;
+
+    when 'create_tag' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_tags (tenant_id, name, color)
+        values (
+            v_tid,
+            p_payload->>'name',
+            case when p_payload ? 'color' then p_payload->>'color' else null end
+        )
+        returning id, tenant_id, name, color, created_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_tag.created', 'crm_tag', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_tag' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_tags t set
+            name = case when p_payload ? 'name' then p_payload->>'name' else t.name end,
+            color = case when p_payload ? 'color' then p_payload->>'color' else t.color end
+        where t.id = (p_payload->>'id')::uuid
+          and t.tenant_id = v_tid
+          and t.deleted_at is null
+        returning id, tenant_id, name, color, created_at, deleted_at
+        into v_row;
+        if not found then raise exception 'Tag not found'; end if;
+        perform platform.log_audit('crm_tag.updated', 'crm_tag', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_tag' then
+        v_result := public.crm_soft_delete_row('public.crm_tags'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_tag.deleted', 'crm_tag', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- COMPANIES
+    -- =================================================
+
+    when 'list_companies' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.name), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                co.id, co.tenant_id, co.name, co.legal_name, co.website, co.industry,
+                co.owner_user_id, co.created_at, co.updated_at, co.deleted_at
+            from public.crm_companies co
+            where co.tenant_id = v_tid and co.deleted_at is null
+        ) t;
+
+    when 'get_company' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                co.id, co.tenant_id, co.name, co.legal_name, co.website, co.industry,
+                co.owner_user_id, co.created_at, co.updated_at, co.deleted_at
+            from public.crm_companies co
+            where co.id = (p_payload->>'id')::uuid
+              and co.tenant_id = v_tid
+              and co.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'Company not found'; end if;
+
+    when 'create_company' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_companies (tenant_id, name, legal_name, website, industry, owner_user_id)
+        values (
+            v_tid,
+            p_payload->>'name',
+            case when p_payload ? 'legal_name' then p_payload->>'legal_name' else null end,
+            case when p_payload ? 'website' then p_payload->>'website' else null end,
+            case when p_payload ? 'industry' then p_payload->>'industry' else null end,
+            case when p_payload ? 'owner_user_id' and p_payload->>'owner_user_id' is not null then (p_payload->>'owner_user_id')::uuid else null end
+        )
+        returning
+            id, tenant_id, name, legal_name, website, industry,
+            owner_user_id, created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_company.created', 'crm_company', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_company' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_companies co set
+            name = case when p_payload ? 'name' then p_payload->>'name' else co.name end,
+            legal_name = case when p_payload ? 'legal_name' then p_payload->>'legal_name' else co.legal_name end,
+            website = case when p_payload ? 'website' then p_payload->>'website' else co.website end,
+            industry = case when p_payload ? 'industry' then p_payload->>'industry' else co.industry end,
+            owner_user_id = case
+                when p_payload ? 'owner_user_id' then
+                    case when p_payload->>'owner_user_id' is null then null else (p_payload->>'owner_user_id')::uuid end
+                else co.owner_user_id
+            end
+        where co.id = (p_payload->>'id')::uuid
+          and co.tenant_id = v_tid
+          and co.deleted_at is null
+        returning
+            co.id, co.tenant_id, co.name, co.legal_name, co.website, co.industry,
+            co.owner_user_id, co.created_at, co.updated_at, co.deleted_at
+        into v_row;
+        if not found then raise exception 'Company not found'; end if;
+        perform platform.log_audit('crm_company.updated', 'crm_company', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_company' then
+        v_result := public.crm_soft_delete_row('public.crm_companies'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_company.deleted', 'crm_company', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- CONTACTS
+    -- =================================================
+
+    when 'list_contacts' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                c.id, c.tenant_id, c.first_name, c.last_name, c.display_name, c.email, c.phone,
+                c.language, c.timezone, c.marketing_consent, c.marketing_consent_at,
+                c.gdpr_consent, c.gdpr_consent_at, c.status, c.lead_source, c.owner_user_id,
+                c.created_at, c.updated_at, c.deleted_at
+            from public.crm_contacts c
+            where c.tenant_id = v_tid
+              and c.deleted_at is null
+              and (not p_payload ? 'status' or c.status = (p_payload->>'status')::public.crm_contact_status)
+        ) t;
+
+    when 'get_contact' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                c.id, c.tenant_id, c.first_name, c.last_name, c.display_name, c.email, c.phone,
+                c.language, c.timezone, c.marketing_consent, c.marketing_consent_at,
+                c.gdpr_consent, c.gdpr_consent_at, c.status, c.lead_source, c.owner_user_id,
+                c.created_at, c.updated_at, c.deleted_at
+            from public.crm_contacts c
+            where c.id = (p_payload->>'id')::uuid
+              and c.tenant_id = v_tid
+              and c.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'Contact not found'; end if;
+
+    when 'create_contact' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_contacts (
+            tenant_id, first_name, last_name, display_name, email, phone, language, timezone,
+            marketing_consent, gdpr_consent, status, lead_source, owner_user_id
+        )
+        values (
+            v_tid,
+            case when p_payload ? 'first_name' then p_payload->>'first_name' else null end,
+            case when p_payload ? 'last_name' then p_payload->>'last_name' else null end,
+            case when p_payload ? 'display_name' then p_payload->>'display_name' else null end,
+            case when p_payload ? 'email' then p_payload->>'email' else null end,
+            case when p_payload ? 'phone' then p_payload->>'phone' else null end,
+            coalesce(p_payload->>'language', 'en'),
+            case when p_payload ? 'timezone' then p_payload->>'timezone' else null end,
+            coalesce((p_payload->>'marketing_consent')::boolean, false),
+            coalesce((p_payload->>'gdpr_consent')::boolean, false),
+            coalesce((p_payload->>'status')::public.crm_contact_status, 'active'::public.crm_contact_status),
+            case when p_payload ? 'lead_source' then p_payload->>'lead_source' else null end,
+            case when p_payload ? 'owner_user_id' and p_payload->>'owner_user_id' is not null then (p_payload->>'owner_user_id')::uuid else null end
+        )
+        returning
+            id, tenant_id, first_name, last_name, display_name, email, phone,
+            language, timezone, marketing_consent, marketing_consent_at,
+            gdpr_consent, gdpr_consent_at, status, lead_source, owner_user_id,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_contact.created', 'crm_contact', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_contact' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_contacts c set
+            first_name = case when p_payload ? 'first_name' then p_payload->>'first_name' else c.first_name end,
+            last_name = case when p_payload ? 'last_name' then p_payload->>'last_name' else c.last_name end,
+            display_name = case when p_payload ? 'display_name' then p_payload->>'display_name' else c.display_name end,
+            email = case when p_payload ? 'email' then p_payload->>'email' else c.email end,
+            phone = case when p_payload ? 'phone' then p_payload->>'phone' else c.phone end,
+            language = case when p_payload ? 'language' then p_payload->>'language' else c.language end,
+            timezone = case when p_payload ? 'timezone' then p_payload->>'timezone' else c.timezone end,
+            marketing_consent = case when p_payload ? 'marketing_consent' then (p_payload->>'marketing_consent')::boolean else c.marketing_consent end,
+            gdpr_consent = case when p_payload ? 'gdpr_consent' then (p_payload->>'gdpr_consent')::boolean else c.gdpr_consent end,
+            status = case when p_payload ? 'status' then (p_payload->>'status')::public.crm_contact_status else c.status end,
+            lead_source = case when p_payload ? 'lead_source' then p_payload->>'lead_source' else c.lead_source end,
+            owner_user_id = case
+                when p_payload ? 'owner_user_id' then
+                    case when p_payload->>'owner_user_id' is null then null else (p_payload->>'owner_user_id')::uuid end
+                else c.owner_user_id
+            end
+        where c.id = (p_payload->>'id')::uuid
+          and c.tenant_id = v_tid
+          and c.deleted_at is null
+        returning
+            c.id, c.tenant_id, c.first_name, c.last_name, c.display_name, c.email, c.phone,
+            c.language, c.timezone, c.marketing_consent, c.marketing_consent_at,
+            c.gdpr_consent, c.gdpr_consent_at, c.status, c.lead_source, c.owner_user_id,
+            c.created_at, c.updated_at, c.deleted_at
+        into v_row;
+        if not found then raise exception 'Contact not found'; end if;
+        perform platform.log_audit('crm_contact.updated', 'crm_contact', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_contact' then
+        v_result := public.crm_soft_delete_row('public.crm_contacts'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_contact.deleted', 'crm_contact', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- LEADS
+    -- =================================================
+
+    when 'list_leads' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                l.id, l.tenant_id, l.first_name, l.last_name, l.email, l.phone, l.status, l.source,
+                l.score, l.temperature, l.owner_user_id, l.estimated_value, l.campaign_id,
+                l.converted_contact_id, l.converted_company_id, l.converted_tenant_id, l.converted_at,
+                l.created_at, l.updated_at, l.deleted_at
+            from public.crm_leads l
+            where l.tenant_id = v_tid
+              and l.deleted_at is null
+              and (not p_payload ? 'status' or l.status = (p_payload->>'status')::public.crm_lead_status)
+              and (not p_payload ? 'campaign_id' or l.campaign_id = (p_payload->>'campaign_id')::uuid)
+        ) t;
+
+    when 'get_lead' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                l.id, l.tenant_id, l.first_name, l.last_name, l.email, l.phone, l.status, l.source,
+                l.score, l.temperature, l.owner_user_id, l.estimated_value, l.campaign_id,
+                l.converted_contact_id, l.converted_company_id, l.converted_tenant_id, l.converted_at,
+                l.created_at, l.updated_at, l.deleted_at
+            from public.crm_leads l
+            where l.id = (p_payload->>'id')::uuid
+              and l.tenant_id = v_tid
+              and l.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'Lead not found'; end if;
+
+    when 'create_lead' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_leads (
+            tenant_id, first_name, last_name, email, phone, status, source, score, temperature,
+            owner_user_id, estimated_value, campaign_id
+        )
+        values (
+            v_tid,
+            case when p_payload ? 'first_name' then p_payload->>'first_name' else null end,
+            case when p_payload ? 'last_name' then p_payload->>'last_name' else null end,
+            case when p_payload ? 'email' then p_payload->>'email' else null end,
+            case when p_payload ? 'phone' then p_payload->>'phone' else null end,
+            coalesce((p_payload->>'status')::public.crm_lead_status, 'new'::public.crm_lead_status),
+            case when p_payload ? 'source' then p_payload->>'source' else null end,
+            case when p_payload ? 'score' and p_payload->>'score' is not null then (p_payload->>'score')::numeric else null end,
+            case when p_payload ? 'temperature' and p_payload->>'temperature' is not null then (p_payload->>'temperature')::public.crm_lead_temperature else null end,
+            case when p_payload ? 'owner_user_id' and p_payload->>'owner_user_id' is not null then (p_payload->>'owner_user_id')::uuid else null end,
+            case when p_payload ? 'estimated_value' and p_payload->>'estimated_value' is not null then (p_payload->>'estimated_value')::numeric else null end,
+            case when p_payload ? 'campaign_id' and p_payload->>'campaign_id' is not null then (p_payload->>'campaign_id')::uuid else null end
+        )
+        returning
+            id, tenant_id, first_name, last_name, email, phone, status, source,
+            score, temperature, owner_user_id, estimated_value, campaign_id,
+            converted_contact_id, converted_company_id, converted_tenant_id, converted_at,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_lead.created', 'crm_lead', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_lead' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_leads l set
+            first_name = case when p_payload ? 'first_name' then p_payload->>'first_name' else l.first_name end,
+            last_name = case when p_payload ? 'last_name' then p_payload->>'last_name' else l.last_name end,
+            email = case when p_payload ? 'email' then p_payload->>'email' else l.email end,
+            phone = case when p_payload ? 'phone' then p_payload->>'phone' else l.phone end,
+            source = case when p_payload ? 'source' then p_payload->>'source' else l.source end,
+            score = case when p_payload ? 'score' then case when p_payload->>'score' is null then null else (p_payload->>'score')::numeric end else l.score end,
+            temperature = case when p_payload ? 'temperature' then case when p_payload->>'temperature' is null then null else (p_payload->>'temperature')::public.crm_lead_temperature end else l.temperature end,
+            owner_user_id = case when p_payload ? 'owner_user_id' then case when p_payload->>'owner_user_id' is null then null else (p_payload->>'owner_user_id')::uuid end else l.owner_user_id end,
+            estimated_value = case when p_payload ? 'estimated_value' then case when p_payload->>'estimated_value' is null then null else (p_payload->>'estimated_value')::numeric end else l.estimated_value end,
+            campaign_id = case when p_payload ? 'campaign_id' then case when p_payload->>'campaign_id' is null then null else (p_payload->>'campaign_id')::uuid end else l.campaign_id end,
+            converted_contact_id = case when p_payload ? 'converted_contact_id' then case when p_payload->>'converted_contact_id' is null then null else (p_payload->>'converted_contact_id')::uuid end else l.converted_contact_id end,
+            converted_company_id = case when p_payload ? 'converted_company_id' then case when p_payload->>'converted_company_id' is null then null else (p_payload->>'converted_company_id')::uuid end else l.converted_company_id end,
+            converted_tenant_id = case when p_payload ? 'converted_tenant_id' then case when p_payload->>'converted_tenant_id' is null then null else (p_payload->>'converted_tenant_id')::uuid end else l.converted_tenant_id end,
+            status = case when p_payload ? 'status' then (p_payload->>'status')::public.crm_lead_status else l.status end
+        where l.id = (p_payload->>'id')::uuid
+          and l.tenant_id = v_tid
+          and l.deleted_at is null
+        returning
+            l.id, l.tenant_id, l.first_name, l.last_name, l.email, l.phone, l.status, l.source,
+            l.score, l.temperature, l.owner_user_id, l.estimated_value, l.campaign_id,
+            l.converted_contact_id, l.converted_company_id, l.converted_tenant_id, l.converted_at,
+            l.created_at, l.updated_at, l.deleted_at
+        into v_row;
+        if not found then raise exception 'Lead not found'; end if;
+        perform platform.log_audit('crm_lead.updated', 'crm_lead', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_lead' then
+        v_result := public.crm_soft_delete_row('public.crm_leads'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_lead.deleted', 'crm_lead', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- CONTACT ↔ COMPANY
+    -- =================================================
+
+    when 'list_contact_companies' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb)
+        into v_result
+        from (
+            select cc.id, cc.tenant_id, cc.contact_id, cc.company_id, cc.role, cc.is_primary, cc.created_at, cc.deleted_at
+            from public.crm_contact_company cc
+            where cc.tenant_id = v_tid
+              and cc.deleted_at is null
+              and (not p_payload ? 'contact_id' or cc.contact_id = (p_payload->>'contact_id')::uuid)
+              and (not p_payload ? 'company_id' or cc.company_id = (p_payload->>'company_id')::uuid)
+        ) t;
+
+    when 'create_contact_company' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_contact_company (tenant_id, contact_id, company_id, role, is_primary)
+        values (
+            v_tid,
+            (p_payload->>'contact_id')::uuid,
+            (p_payload->>'company_id')::uuid,
+            p_payload->>'role',
+            coalesce((p_payload->>'is_primary')::boolean, false)
+        )
+        returning id, tenant_id, contact_id, company_id, role, is_primary, created_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_contact_company.created', 'crm_contact_company', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_contact_company' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_contact_company cc set
+            role = case when p_payload ? 'role' then p_payload->>'role' else cc.role end,
+            is_primary = case when p_payload ? 'is_primary' then (p_payload->>'is_primary')::boolean else cc.is_primary end
+        where cc.id = (p_payload->>'id')::uuid
+          and cc.tenant_id = v_tid
+          and cc.deleted_at is null
+        returning id, tenant_id, contact_id, company_id, role, is_primary, created_at, deleted_at
+        into v_row;
+        if not found then raise exception 'Contact company link not found'; end if;
+        perform platform.log_audit('crm_contact_company.updated', 'crm_contact_company', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_contact_company' then
+        v_result := public.crm_soft_delete_row('public.crm_contact_company'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_contact_company.deleted', 'crm_contact_company', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- COMPANY ↔ TENANT
+    -- =================================================
+
+    when 'list_company_tenants' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb)
+        into v_result
+        from (
+            select ct.id, ct.tenant_id, ct.company_id, ct.linked_tenant_id, ct.relationship_type, ct.created_at, ct.deleted_at
+            from public.crm_company_tenants ct
+            where ct.tenant_id = v_tid
+              and ct.deleted_at is null
+              and (not p_payload ? 'company_id' or ct.company_id = (p_payload->>'company_id')::uuid)
+        ) t;
+
+    when 'create_company_tenant' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_company_tenants (tenant_id, company_id, linked_tenant_id, relationship_type)
+        values (
+            v_tid,
+            (p_payload->>'company_id')::uuid,
+            case when p_payload ? 'linked_tenant_id' and p_payload->>'linked_tenant_id' is not null then (p_payload->>'linked_tenant_id')::uuid else null end,
+            case when p_payload ? 'relationship_type' then p_payload->>'relationship_type' else null end
+        )
+        returning id, tenant_id, company_id, linked_tenant_id, relationship_type, created_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_company_tenant.created', 'crm_company_tenant', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_company_tenant' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_company_tenants ct set
+            linked_tenant_id = case when p_payload ? 'linked_tenant_id' then case when p_payload->>'linked_tenant_id' is null then null else (p_payload->>'linked_tenant_id')::uuid end else ct.linked_tenant_id end,
+            relationship_type = case when p_payload ? 'relationship_type' then p_payload->>'relationship_type' else ct.relationship_type end
+        where ct.id = (p_payload->>'id')::uuid
+          and ct.tenant_id = v_tid
+          and ct.deleted_at is null
+        returning id, tenant_id, company_id, linked_tenant_id, relationship_type, created_at, deleted_at
+        into v_row;
+        if not found then raise exception 'Company tenant link not found'; end if;
+        perform platform.log_audit('crm_company_tenant.updated', 'crm_company_tenant', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_company_tenant' then
+        v_result := public.crm_soft_delete_row('public.crm_company_tenants'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_company_tenant.deleted', 'crm_company_tenant', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- CONTACT ↔ TENANT
+    -- =================================================
+
+    when 'list_contact_tenants' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb)
+        into v_result
+        from (
+            select ct.id, ct.tenant_id, ct.contact_id, ct.linked_tenant_id, ct.relationship_type, ct.created_at, ct.deleted_at
+            from public.crm_contact_tenants ct
+            where ct.tenant_id = v_tid
+              and ct.deleted_at is null
+              and (not p_payload ? 'contact_id' or ct.contact_id = (p_payload->>'contact_id')::uuid)
+        ) t;
+
+    when 'create_contact_tenant' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_contact_tenants (tenant_id, contact_id, linked_tenant_id, relationship_type)
+        values (
+            v_tid,
+            (p_payload->>'contact_id')::uuid,
+            case when p_payload ? 'linked_tenant_id' and p_payload->>'linked_tenant_id' is not null then (p_payload->>'linked_tenant_id')::uuid else null end,
+            case when p_payload ? 'relationship_type' then p_payload->>'relationship_type' else null end
+        )
+        returning id, tenant_id, contact_id, linked_tenant_id, relationship_type, created_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_contact_tenant.created', 'crm_contact_tenant', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_contact_tenant' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_contact_tenants ct set
+            linked_tenant_id = case when p_payload ? 'linked_tenant_id' then case when p_payload->>'linked_tenant_id' is null then null else (p_payload->>'linked_tenant_id')::uuid end else ct.linked_tenant_id end,
+            relationship_type = case when p_payload ? 'relationship_type' then p_payload->>'relationship_type' else ct.relationship_type end
+        where ct.id = (p_payload->>'id')::uuid
+          and ct.tenant_id = v_tid
+          and ct.deleted_at is null
+        returning id, tenant_id, contact_id, linked_tenant_id, relationship_type, created_at, deleted_at
+        into v_row;
+        if not found then raise exception 'Contact tenant link not found'; end if;
+        perform platform.log_audit('crm_contact_tenant.updated', 'crm_contact_tenant', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_contact_tenant' then
+        v_result := public.crm_soft_delete_row('public.crm_contact_tenants'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_contact_tenant.deleted', 'crm_contact_tenant', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- OPPORTUNITIES
+    -- =================================================
+
+    when 'list_opportunities' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                o.id, o.tenant_id, o.pipeline_id, o.stage_id, o.contact_id, o.company_id, o.linked_tenant_id,
+                o.name, o.expected_revenue, o.probability, o.expected_close_date, o.owner_user_id, o.status,
+                o.created_at, o.updated_at, o.deleted_at
+            from public.crm_opportunities o
+            where o.tenant_id = v_tid
+              and o.deleted_at is null
+              and (not p_payload ? 'pipeline_id' or o.pipeline_id = (p_payload->>'pipeline_id')::uuid)
+              and (not p_payload ? 'stage_id' or o.stage_id = (p_payload->>'stage_id')::uuid)
+              and (not p_payload ? 'status' or o.status = (p_payload->>'status')::public.crm_opportunity_status)
+        ) t;
+
+    when 'get_opportunity' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                o.id, o.tenant_id, o.pipeline_id, o.stage_id, o.contact_id, o.company_id, o.linked_tenant_id,
+                o.name, o.expected_revenue, o.probability, o.expected_close_date, o.owner_user_id, o.status,
+                o.created_at, o.updated_at, o.deleted_at
+            from public.crm_opportunities o
+            where o.id = (p_payload->>'id')::uuid
+              and o.tenant_id = v_tid
+              and o.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'Opportunity not found'; end if;
+
+    when 'create_opportunity' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_opportunities (
+            tenant_id, pipeline_id, stage_id, name, contact_id, company_id, linked_tenant_id,
+            expected_revenue, probability, expected_close_date, owner_user_id, status
+        )
+        values (
+            v_tid,
+            (p_payload->>'pipeline_id')::uuid,
+            (p_payload->>'stage_id')::uuid,
+            p_payload->>'name',
+            case when p_payload ? 'contact_id' and p_payload->>'contact_id' is not null then (p_payload->>'contact_id')::uuid else null end,
+            case when p_payload ? 'company_id' and p_payload->>'company_id' is not null then (p_payload->>'company_id')::uuid else null end,
+            case when p_payload ? 'linked_tenant_id' and p_payload->>'linked_tenant_id' is not null then (p_payload->>'linked_tenant_id')::uuid else null end,
+            case when p_payload ? 'expected_revenue' and p_payload->>'expected_revenue' is not null then (p_payload->>'expected_revenue')::numeric else null end,
+            case when p_payload ? 'probability' and p_payload->>'probability' is not null then (p_payload->>'probability')::numeric else null end,
+            case when p_payload ? 'expected_close_date' and p_payload->>'expected_close_date' is not null then (p_payload->>'expected_close_date')::date else null end,
+            case when p_payload ? 'owner_user_id' and p_payload->>'owner_user_id' is not null then (p_payload->>'owner_user_id')::uuid else null end,
+            coalesce((p_payload->>'status')::public.crm_opportunity_status, 'open'::public.crm_opportunity_status)
+        )
+        returning
+            id, tenant_id, pipeline_id, stage_id, contact_id, company_id, linked_tenant_id,
+            name, expected_revenue, probability, expected_close_date, owner_user_id, status,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_opportunity.created', 'crm_opportunity', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_opportunity' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_opportunities o set
+            pipeline_id = case when p_payload ? 'pipeline_id' then (p_payload->>'pipeline_id')::uuid else o.pipeline_id end,
+            stage_id = case when p_payload ? 'stage_id' then (p_payload->>'stage_id')::uuid else o.stage_id end,
+            name = case when p_payload ? 'name' then p_payload->>'name' else o.name end,
+            contact_id = case when p_payload ? 'contact_id' then case when p_payload->>'contact_id' is null then null else (p_payload->>'contact_id')::uuid end else o.contact_id end,
+            company_id = case when p_payload ? 'company_id' then case when p_payload->>'company_id' is null then null else (p_payload->>'company_id')::uuid end else o.company_id end,
+            linked_tenant_id = case when p_payload ? 'linked_tenant_id' then case when p_payload->>'linked_tenant_id' is null then null else (p_payload->>'linked_tenant_id')::uuid end else o.linked_tenant_id end,
+            expected_revenue = case when p_payload ? 'expected_revenue' then case when p_payload->>'expected_revenue' is null then null else (p_payload->>'expected_revenue')::numeric end else o.expected_revenue end,
+            probability = case when p_payload ? 'probability' then case when p_payload->>'probability' is null then null else (p_payload->>'probability')::numeric end else o.probability end,
+            expected_close_date = case when p_payload ? 'expected_close_date' then case when p_payload->>'expected_close_date' is null then null else (p_payload->>'expected_close_date')::date end else o.expected_close_date end,
+            owner_user_id = case when p_payload ? 'owner_user_id' then case when p_payload->>'owner_user_id' is null then null else (p_payload->>'owner_user_id')::uuid end else o.owner_user_id end,
+            status = case when p_payload ? 'status' then (p_payload->>'status')::public.crm_opportunity_status else o.status end
+        where o.id = (p_payload->>'id')::uuid
+          and o.tenant_id = v_tid
+          and o.deleted_at is null
+        returning
+            o.id, o.tenant_id, o.pipeline_id, o.stage_id, o.contact_id, o.company_id, o.linked_tenant_id,
+            o.name, o.expected_revenue, o.probability, o.expected_close_date, o.owner_user_id, o.status,
+            o.created_at, o.updated_at, o.deleted_at
+        into v_row;
+        if not found then raise exception 'Opportunity not found'; end if;
+        perform platform.log_audit('crm_opportunity.updated', 'crm_opportunity', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_opportunity' then
+        v_result := public.crm_soft_delete_row('public.crm_opportunities'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_opportunity.deleted', 'crm_opportunity', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- TASKS
+    -- =================================================
+
+    when 'list_tasks' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.due_at asc nulls last), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                tk.id, tk.tenant_id, tk.title, tk.description, tk.target_type, tk.target_id,
+                tk.priority, tk.due_at, tk.status, tk.owner_user_id,
+                tk.created_at, tk.updated_at, tk.deleted_at
+            from public.crm_tasks tk
+            where tk.tenant_id = v_tid
+              and tk.deleted_at is null
+              and (not p_payload ? 'target_type' or tk.target_type = (p_payload->>'target_type')::public.crm_task_target_type)
+              and (not p_payload ? 'target_id' or tk.target_id = (p_payload->>'target_id')::uuid)
+              and (not p_payload ? 'status' or tk.status = (p_payload->>'status')::public.crm_task_status)
+        ) t;
+
+    when 'get_task' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                tk.id, tk.tenant_id, tk.title, tk.description, tk.target_type, tk.target_id,
+                tk.priority, tk.due_at, tk.status, tk.owner_user_id,
+                tk.created_at, tk.updated_at, tk.deleted_at
+            from public.crm_tasks tk
+            where tk.id = (p_payload->>'id')::uuid
+              and tk.tenant_id = v_tid
+              and tk.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'Task not found'; end if;
+
+    when 'create_task' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_tasks (
+            tenant_id, title, description, target_type, target_id, priority, due_at, status, owner_user_id
+        )
+        values (
+            v_tid,
+            p_payload->>'title',
+            case when p_payload ? 'description' then p_payload->>'description' else null end,
+            (p_payload->>'target_type')::public.crm_task_target_type,
+            (p_payload->>'target_id')::uuid,
+            coalesce((p_payload->>'priority')::public.priority_level, 'normal'::public.priority_level),
+            case when p_payload ? 'due_at' and p_payload->>'due_at' is not null then (p_payload->>'due_at')::timestamptz else null end,
+            coalesce((p_payload->>'status')::public.crm_task_status, 'pending'::public.crm_task_status),
+            case when p_payload ? 'owner_user_id' and p_payload->>'owner_user_id' is not null then (p_payload->>'owner_user_id')::uuid else null end
+        )
+        returning
+            id, tenant_id, title, description, target_type, target_id,
+            priority, due_at, status, owner_user_id,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_task.created', 'crm_task', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_task' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_tasks tk set
+            title = case when p_payload ? 'title' then p_payload->>'title' else tk.title end,
+            description = case when p_payload ? 'description' then p_payload->>'description' else tk.description end,
+            target_type = case when p_payload ? 'target_type' then (p_payload->>'target_type')::public.crm_task_target_type else tk.target_type end,
+            target_id = case when p_payload ? 'target_id' then (p_payload->>'target_id')::uuid else tk.target_id end,
+            priority = case when p_payload ? 'priority' then (p_payload->>'priority')::public.priority_level else tk.priority end,
+            due_at = case when p_payload ? 'due_at' then case when p_payload->>'due_at' is null then null else (p_payload->>'due_at')::timestamptz end else tk.due_at end,
+            status = case when p_payload ? 'status' then (p_payload->>'status')::public.crm_task_status else tk.status end,
+            owner_user_id = case when p_payload ? 'owner_user_id' then case when p_payload->>'owner_user_id' is null then null else (p_payload->>'owner_user_id')::uuid end else tk.owner_user_id end
+        where tk.id = (p_payload->>'id')::uuid
+          and tk.tenant_id = v_tid
+          and tk.deleted_at is null
+        returning
+            tk.id, tk.tenant_id, tk.title, tk.description, tk.target_type, tk.target_id,
+            tk.priority, tk.due_at, tk.status, tk.owner_user_id,
+            tk.created_at, tk.updated_at, tk.deleted_at
+        into v_row;
+        if not found then raise exception 'Task not found'; end if;
+        perform platform.log_audit('crm_task.updated', 'crm_task', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_task' then
+        v_result := public.crm_soft_delete_row('public.crm_tasks'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_task.deleted', 'crm_task', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- INTERACTIONS
+    -- =================================================
+
+    when 'list_interactions' then
+        v_tid := platform.current_tenant_id();
+        v_limit := least(coalesce((p_payload->>'limit')::int, 100), 500);
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.occurred_at desc), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                i.id, i.tenant_id, i.interaction_type, i.subject, i.metadata,
+                i.contact_id, i.company_id, i.lead_id, i.opportunity_id, i.recorded_by,
+                i.occurred_at, i.created_at, i.deleted_at
+            from public.crm_interactions i
+            where i.tenant_id = v_tid
+              and i.deleted_at is null
+              and (not p_payload ? 'contact_id' or i.contact_id = (p_payload->>'contact_id')::uuid)
+              and (not p_payload ? 'lead_id' or i.lead_id = (p_payload->>'lead_id')::uuid)
+              and (not p_payload ? 'opportunity_id' or i.opportunity_id = (p_payload->>'opportunity_id')::uuid)
+              and (not p_payload ? 'company_id' or i.company_id = (p_payload->>'company_id')::uuid)
+            limit v_limit
+        ) t;
+
+    when 'create_interaction' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_interactions (
+            tenant_id, interaction_type, subject, metadata,
+            contact_id, company_id, lead_id, opportunity_id, recorded_by, occurred_at
+        )
+        values (
+            v_tid,
+            (p_payload->>'interaction_type')::public.crm_interaction_type,
+            case when p_payload ? 'subject' then p_payload->>'subject' else null end,
+            coalesce(p_payload->'metadata', '{}'::jsonb),
+            case when p_payload ? 'contact_id' and p_payload->>'contact_id' is not null then (p_payload->>'contact_id')::uuid else null end,
+            case when p_payload ? 'company_id' and p_payload->>'company_id' is not null then (p_payload->>'company_id')::uuid else null end,
+            case when p_payload ? 'lead_id' and p_payload->>'lead_id' is not null then (p_payload->>'lead_id')::uuid else null end,
+            case when p_payload ? 'opportunity_id' and p_payload->>'opportunity_id' is not null then (p_payload->>'opportunity_id')::uuid else null end,
+            (select auth.uid()),
+            coalesce((p_payload->>'occurred_at')::timestamptz, now())
+        )
+        returning
+            id, tenant_id, interaction_type, subject, metadata,
+            contact_id, company_id, lead_id, opportunity_id, recorded_by,
+            occurred_at, created_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_interaction.created', 'crm_interaction', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'soft_delete_interaction' then
+        v_result := public.crm_soft_delete_row('public.crm_interactions'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_interaction.soft_deleted', 'crm_interaction', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- NOTES
+    -- =================================================
+
+    when 'list_notes' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                n.id, n.tenant_id, n.entity_type, n.entity_id, n.body, n.version,
+                n.author_user_id, n.created_at, n.updated_at, n.deleted_at
+            from public.crm_notes n
+            where n.tenant_id = v_tid
+              and n.deleted_at is null
+              and n.entity_type = (p_payload->>'entity_type')::public.crm_entity_type
+              and n.entity_id = (p_payload->>'entity_id')::uuid
+        ) t;
+
+    when 'create_note' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_notes (tenant_id, entity_type, entity_id, body, author_user_id)
+        values (
+            v_tid,
+            (p_payload->>'entity_type')::public.crm_entity_type,
+            (p_payload->>'entity_id')::uuid,
+            p_payload->>'body',
+            (select auth.uid())
+        )
+        returning
+            id, tenant_id, entity_type, entity_id, body, version,
+            author_user_id, created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_note.created', 'crm_note', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_note' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_notes n set
+            body = case when p_payload ? 'body' then p_payload->>'body' else n.body end
+        where n.id = (p_payload->>'id')::uuid
+          and n.tenant_id = v_tid
+          and n.deleted_at is null
+        returning
+            n.id, n.tenant_id, n.entity_type, n.entity_id, n.body, n.version,
+            n.author_user_id, n.created_at, n.updated_at, n.deleted_at
+        into v_row;
+        if not found then raise exception 'Note not found'; end if;
+        perform platform.log_audit('crm_note.updated', 'crm_note', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_note' then
+        v_result := public.crm_soft_delete_row('public.crm_notes'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_note.deleted', 'crm_note', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- TAG ASSIGNMENTS
+    -- =================================================
+
+    when 'list_tag_assignments' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb)
+        into v_result
+        from (
+            select ta.id, ta.tenant_id, ta.tag_id, ta.entity_type, ta.entity_id, ta.created_at, ta.deleted_at
+            from public.crm_tag_assignments ta
+            where ta.tenant_id = v_tid
+              and ta.deleted_at is null
+              and (not p_payload ? 'entity_type' or ta.entity_type = (p_payload->>'entity_type')::public.crm_entity_type)
+              and (not p_payload ? 'entity_id' or ta.entity_id = (p_payload->>'entity_id')::uuid)
+        ) t;
+
+    when 'create_tag_assignment' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_tag_assignments (tenant_id, tag_id, entity_type, entity_id)
+        values (
+            v_tid,
+            (p_payload->>'tag_id')::uuid,
+            (p_payload->>'entity_type')::public.crm_entity_type,
+            (p_payload->>'entity_id')::uuid
+        )
+        returning id, tenant_id, tag_id, entity_type, entity_id, created_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_tag_assignment.created', 'crm_tag_assignment', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'delete_tag_assignment' then
+        v_result := public.crm_soft_delete_row('public.crm_tag_assignments'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_tag_assignment.deleted', 'crm_tag_assignment', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- LISTS
+    -- =================================================
+
+    when 'list_lists' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.name), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                ls.id, ls.tenant_id, ls.name, ls.description, ls.list_type, ls.filter_config,
+                ls.created_at, ls.updated_at, ls.deleted_at
+            from public.crm_lists ls
+            where ls.tenant_id = v_tid and ls.deleted_at is null
+        ) t;
+
+    when 'get_list' then
+        v_tid := platform.current_tenant_id();
+        select to_jsonb(t) into v_result
+        from (
+            select
+                ls.id, ls.tenant_id, ls.name, ls.description, ls.list_type, ls.filter_config,
+                ls.created_at, ls.updated_at, ls.deleted_at
+            from public.crm_lists ls
+            where ls.id = (p_payload->>'id')::uuid
+              and ls.tenant_id = v_tid
+              and ls.deleted_at is null
+        ) t;
+        if v_result is null then raise exception 'List not found'; end if;
+
+    when 'create_list' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_lists (tenant_id, name, description, list_type, filter_config)
+        values (
+            v_tid,
+            p_payload->>'name',
+            case when p_payload ? 'description' then p_payload->>'description' else null end,
+            coalesce((p_payload->>'list_type')::public.crm_list_type, 'static'::public.crm_list_type),
+            case when p_payload ? 'filter_config' then p_payload->'filter_config' else null end
+        )
+        returning
+            id, tenant_id, name, description, list_type, filter_config,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_list.created', 'crm_list', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_list' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_lists ls set
+            name = case when p_payload ? 'name' then p_payload->>'name' else ls.name end,
+            description = case when p_payload ? 'description' then p_payload->>'description' else ls.description end,
+            list_type = case when p_payload ? 'list_type' then (p_payload->>'list_type')::public.crm_list_type else ls.list_type end,
+            filter_config = case when p_payload ? 'filter_config' then p_payload->'filter_config' else ls.filter_config end
+        where ls.id = (p_payload->>'id')::uuid
+          and ls.tenant_id = v_tid
+          and ls.deleted_at is null
+        returning
+            ls.id, ls.tenant_id, ls.name, ls.description, ls.list_type, ls.filter_config,
+            ls.created_at, ls.updated_at, ls.deleted_at
+        into v_row;
+        if not found then raise exception 'List not found'; end if;
+        perform platform.log_audit('crm_list.updated', 'crm_list', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_list' then
+        v_result := public.crm_soft_delete_row('public.crm_lists'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_list.deleted', 'crm_list', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- LIST MEMBERS
+    -- =================================================
+
+    when 'list_list_members' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.added_at), '[]'::jsonb)
+        into v_result
+        from (
+            select lm.id, lm.tenant_id, lm.list_id, lm.contact_id, lm.added_at, lm.deleted_at
+            from public.crm_list_members lm
+            where lm.tenant_id = v_tid
+              and lm.list_id = (p_payload->>'list_id')::uuid
+              and lm.deleted_at is null
+        ) t;
+
+    when 'create_list_member' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_list_members (tenant_id, list_id, contact_id)
+        values (
+            v_tid,
+            (p_payload->>'list_id')::uuid,
+            (p_payload->>'contact_id')::uuid
+        )
+        returning id, tenant_id, list_id, contact_id, added_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_list_member.created', 'crm_list_member', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'delete_list_member' then
+        v_result := public.crm_soft_delete_row('public.crm_list_members'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_list_member.deleted', 'crm_list_member', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- CUSTOM FIELDS
+    -- =================================================
+
+    when 'list_custom_fields' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.display_order), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                cf.id, cf.tenant_id, cf.field_key, cf.label, cf.field_type, cf.applies_to,
+                cf.options, cf.is_required, cf.display_order,
+                cf.created_at, cf.updated_at, cf.deleted_at
+            from public.crm_custom_fields cf
+            where cf.tenant_id = v_tid
+              and cf.deleted_at is null
+              and (not p_payload ? 'applies_to' or cf.applies_to = (p_payload->>'applies_to')::public.crm_entity_type)
+        ) t;
+
+    when 'create_custom_field' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_custom_fields (
+            tenant_id, field_key, label, field_type, applies_to, options, is_required, display_order
+        )
+        values (
+            v_tid,
+            p_payload->>'field_key',
+            p_payload->>'label',
+            (p_payload->>'field_type')::public.crm_custom_field_type,
+            (p_payload->>'applies_to')::public.crm_entity_type,
+            case when p_payload ? 'options' then p_payload->'options' else null end,
+            coalesce((p_payload->>'is_required')::boolean, false),
+            coalesce((p_payload->>'display_order')::int, 0)
+        )
+        returning
+            id, tenant_id, field_key, label, field_type, applies_to,
+            options, is_required, display_order,
+            created_at, updated_at, deleted_at
+        into v_row;
+        perform platform.log_audit('crm_custom_field.created', 'crm_custom_field', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_custom_field' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_custom_fields cf set
+            field_key = case when p_payload ? 'field_key' then p_payload->>'field_key' else cf.field_key end,
+            label = case when p_payload ? 'label' then p_payload->>'label' else cf.label end,
+            field_type = case when p_payload ? 'field_type' then (p_payload->>'field_type')::public.crm_custom_field_type else cf.field_type end,
+            applies_to = case when p_payload ? 'applies_to' then (p_payload->>'applies_to')::public.crm_entity_type else cf.applies_to end,
+            options = case when p_payload ? 'options' then p_payload->'options' else cf.options end,
+            is_required = case when p_payload ? 'is_required' then (p_payload->>'is_required')::boolean else cf.is_required end,
+            display_order = case when p_payload ? 'display_order' then (p_payload->>'display_order')::int else cf.display_order end
+        where cf.id = (p_payload->>'id')::uuid
+          and cf.tenant_id = v_tid
+          and cf.deleted_at is null
+        returning
+            cf.id, cf.tenant_id, cf.field_key, cf.label, cf.field_type, cf.applies_to,
+            cf.options, cf.is_required, cf.display_order,
+            cf.created_at, cf.updated_at, cf.deleted_at
+        into v_row;
+        if not found then raise exception 'Custom field not found'; end if;
+        perform platform.log_audit('crm_custom_field.updated', 'crm_custom_field', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_custom_field' then
+        v_result := public.crm_soft_delete_row('public.crm_custom_fields'::regclass, (p_payload->>'id')::uuid);
+        perform platform.log_audit('crm_custom_field.deleted', 'crm_custom_field', (p_payload->>'id')::uuid);
+
+    -- =================================================
+    -- CUSTOM FIELD VALUES
+    -- =================================================
+
+    when 'list_custom_field_values' then
+        v_tid := platform.current_tenant_id();
+        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb)
+        into v_result
+        from (
+            select
+                cfv.id, cfv.tenant_id, cfv.custom_field_id, cfv.entity_type, cfv.entity_id,
+                cfv.value_text, cfv.value_number, cfv.value_boolean, cfv.value_date, cfv.value_datetime, cfv.value_json,
+                cfv.created_at, cfv.updated_at
+            from public.crm_custom_field_values cfv
+            where cfv.tenant_id = v_tid
+              and (not p_payload ? 'entity_type' or cfv.entity_type = (p_payload->>'entity_type')::public.crm_entity_type)
+              and (not p_payload ? 'entity_id' or cfv.entity_id = (p_payload->>'entity_id')::uuid)
+              and (not p_payload ? 'custom_field_id' or cfv.custom_field_id = (p_payload->>'custom_field_id')::uuid)
+        ) t;
+
+    when 'upsert_custom_field_value' then
+        v_tid := platform.current_tenant_id();
+        insert into public.crm_custom_field_values (
+            tenant_id, custom_field_id, entity_type, entity_id,
+            value_text, value_number, value_boolean, value_date, value_datetime, value_json
+        )
+        values (
+            v_tid,
+            (p_payload->>'custom_field_id')::uuid,
+            (p_payload->>'entity_type')::public.crm_entity_type,
+            (p_payload->>'entity_id')::uuid,
+            case when p_payload ? 'value_text' then p_payload->>'value_text' else null end,
+            case when p_payload ? 'value_number' and p_payload->>'value_number' is not null then (p_payload->>'value_number')::numeric else null end,
+            case when p_payload ? 'value_boolean' and p_payload->>'value_boolean' is not null then (p_payload->>'value_boolean')::boolean else null end,
+            case when p_payload ? 'value_date' and p_payload->>'value_date' is not null then (p_payload->>'value_date')::date else null end,
+            case when p_payload ? 'value_datetime' and p_payload->>'value_datetime' is not null then (p_payload->>'value_datetime')::timestamptz else null end,
+            case when p_payload ? 'value_json' then p_payload->'value_json' else null end
+        )
+        on conflict (custom_field_id, entity_id) do update set
+            value_text = excluded.value_text,
+            value_number = excluded.value_number,
+            value_boolean = excluded.value_boolean,
+            value_date = excluded.value_date,
+            value_datetime = excluded.value_datetime,
+            value_json = excluded.value_json
+        returning
+            id, tenant_id, custom_field_id, entity_type, entity_id,
+            value_text, value_number, value_boolean, value_date, value_datetime, value_json,
+            created_at, updated_at
+        into v_row;
+        perform platform.log_audit('crm_custom_field_value.upserted', 'crm_custom_field_value', v_row.id);
+        v_result := to_jsonb(v_row);
+
+    when 'update_custom_field_value' then
+        v_tid := platform.current_tenant_id();
+        update public.crm_custom_field_values cfv set
+            value_text = case when p_payload ? 'value_text' then p_payload->>'value_text' else cfv.value_text end,
+            value_number = case when p_payload ? 'value_number' then case when p_payload->>'value_number' is null then null else (p_payload->>'value_number')::numeric end else cfv.value_number end,
+            value_boolean = case when p_payload ? 'value_boolean' then case when p_payload->>'value_boolean' is null then null else (p_payload->>'value_boolean')::boolean end else cfv.value_boolean end,
+            value_date = case when p_payload ? 'value_date' then case when p_payload->>'value_date' is null then null else (p_payload->>'value_date')::date end else cfv.value_date end,
+            value_datetime = case when p_payload ? 'value_datetime' then case when p_payload->>'value_datetime' is null then null else (p_payload->>'value_datetime')::timestamptz end else cfv.value_datetime end,
+            value_json = case when p_payload ? 'value_json' then p_payload->'value_json' else cfv.value_json end
+        where cfv.id = (p_payload->>'id')::uuid
+          and cfv.tenant_id = v_tid
+        returning
+            id, tenant_id, custom_field_id, entity_type, entity_id,
+            value_text, value_number, value_boolean, value_date, value_datetime, value_json,
+            created_at, updated_at
+        into v_row;
+        if not found then raise exception 'Custom field value not found'; end if;
+        perform platform.log_audit('crm_custom_field_value.updated', 'crm_custom_field_value', v_row.id, p_payload - 'id');
+        v_result := to_jsonb(v_row);
+
+    when 'delete_custom_field_value' then
+        v_tid := platform.current_tenant_id();
+        delete from public.crm_custom_field_values cfv
+        where cfv.id = (p_payload->>'id')::uuid
+          and cfv.tenant_id = v_tid;
+        if not found then raise exception 'Custom field value not found'; end if;
+        perform platform.log_audit('crm_custom_field_value.deleted', 'crm_custom_field_value', (p_payload->>'id')::uuid);
+        v_result := jsonb_build_object('deleted', true, 'id', p_payload->>'id');
+
+    else
+        raise exception 'unknown crm_api operation: %', p_op;
+    end case;
+
+    return v_result;
+end;
+$$;
+
+revoke all on function public.crm_domain(text, jsonb) from public;
+grant execute on function public.crm_domain(text, jsonb) to authenticated, service_role;
+
+-- -----------------------------------------------------
+-- 015 CRM: soft delete helper
+-- -----------------------------------------------------
+
+create or replace function public.crm_soft_delete_row(
+    p_table regclass,
+    p_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count int;
+begin
+    execute format(
+        'update %s set deleted_at = now() where id = $1 and tenant_id = $2',
+        p_table
+    ) using p_id, platform.current_tenant_id();
+    get diagnostics v_count = row_count;
+    if v_count = 0 then
+        raise exception 'record not found or not accessible';
+    end if;
+    return jsonb_build_object('deleted', true, 'id', p_id);
+end;
+$$;
+
+revoke all on function public.crm_soft_delete_row(regclass, uuid) from public;
+grant execute on function public.crm_soft_delete_row(regclass, uuid) to authenticated, service_role;
+
+-- -----------------------------------------------------
+-- 015 CRM: domain triggers (lifecycle timestamps / versioning)
+-- -----------------------------------------------------
+
+create or replace function public.trg_crm_contacts_consent_timestamps()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+    if tg_op = 'INSERT' then
+        if new.marketing_consent then
+            new.marketing_consent_at := coalesce(new.marketing_consent_at, now());
+        end if;
+        if new.gdpr_consent then
+            new.gdpr_consent_at := coalesce(new.gdpr_consent_at, now());
+        end if;
+    elsif tg_op = 'UPDATE' then
+        if new.marketing_consent is distinct from old.marketing_consent then
+            new.marketing_consent_at := case
+                when new.marketing_consent then coalesce(new.marketing_consent_at, now())
+                else null
+            end;
+        end if;
+        if new.gdpr_consent is distinct from old.gdpr_consent then
+            new.gdpr_consent_at := case
+                when new.gdpr_consent then coalesce(new.gdpr_consent_at, now())
+                else null
+            end;
+        end if;
+    end if;
+    return new;
+end;
+$$;
+
+drop trigger if exists trg_crm_contacts_consent_timestamps on public.crm_contacts;
+create trigger trg_crm_contacts_consent_timestamps
+before insert or update on public.crm_contacts
+for each row execute function public.trg_crm_contacts_consent_timestamps();
+
+create or replace function public.trg_crm_leads_conversion_timestamp()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+    if new.status is distinct from old.status then
+        if new.status = 'converted'::public.crm_lead_status then
+            new.converted_at := coalesce(new.converted_at, now());
+        elsif old.status = 'converted'::public.crm_lead_status
+              and new.status <> 'converted'::public.crm_lead_status then
+            new.converted_at := null;
+        end if;
+    end if;
+    return new;
+end;
+$$;
+
+drop trigger if exists trg_crm_leads_conversion_timestamp on public.crm_leads;
+create trigger trg_crm_leads_conversion_timestamp
+before update of status on public.crm_leads
+for each row execute function public.trg_crm_leads_conversion_timestamp();
+
+create or replace function public.trg_crm_notes_version_increment()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+    if new.body is distinct from old.body then
+        new.version := old.version + 1;
+    end if;
+    return new;
+end;
+$$;
+
+drop trigger if exists trg_crm_notes_version_increment on public.crm_notes;
+create trigger trg_crm_notes_version_increment
+before update of body on public.crm_notes
+for each row execute function public.trg_crm_notes_version_increment();
