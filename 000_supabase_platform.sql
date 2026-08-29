@@ -1,4 +1,4 @@
--- REV22 greenfield baseline: 000_supabase_platform.sql
+-- test REV22 greenfield baseline: 000_supabase_platform.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
 create schema if not exists platform;
