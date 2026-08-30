@@ -324,7 +324,128 @@ set search_path = '';
 
 
 -- =====================================================
--- 8. SCHEMA MIGRATION REGISTRATION
+-- 8. GENERIC RAW TELEMETRY INGESTION
+--
+-- Purpose:
+-- Trusted server-side insertion of raw provider payload.
+--
+-- 006 owns the raw telemetry storage boundary.
+-- 007 resolves the device identity.
+--
+-- This function does NOT:
+-- - interpret payload
+-- - derive state
+-- - calculate metrics
+-- - execute automation
+-- - resolve provider identities
+-- =====================================================
+
+create or replace function public.ingest_raw_device_telemetry(
+    p_tenant_id uuid,
+    p_device_id uuid,
+    p_source text,
+    p_provider_event_id text,
+    p_observed_at timestamptz,
+    p_raw_payload jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_id uuid;
+begin
+
+    if p_tenant_id is null then
+        raise exception 'tenant_id is required';
+    end if;
+
+    if p_device_id is null then
+        raise exception 'device_id is required';
+    end if;
+
+    if p_source is null
+       or btrim(p_source) = '' then
+        raise exception 'source is required';
+    end if;
+
+    if p_raw_payload is null then
+        raise exception 'raw_payload is required';
+    end if;
+
+
+    -- =================================================
+    -- DEVICE / TENANT INTEGRITY
+    --
+    -- The trigger on device_telemetry_raw performs the
+    -- definitive tenant consistency check.
+    -- =================================================
+
+
+    insert into public.device_telemetry_raw (
+        tenant_id,
+        device_id,
+        source,
+        provider_event_id,
+        observed_at,
+        received_at,
+        raw_payload
+    )
+    values (
+        p_tenant_id,
+        p_device_id,
+        p_source,
+        p_provider_event_id,
+        p_observed_at,
+        now(),
+        p_raw_payload
+    )
+    returning id
+    into v_id;
+
+
+    return v_id;
+
+end;
+$$;
+
+
+revoke all on function public.ingest_raw_device_telemetry(
+    uuid,
+    uuid,
+    text,
+    text,
+    timestamptz,
+    jsonb
+)
+from public, anon, authenticated;
+
+
+grant execute on function public.ingest_raw_device_telemetry(
+    uuid,
+    uuid,
+    text,
+    text,
+    timestamptz,
+    jsonb
+)
+to service_role;
+
+
+comment on function public.ingest_raw_device_telemetry(
+    uuid,
+    uuid,
+    text,
+    text,
+    timestamptz,
+    jsonb
+) is
+    'Trusted server-side ingestion of immutable raw provider telemetry. Device identity must already be resolved by the integration layer.';
+
+
+-- =====================================================
+-- 9. SCHEMA MIGRATION REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (

@@ -139,6 +139,8 @@ create table if not exists public.device_integration_map (
 
     device_id uuid not null references public.devices(id) on delete cascade,
 
+    hardware_id text,
+  
     provider_code text not null,
 
     external_id text not null,
@@ -220,6 +222,17 @@ create table if not exists public.integration_webhook_mappings (
             mapping_code
         )
 );
+
+comment on column public.device_integration_map.hardware_id is
+    'Stable provider-side hardware identity used to reconcile changing external provider identifiers. Provider-agnostic.';
+
+
+comment on column public.device_integration_map.external_id is
+    'Current provider-side device identifier. May change when the provider reassigns or recreates the external identity.';
+
+
+comment on table public.device_integration_map is
+    'Provider device identity mapping. external_id is the current provider identifier; hardware_id is the stable provider hardware identity. No device state, telemetry or credentials.';
 
 
 -- =====================================================
@@ -755,6 +768,12 @@ create index if not exists idx_integration_providers_active
 
 
 
+create index if not exists idx_device_integration_hardware
+    on public.device_integration_map (tenant_id, provider_code, hardware_id)
+      where hardware_id is not null;
+
+
+
 create index if not exists idx_integration_providers_category
     on public.integration_providers (category);
 
@@ -837,6 +856,18 @@ create unique index if not exists uq_device_integration_tenant_provider_external
 
 comment on table public.device_integration_map is
     'Maps domain devices to provider external IDs. No credentials or runtime state.';
+
+
+-- =====================================================
+-- HARDWARE IDENTITY UNIQUENESS
+--
+-- One physical provider device may not map to multiple
+-- SmartHellas devices within the same tenant/provider.
+-- =====================================================
+
+create unique index if not exists uq_device_integration_tenant_provider_hardware
+    on public.device_integration_map (tenant_id, provider_code, hardware_id)
+        where hardware_id is not null;
 
 
 -- =====================================================
@@ -1454,6 +1485,294 @@ end;
 $$;
 
 
+
+-- =====================================================
+-- GENERIC PROVIDER DEVICE LOOKUP
+-- =====================================================
+
+create or replace function public.resolve_provider_device_by_external_id(
+    p_tenant_id uuid,
+    p_provider_code text,
+    p_external_id text
+)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select dim.device_id
+    from public.device_integration_map dim
+    where dim.tenant_id = p_tenant_id
+      and dim.provider_code = p_provider_code
+      and dim.external_id = p_external_id
+    limit 1;
+$$;
+
+
+revoke all on function public.resolve_provider_device_by_external_id(
+    uuid,
+    text,
+    text
+)
+from public, anon, authenticated;
+
+
+grant execute on function public.resolve_provider_device_by_external_id(
+    uuid,
+    text,
+    text
+)
+to service_role;
+
+
+comment on function public.resolve_provider_device_by_external_id(
+    uuid,
+    text,
+    text
+) is
+    'Generic provider device lookup by current external provider identifier.';
+
+
+-- =====================================================
+-- GENERIC PROVIDER HARDWARE LOOKUP
+-- =====================================================
+
+create or replace function public.resolve_provider_device_by_hardware_id(
+    p_tenant_id uuid,
+    p_provider_code text,
+    p_hardware_id text
+)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select dim.device_id
+    from public.device_integration_map dim
+    where dim.tenant_id = p_tenant_id
+      and dim.provider_code = p_provider_code
+      and dim.hardware_id = p_hardware_id
+    limit 1;
+$$;
+
+
+revoke all on function public.resolve_provider_device_by_hardware_id(
+    uuid,
+    text,
+    text
+)
+from public, anon, authenticated;
+
+
+grant execute on function public.resolve_provider_device_by_hardware_id(
+    uuid,
+    text,
+    text
+)
+to service_role;
+
+
+comment on function public.resolve_provider_device_by_hardware_id(
+    uuid,
+    text,
+    text
+) is
+    'Generic provider device lookup by stable provider hardware identity.';
+
+
+-- =====================================================
+-- GENERIC PROVIDER DEVICE RECONCILIATION
+--
+-- Purpose:
+-- Replace the current provider external_id when the
+-- provider-side identifier changes.
+--
+-- Example:
+--
+-- old external_id = OLD123
+-- hardware_id     = HW001
+--
+-- provider reports:
+--
+-- new external_id = NEW456
+-- hardware_id     = HW001
+--
+-- Result:
+--
+-- external_id = NEW456
+-- hardware_id = HW001
+--
+-- device_id remains unchanged.
+-- =====================================================
+
+create or replace function public.reconcile_provider_device(
+    p_tenant_id uuid,
+    p_provider_code text,
+    p_external_id text,
+    p_hardware_id text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_map_id uuid;
+    v_device_id uuid;
+    v_previous_external_id text;
+begin
+
+    if p_tenant_id is null then
+        raise exception
+            'tenant_id is required';
+    end if;
+
+    if p_provider_code is null
+       or btrim(p_provider_code) = '' then
+        raise exception
+            'provider_code is required';
+    end if;
+
+    if p_external_id is null
+       or btrim(p_external_id) = '' then
+        raise exception
+            'external_id is required';
+    end if;
+
+    if p_hardware_id is null
+       or btrim(p_hardware_id) = '' then
+        raise exception
+            'hardware_id is required';
+    end if;
+
+
+    -- =================================================
+    -- FIND EXISTING PHYSICAL DEVICE
+    -- =================================================
+
+    select
+        dim.id,
+        dim.device_id,
+        dim.external_id
+    into
+        v_map_id,
+        v_device_id,
+        v_previous_external_id
+    from public.device_integration_map dim
+    where dim.tenant_id = p_tenant_id
+      and dim.provider_code = p_provider_code
+      and dim.hardware_id = p_hardware_id
+    for update;
+
+
+    if not found then
+
+        raise exception
+            'No provider device mapping found for provider % and hardware identity %',
+            p_provider_code,
+            p_hardware_id;
+
+    end if;
+
+
+    -- =================================================
+    -- PROTECT AGAINST CROSS-DEVICE COLLISION
+    --
+    -- The new external ID may not already belong to a
+    -- different SmartHellas device.
+    -- =================================================
+
+    if exists (
+        select 1
+        from public.device_integration_map dim
+        where dim.tenant_id = p_tenant_id
+          and dim.provider_code = p_provider_code
+          and dim.external_id = p_external_id
+          and dim.id <> v_map_id
+    ) then
+
+        raise exception
+            'External provider identifier % already belongs to another device',
+            p_external_id;
+
+    end if;
+
+
+    -- =================================================
+    -- UPDATE CURRENT PROVIDER IDENTITY
+    -- =================================================
+
+    update public.device_integration_map
+    set
+        external_id = btrim(p_external_id)
+    where id = v_map_id;
+
+
+    -- =================================================
+    -- AUDIT
+    -- =================================================
+
+    perform platform.log_audit(
+        'provider.device_identity_reconciled',
+        'device_integration_map',
+        v_map_id,
+        jsonb_build_object(
+            'provider_code', p_provider_code,
+            'device_id', v_device_id,
+            'hardware_id', p_hardware_id,
+            'previous_external_id', v_previous_external_id,
+            'current_external_id', btrim(p_external_id)
+        )
+    );
+
+
+    return jsonb_build_object(
+        'reconciled', true,
+        'device_map_id', v_map_id,
+        'device_id', v_device_id,
+        'provider_code', p_provider_code,
+        'hardware_id', p_hardware_id,
+        'previous_external_id', v_previous_external_id,
+        'external_id', btrim(p_external_id)
+    );
+
+end;
+$$;
+
+
+revoke all on function public.reconcile_provider_device(
+    uuid,
+    text,
+    text,
+    text
+)
+from public, anon, authenticated;
+
+
+grant execute on function public.reconcile_provider_device(
+    uuid,
+    text,
+    text,
+    text
+)
+to service_role;
+
+
+comment on function public.reconcile_provider_device(
+    uuid,
+    text,
+    text,
+    text
+) is
+    'Generic provider device identity reconciliation. Stable hardware identity resolves a device when the current provider external identifier changes.';
+
+
+
+
+
+
 -- =====================================================
 -- 18. INTEGRATION DOMAIN FUNCTIONS
 -- =====================================================
@@ -1621,41 +1940,159 @@ begin
         v_result := jsonb_build_object('deleted', true, 'id', p_payload->>'id');
 
     when 'list_device_maps' then
-        v_tid := platform.current_tenant_id();
-        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb) into v_result
-        from (
-            select dim.id, dim.tenant_id, dim.device_id, dim.provider_code, dim.external_id, dim.config, dim.created_at
-            from public.device_integration_map dim
-            where dim.tenant_id = v_tid
-              and (p_payload->>'device_id' is null or dim.device_id = (p_payload->>'device_id')::uuid)
-              and (p_payload->>'provider_code' is null or dim.provider_code = p_payload->>'provider_code')
-        ) t;
+
+    v_tid := platform.current_tenant_id();
+
+    select
+        coalesce(
+            jsonb_agg(
+                to_jsonb(t)
+                order by t.created_at
+            ),
+            '[]'::jsonb
+        )
+    into v_result
+
+    from (
+        select
+            dim.id,
+            dim.tenant_id,
+            dim.device_id,
+            dim.provider_code,
+            dim.external_id,
+            dim.hardware_id,
+            dim.config,
+            dim.created_at
+
+        from public.device_integration_map dim
+
+        where dim.tenant_id = v_tid
+
+          and (
+                p_payload->>'device_id' is null
+                or dim.device_id =
+                   (p_payload->>'device_id')::uuid
+              )
+
+          and (
+                p_payload->>'provider_code' is null
+                or dim.provider_code =
+                   p_payload->>'provider_code'
+              )
+
+    ) t;
 
     when 'create_device_map' then
-        perform public.edge_require_manager();
-        v_tid := platform.current_tenant_id();
-        insert into public.device_integration_map (device_id, provider_code, external_id, config)
-        values (
-            (p_payload->>'device_id')::uuid,
-            p_payload->>'provider_code',
-            p_payload->>'external_id',
-            coalesce(p_payload->'config', '{}'::jsonb)
-        )
-        returning id, tenant_id, device_id, provider_code, external_id, config, created_at into v_row;
-        perform platform.log_audit('device_integration_map.created', 'device_integration_map', v_row.id);
-        v_result := to_jsonb(v_row);
 
+    perform public.edge_require_manager();
+
+    v_tid := platform.current_tenant_id();
+
+    insert into public.device_integration_map (
+        device_id,
+        provider_code,
+        external_id,
+        hardware_id,
+        config
+    )
+    values (
+        (p_payload->>'device_id')::uuid,
+        lower(trim(p_payload->>'provider_code')),
+        p_payload->>'external_id',
+        nullif(
+            trim(p_payload->>'hardware_id'),
+            ''
+        ),
+        coalesce(
+            p_payload->'config',
+            '{}'::jsonb
+        )
+    )
+
+    returning
+        id,
+        tenant_id,
+        device_id,
+        provider_code,
+        external_id,
+        hardware_id,
+        config,
+        created_at
+    into v_row;
+
+    perform platform.log_audit(
+        'device_integration_map.created',
+        'device_integration_map',
+        v_row.id
+    );
+
+    v_result := to_jsonb(v_row);
+    
     when 'update_device_map' then
-        perform public.edge_require_manager();
-        v_tid := platform.current_tenant_id();
-        update public.device_integration_map dim set
-            external_id = case when p_payload ? 'external_id' then p_payload->>'external_id' else dim.external_id end,
-            config = case when p_payload ? 'config' then p_payload->'config' else dim.config end
-        where dim.id = (p_payload->>'id')::uuid and dim.tenant_id = v_tid
-        returning dim.id, dim.tenant_id, dim.device_id, dim.provider_code, dim.external_id, dim.config, dim.created_at into v_row;
-        if not found then raise exception 'Device map not found'; end if;
-        perform platform.log_audit('device_integration_map.updated', 'device_integration_map', v_row.id);
-        v_result := to_jsonb(v_row);
+
+    perform public.edge_require_manager();
+
+    v_tid := platform.current_tenant_id();
+
+    update public.device_integration_map dim
+
+    set
+        external_id =
+            case
+                when p_payload ? 'external_id'
+                then p_payload->>'external_id'
+                else dim.external_id
+            end,
+
+        hardware_id =
+            case
+                when p_payload ? 'hardware_id'
+                then nullif(
+                    trim(p_payload->>'hardware_id'),
+                    ''
+                )
+                else dim.hardware_id
+            end,
+
+        config =
+            case
+                when p_payload ? 'config'
+                then p_payload->'config'
+                else dim.config
+            end
+
+    where dim.id =
+          (p_payload->>'id')::uuid
+
+      and dim.tenant_id = v_tid
+
+    returning
+        dim.id,
+        dim.tenant_id,
+        dim.device_id,
+        dim.provider_code,
+        dim.external_id,
+        dim.hardware_id,
+        dim.config,
+        dim.created_at
+
+    into v_row;
+
+
+    if not found then
+        raise exception
+            'Device map not found';
+    end if;
+
+
+    perform platform.log_audit(
+        'device_integration_map.updated',
+        'device_integration_map',
+        v_row.id
+    );
+
+
+    v_result := to_jsonb(v_row);
 
     when 'delete_device_map' then
         perform public.edge_require_manager();
@@ -2241,6 +2678,181 @@ begin
     );
 end;
 $$;
+
+
+
+-- =====================================================
+-- 20. RESOLVE OR RECONCILE PROVIDER DEVICE
+--
+-- Purpose:
+-- Resolve a provider device to a SmartHellas device.
+--
+-- Resolution order:
+--
+-- 1. Current external_id
+-- 2. Stable hardware_id
+--
+-- 007 owns provider identity.
+-- 004 remains device SSOT.
+-- =====================================================
+
+create or replace function public.resolve_or_reconcile_provider_device(
+    p_tenant_id uuid,
+    p_provider_code text,
+    p_external_id text,
+    p_hardware_id text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_device_id uuid;
+    v_map_id uuid;
+begin
+
+    if p_tenant_id is null then
+        raise exception 'tenant_id is required';
+    end if;
+
+    if p_provider_code is null
+       or btrim(p_provider_code) = '' then
+        raise exception 'provider_code is required';
+    end if;
+
+    if p_external_id is null
+       or btrim(p_external_id) = '' then
+        raise exception 'external_id is required';
+    end if;
+
+
+    -- =================================================
+    -- 1. CURRENT EXTERNAL ID
+    -- =================================================
+
+    select dim.device_id
+    into v_device_id
+    from public.device_integration_map dim
+    where dim.tenant_id = p_tenant_id
+      and dim.provider_code = p_provider_code
+      and dim.external_id = p_external_id
+    limit 1;
+
+
+    if v_device_id is not null then
+
+        return v_device_id;
+
+    end if;
+
+
+    -- =================================================
+    -- 2. STABLE HARDWARE ID
+    -- =================================================
+
+    if p_hardware_id is null
+       or btrim(p_hardware_id) = '' then
+
+        raise exception
+            'Provider device % is unknown and no hardware identity was supplied',
+            p_external_id;
+
+    end if;
+
+
+    select
+        dim.id,
+        dim.device_id
+    into
+        v_map_id,
+        v_device_id
+    from public.device_integration_map dim
+    where dim.tenant_id = p_tenant_id
+      and dim.provider_code = p_provider_code
+      and dim.hardware_id = p_hardware_id
+    limit 1
+    for update;
+
+
+    if v_device_id is null then
+
+        raise exception
+            'No SmartHellas device mapping found for provider % and hardware identity %',
+            p_provider_code,
+            p_hardware_id;
+
+    end if;
+
+
+    -- =================================================
+    -- 3. RECONCILE CURRENT EXTERNAL ID
+    -- =================================================
+
+    if exists (
+        select 1
+        from public.device_integration_map dim
+        where dim.tenant_id = p_tenant_id
+          and dim.provider_code = p_provider_code
+          and dim.external_id = p_external_id
+          and dim.id <> v_map_id
+    ) then
+
+        raise exception
+            'External provider identifier % already belongs to another device',
+            p_external_id;
+
+    end if;
+
+
+    update public.device_integration_map
+    set external_id = btrim(p_external_id)
+    where id = v_map_id;
+
+
+    perform platform.log_audit(
+        'provider.device_identity_reconciled',
+        'device_integration_map',
+        v_map_id,
+        jsonb_build_object(
+            'provider_code',
+            p_provider_code,
+
+            'device_id',
+            v_device_id,
+
+            'hardware_id',
+            p_hardware_id,
+
+            'external_id',
+            p_external_id
+        )
+    );
+
+
+    return v_device_id;
+
+end;
+$$;
+
+
+revoke all on function public.resolve_or_reconcile_provider_device(
+    uuid,
+    text,
+    text,
+    text
+)
+from public, anon, authenticated;
+
+
+grant execute on function public.resolve_or_reconcile_provider_device(
+    uuid,
+    text,
+    text,
+    text
+)
+to service_role;
+
 
 
 -- =====================================================
