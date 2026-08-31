@@ -53,6 +53,99 @@ create table if not exists public.integration_providers (
 
 
 -- =====================================================
+-- 2.0 INTEGRATION OAUTH CONFIGURATION (SSOT)
+-- =====================================================
+
+create table if not exists public.integration_oauth_configs (
+
+    id uuid primary key default gen_random_uuid(),
+
+    provider_code text not null
+        references public.integration_providers(code)
+        on delete cascade,
+
+    authorization_url text not null,
+
+    token_url text not null,
+
+    default_scopes text[] not null default '{}'::text[],
+
+    response_type text not null default 'code',
+
+    grant_type text not null default 'authorization_code',
+
+    client_auth_method text not null default 'client_secret_post',
+
+    pkce_required boolean not null default false,
+
+    pkce_method text,
+
+    redirect_uri_mode text not null default 'supabase_function',
+
+    is_active boolean not null default true,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    constraint uq_integration_oauth_config_provider
+        unique (provider_code),
+
+    constraint chk_integration_oauth_response_type
+        check (response_type = 'code'),
+
+    constraint chk_integration_oauth_grant_type
+        check (grant_type = 'authorization_code'),
+
+    constraint chk_integration_oauth_client_auth_method
+        check (
+            client_auth_method in (
+                'client_secret_basic',
+                'client_secret_post',
+                'none'
+            )
+        ),
+
+    constraint chk_integration_oauth_pkce_method
+        check (
+            (pkce_required = false and pkce_method is null)
+            or
+            (pkce_required = true and pkce_method = 'S256')
+        ),
+
+    constraint chk_integration_oauth_redirect_uri_mode
+        check (
+            redirect_uri_mode in (
+                'supabase_function',
+                'configured'
+            )
+        )
+);
+
+
+comment on table public.integration_oauth_configs is
+    'OAuth protocol configuration SSOT per integration provider. Contains no secrets, tokens, tenant state or OAuth transaction state.';
+
+comment on column public.integration_oauth_configs.authorization_url is
+    'Provider OAuth authorization endpoint. Non-secret configuration.';
+
+comment on column public.integration_oauth_configs.token_url is
+    'Provider OAuth token endpoint. Non-secret configuration.';
+
+comment on column public.integration_oauth_configs.default_scopes is
+    'Default OAuth scopes requested by SmartHellas for this provider.';
+
+comment on column public.integration_oauth_configs.client_auth_method is
+    'OAuth client authentication method used at the token endpoint.';
+
+comment on column public.integration_oauth_configs.pkce_required is
+    'Whether the provider requires PKCE for the authorization-code flow.';
+
+comment on column public.integration_oauth_configs.redirect_uri_mode is
+    'Defines how the OAuth redirect URI is resolved for the provider.';
+
+
+-- =====================================================
 -- 2. INTEGRATION CAPABILITIES (PROVIDER FEATURES)
 -- =====================================================
 
@@ -248,9 +341,9 @@ insert into public.integration_providers (
     supports_oauth
 )
 values
-    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('ttlock', 'TTLock', 'lock', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('shelly', 'Shelly', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
+    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('ttlock', 'TTLock', 'lock', '2026-01-01 00:00:00+00'::timestamptz, true, true),
+    ('shelly', 'Shelly', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, true),
     ('beds24', 'Beds24', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
     ('stripe', 'Stripe', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
     ('vivawallet', 'Viva Wallet', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
