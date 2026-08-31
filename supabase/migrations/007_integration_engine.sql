@@ -256,7 +256,7 @@ create table if not exists public.integration_oauth_states (
     user_id uuid not null,
     provider_code text not null,
     state_token text not null,
-    redirect_ text,
+    redirect_uri text,
     code_verifier text,
     code_challenge_method text,
     expires_at timestamptz not null,
@@ -862,7 +862,9 @@ do update set
     value_type = excluded.value_type,
     is_required = excluded.is_required,
     is_active = excluded.is_active,
-rmko
+    updated_at = now();
+
+
 -- =====================================================
 -- 9.6 — OAuth API signature cleanup
 -- =====================================================
@@ -3407,7 +3409,7 @@ declare
     v_state_token text;
     v_expires_at timestamptz;
 
-    v_redirect_ text;
+    v_redirect_uri text;
 
     v_supabase_url text;
     v_client_id text;
@@ -3423,8 +3425,6 @@ begin
 
     p_payload := coalesce(p_payload, '{}'::jsonb);
 
-    -- =================================================
-    -- 1. CURRENT USER / TENANT
 -- =====================================================
 -- 007: GENERIC OAUTH START
 --
@@ -3472,7 +3472,7 @@ declare
     v_state_token text;
     v_expires_at timestamptz;
 
-    v_redirect_ text;
+    v_redirect_uri text;
 
     v_supabase_url text;
     v_client_id text;
@@ -3635,7 +3635,7 @@ begin
             end if;
 
 
-            v_redirect_ :=
+            v_redirect_uri :=
                 rtrim(
                     v_supabase_url,
                     '/'
@@ -3645,19 +3645,19 @@ begin
 
         when 'configured' then
 
-            v_redirect_ :=
+            v_redirect_uri :=
                 nullif(
                     btrim(
-                        p_payload->>'redirect_'
+                        p_payload->>'redirect_uri'
                     ),
                     ''
                 );
 
 
-            if v_redirect_ is null then
+            if v_redirect_uri is null then
 
                 raise exception
-                    'redirect_ is required for configured OAuth redirect mode';
+                    'redirect_uri is required for configured OAuth redirect mode';
 
             end if;
 
@@ -3802,7 +3802,7 @@ begin
         user_id,
         provider_code,
         state_token,
-        redirect_,
+        redirect_uri,
         code_verifier,
         code_challenge_method,
         expires_at
@@ -3813,7 +3813,7 @@ begin
         v_uid,
         v_provider_code,
         v_state_token,
-        v_redirect_,
+        v_redirect_uri,
         v_code_verifier,
 
         case
@@ -3847,9 +3847,9 @@ begin
         || public.integrations_oauth_url_encode(
             v_client_id
         )
-        || '&redirect_='
+        || '&redirect_uri='
         || public.integrations_oauth_url_encode(
-            v_redirect_
+            v_redirect_uri
         )
         || '&state='
         || public.integrations_oauth_url_encode(
@@ -4137,7 +4137,7 @@ drop function if exists public.integrations_exchange_oauth_tokens(
 -- MUST NOT:
 -- - accept tenant_id from caller
 -- - accept provider_code from caller
--- - accept redirect_ from caller
+-- - accept redirect_uri from caller
 -- - contain provider-specific branches
 -- - store tokens in PostgreSQL
 -- -----------------------------------------------------
@@ -4158,7 +4158,7 @@ declare
     v_tenant_id uuid;
     v_provider_code text;
 
-    v_redirect_ text;
+    v_redirect_uri text;
     v_code_verifier text;
     v_code_challenge_method text;
 
@@ -4216,9 +4216,9 @@ begin
     v_provider_code :=
         lower(trim(v_state->>'provider_code'));
 
-    v_redirect_ :=
+    v_redirect_uri :=
         nullif(
-            trim(v_state->>'redirect_'),
+            trim(v_state->>'redirect_uri'),
             ''
         );
 
@@ -4245,9 +4245,9 @@ begin
             'OAuth state does not contain provider_code';
     end if;
 
-    if v_redirect_ is null then
+    if v_redirect_uri is null then
         raise exception
-            'OAuth state does not contain redirect_';
+            'OAuth state does not contain redirect_uri';
     end if;
 
 
@@ -4376,9 +4376,9 @@ begin
             trim(p_code)
         )
 
-        || '&redirect_='
+        || '&redirect_uri='
         || public.integrations_oauth_url_encode(
-            v_redirect_
+            v_redirect_uri
         );
 
 
@@ -4557,446 +4557,6 @@ begin
 end;
 $$;
 
-
-
--- -----------------------------------------------------
--- 007 Integrations: Generic OAuth token exchange (SSOT)
--- -----------------------------------------------------
---
--- Responsibility:
--- - Resolve OAuth transaction from state
--- - Resolve provider OAuth configuration
--- - Resolve client credentials from Vault
--- - Exchange authorization code for tokens
--- - Store provider token response in Vault
---
--- SSOT:
--- integration_oauth_states  = OAuth transaction
--- integration_oauth_configs = OAuth protocol configuration
--- Vault                     = client credentials/tokens
---
--- MUST NOT:
--- - accept tenant_id from caller
--- - accept provider_code from caller
--- - accept redirect_ from caller
--- - contain provider-specific branches
--- - store tokens in PostgreSQL
--- -----------------------------------------------------
-
-create or replace function public.integrations_exchange_oauth_tokens(
-    p_code text,
-    p_state_token text
-)
-returns text
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_state jsonb;
-    v_config record;
-
-    v_tenant_id uuid;
-    v_provider_code text;
-
-    v_redirect_ text;
-    v_code_verifier text;
-    v_code_challenge_method text;
-
-    v_credentials_ref text;
-
-    v_client_id text;
-    v_client_secret text;
-
-    v_form_body text;
-
-    v_http_result jsonb;
-    v_status_code int;
-    v_response_body text;
-
-    v_token_json jsonb;
-begin
-
-    -- =================================================
-    -- 1. INPUT VALIDATION
-    -- =================================================
-
-    if p_code is null
-       or length(trim(p_code)) = 0 then
-
-        raise exception 'code is required';
-
-    end if;
-
-    if p_state_token is null
-       or length(trim(p_state_token)) = 0 then
-
-        raise exception 'state_token is required';
-
-    end if;
-
-
-    -- =================================================
-    -- 2. RESOLVE OAUTH TRANSACTION
-    --
-    -- The state is the authoritative source for:
-    -- - tenant
-    -- - provider
-    -- - redirect 
-    -- - PKCE verifier
-    -- =================================================
-
-    v_state :=
-        public.integrations_resolve_oauth_state(
-            trim(p_state_token)
-        );
-
-    v_tenant_id :=
-        (v_state->>'tenant_id')::uuid;
-
-    v_provider_code :=
-        lower(trim(v_state->>'provider_code'));
-
-    v_redirect_ :=
-        nullif(
-            trim(v_state->>'redirect_'),
-            ''
-        );
-
-    v_code_verifier :=
-        nullif(
-            trim(v_state->>'code_verifier'),
-            ''
-        );
-
-    v_code_challenge_method :=
-        nullif(
-            trim(v_state->>'code_challenge_method'),
-            ''
-        );
-
-
-    if v_tenant_id is null then
-        raise exception
-            'OAuth state does not contain tenant_id';
-    end if;
-
-    if v_provider_code is null then
-        raise exception
-            'OAuth state does not contain provider_code';
-    end if;
-
-    if v_redirect_ is null then
-        raise exception
-            'OAuth state does not contain redirect_';
-    end if;
-
-
-    -- =================================================
-    -- 3. RESOLVE OAUTH CONFIGURATION
-    -- =================================================
-
-    select
-        oc.provider_code,
-        oc.token_url,
-        oc.grant_type,
-        oc.client_auth_method,
-        oc.pkce_required,
-        oc.pkce_method,
-        oc.is_active
-
-    into v_config
-
-    from public.integration_oauth_configs oc
-
-    where oc.provider_code = v_provider_code
-      and oc.is_active = true
-
-    limit 1;
-
-
-    if not found then
-        raise exception
-            'Active OAuth configuration not found for provider %',
-            v_provider_code;
-    end if;
-
-
-    -- =================================================
-    -- 4. VALIDATE PKCE STATE AGAINST CONFIG
-    -- =================================================
-
-    if v_config.pkce_required then
-
-        if v_code_verifier is null then
-            raise exception
-                'PKCE code_verifier missing for provider %',
-                v_provider_code;
-        end if;
-
-        if v_code_challenge_method is null then
-            raise exception
-                'PKCE challenge method missing for provider %',
-                v_provider_code;
-        end if;
-
-        if v_code_challenge_method <> v_config.pkce_method then
-            raise exception
-                'OAuth PKCE method mismatch for provider %',
-                v_provider_code;
-        end if;
-
-    else
-
-        if v_code_verifier is not null
-           or v_code_challenge_method is not null then
-
-            raise exception
-                'Unexpected PKCE state for provider %',
-                v_provider_code;
-
-        end if;
-
-    end if;
-
-
-    -- =================================================
-    -- 5. RESOLVE CLIENT CREDENTIALS FROM VAULT
-    -- =================================================
-
-    v_client_id :=
-        platform.get_vault_secret(
-            'oauth_client_id_' || v_provider_code
-        );
-
-    if v_client_id is null
-       or btrim(v_client_id) = '' then
-
-        raise exception
-            'OAuth client id not configured for %',
-            v_provider_code;
-
-    end if;
-
-
-    -- Client secret is not required for public clients
-    -- using client_auth_method = none.
-
-    if v_config.client_auth_method
-       in ('client_secret_basic', 'client_secret_post') then
-
-        v_client_secret :=
-            platform.get_vault_secret(
-                'oauth_client_secret_' || v_provider_code
-            );
-
-        if v_client_secret is null
-           or btrim(v_client_secret) = '' then
-
-            raise exception
-                'OAuth client secret not configured for %',
-                v_provider_code;
-
-        end if;
-
-    end if;
-
-
-    -- =================================================
-    -- 6. BUILD TOKEN REQUEST
-    -- =================================================
-
-    v_form_body :=
-          'grant_type='
-        || public.integrations_oauth_url_encode(
-            v_config.grant_type
-        )
-
-        || '&code='
-        || public.integrations_oauth_url_encode(
-            trim(p_code)
-        )
-
-        || '&redirect_='
-        || public.integrations_oauth_url_encode(
-            v_redirect_
-        );
-
-
-    -- =================================================
-    -- 7. CLIENT AUTHENTICATION
-    -- =================================================
-
-    case v_config.client_auth_method
-
-        when 'client_secret_post' then
-
-            v_form_body :=
-                v_form_body
-                || '&client_id='
-                || public.integrations_oauth_url_encode(
-                    v_client_id
-                )
-                || '&client_secret='
-                || public.integrations_oauth_url_encode(
-                    v_client_secret
-                );
-
-
-        when 'none' then
-
-            v_form_body :=
-                v_form_body
-                || '&client_id='
-                || public.integrations_oauth_url_encode(
-                    v_client_id
-                );
-
-
-        when 'client_secret_basic' then
-
-            raise exception
-                'client_secret_basic is not supported by the current sync_http_request abstraction for provider %',
-                v_provider_code;
-
-
-        else
-
-            raise exception
-                'Unsupported OAuth client authentication method: %',
-                v_config.client_auth_method;
-
-    end case;
-
-
-    -- =================================================
-    -- 8. PKCE
-    -- =================================================
-
-    if v_config.pkce_required then
-
-        v_form_body :=
-            v_form_body
-            || '&code_verifier='
-            || public.integrations_oauth_url_encode(
-                v_code_verifier
-            );
-
-    end if;
-
-
-    -- =================================================
-    -- 9. TOKEN EXCHANGE
-    -- =================================================
-
-    v_http_result :=
-        platform.sync_http_request(
-            'POST',
-            v_config.token_url,
-            'application/x-www-form-urlencoded',
-            v_form_body
-        );
-
-
-    -- =================================================
-    -- 10. VALIDATE HTTP RESPONSE
-    -- =================================================
-
-    v_status_code :=
-        (v_http_result->>'status_code')::int;
-
-    v_response_body :=
-        v_http_result->>'body';
-
-
-    if v_status_code is null then
-
-        raise exception
-            'OAuth token exchange returned no HTTP status for provider %',
-            v_provider_code;
-
-    end if;
-
-
-    if v_status_code < 200
-       or v_status_code >= 300 then
-
-        raise exception
-            'OAuth token exchange failed for provider % (HTTP %): %',
-            v_provider_code,
-            v_status_code,
-            v_response_body;
-
-    end if;
-
-
-    -- =================================================
-    -- 11. VALIDATE TOKEN RESPONSE JSON
-    -- =================================================
-
-    begin
-
-        v_token_json :=
-            v_response_body::jsonb;
-
-    exception
-        when others then
-
-            raise exception
-                'OAuth token exchange returned invalid JSON for provider %',
-                v_provider_code;
-
-    end;
-
-
-    if v_token_json->>'access_token' is null
-       or btrim(v_token_json->>'access_token') = '' then
-
-        raise exception
-            'OAuth token response did not contain access_token for provider %',
-            v_provider_code;
-
-    end if;
-
-
-    -- =================================================
-    -- 12. CREDENTIALS REFERENCE
-    -- =================================================
-
-    v_credentials_ref :=
-        format(
-            'integrations/%s/%s',
-            v_tenant_id,
-            v_provider_code
-        );
-
-
-    -- =================================================
-    -- 13. STORE TOKEN RESPONSE IN VAULT
-    --
-    -- Store the complete provider token response.
-    -- Never expose it to the caller.
-    -- =================================================
-
-    perform platform.upsert_vault_secret(
-        v_response_body,
-        v_credentials_ref,
-        format(
-            'OAuth credentials for %s tenant %s',
-            v_provider_code,
-            v_tenant_id
-        )
-    );
-
-
-    -- =================================================
-    -- 14. RETURN ONLY VAULT REFERENCE
-    -- =================================================
-
-    return v_credentials_ref;
-
-end;
-$$;
 
 
 -- =====================================================
@@ -5344,7 +4904,7 @@ create or replace function public.process_integration_webhook(
     p_webhook_id uuid
 )
 returns jsonb
-language plpgsql
+ n plpgsql
 security definer
 set search_path = ''
 as $$
