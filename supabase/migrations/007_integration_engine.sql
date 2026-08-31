@@ -80,7 +80,7 @@ create table if not exists public.integration_oauth_configs (
 
     pkce_method text,
 
-    redirect_uri_mode text not null default 'supabase_function',
+    redirect__mode text not null default 'supabase_function',
 
     is_active boolean not null default true,
 
@@ -113,9 +113,9 @@ create table if not exists public.integration_oauth_configs (
             (pkce_required = true and pkce_method = 'S256')
         ),
 
-    constraint chk_integration_oauth_redirect_uri_mode
+    constraint chk_integration_oauth_redirect__mode
         check (
-            redirect_uri_mode in (
+            redirect__mode in (
                 'supabase_function',
                 'configured'
             )
@@ -141,8 +141,8 @@ comment on column public.integration_oauth_configs.client_auth_method is
 comment on column public.integration_oauth_configs.pkce_required is
     'Whether the provider requires PKCE for the authorization-code flow.';
 
-comment on column public.integration_oauth_configs.redirect_uri_mode is
-    'Defines how the OAuth redirect URI is resolved for the provider.';
+comment on column public.integration_oauth_configs.redirect__mode is
+    'Defines how the OAuth redirect  is resolved for the provider.';
 
 
 -- =====================================================
@@ -256,7 +256,7 @@ create table if not exists public.integration_oauth_states (
     user_id uuid not null,
     provider_code text not null,
     state_token text not null,
-    redirect_uri text,
+    redirect_ text,
     code_verifier text,
     code_challenge_method text,
     expires_at timestamptz not null,
@@ -1073,7 +1073,7 @@ end $$;
 -- 12. RLS CONFIGURATION
 -- =====================================================
 
-alter table public.integration_providers enable row level security;
+alter table public.integration_providers enable row level secty;
 
 
 
@@ -1084,7 +1084,7 @@ drop policy if exists integration_providers_write on public.integration_provider
 
 
 
-alter table public.integration_capabilities enable row level security;
+alter table public.integration_capabilities enable row level secty;
 
 
 
@@ -1095,7 +1095,7 @@ drop policy if exists integration_capabilities_write on public.integration_capab
 
 
 
-alter table public.tenant_integrations enable row level security;
+alter table public.tenant_integrations enable row level secty;
 
 
 
@@ -1112,7 +1112,7 @@ drop policy if exists tenant_integrations_delete on public.tenant_integrations;
 
 
 
-alter table public.webhook_definitions enable row level security;
+alter table public.webhook_definitions enable row level secty;
 
 
 
@@ -1129,7 +1129,7 @@ drop policy if exists webhook_definitions_delete on public.webhook_definitions;
 
 
 
-alter table public.device_integration_map enable row level security;
+alter table public.device_integration_map enable row level secty;
 
 
 
@@ -1354,10 +1354,10 @@ create policy webhook_definitions_update on public.webhook_definitions
 -- =====================================================
 
 alter table public.integration_oauth_states
-    enable row level security;
+    enable row level secty;
 
 alter table public.integration_oauth_states
-    force row level security;
+    force row level secty;
 
 
 drop policy if exists integration_oauth_states_select
@@ -1486,7 +1486,7 @@ create or replace function public.resolve_integration_webhook_mapping(
 )
 returns text
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -1604,7 +1604,7 @@ create or replace function public.resolve_provider_device_by_external_id(
 returns uuid
 language sql
 stable
-security definer
+secty definer
 set search_path = ''
 as $$
     select dim.device_id
@@ -1652,7 +1652,7 @@ create or replace function public.resolve_provider_device_by_hardware_id(
 returns uuid
 language sql
 stable
-security definer
+secty definer
 set search_path = ''
 as $$
     select dim.device_id
@@ -1721,7 +1721,7 @@ create or replace function public.reconcile_provider_device(
 )
 returns jsonb
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -1893,7 +1893,7 @@ create or replace function public.integrations_domain(
 )
 returns jsonb
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -2812,7 +2812,7 @@ create or replace function public.integrations_domain_ext(
 )
 returns jsonb
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -2930,31 +2930,33 @@ drop function if exists public.integrations_complete_oauth(
     text
 );
 
--- -----------------------------------------------------
--- 007 Integrations: OAuth state completion (SSOT)
--- -----------------------------------------------------
+-- =====================================================
+-- 007 Integrations: OAuth completion (SSOT hardened)
+-- =====================================================
 --
 -- Responsibility:
--- - Complete an OAuth transaction
--- - Resolve tenant/user/provider from OAuth state
--- - Bind credentials to tenant integration
--- - Consume OAuth state only after successful completion
+-- - Resolve OAuth transaction from state
+-- - Resolve tenant and provider from OAuth state
+-- - Derive credentials reference deterministically
+-- - Consume the OAuth state transaction
+-- - Upsert tenant integration
+-- - Audit successful OAuth completion
 --
--- Caller supplies ONLY:
--- - credentials_ref
--- - state_token
---
--- Tenant/provider are resolved from integration_oauth_states.
+-- SSOT:
+-- integration_oauth_states = OAuth transaction
+-- integration_providers    = provider catalog
+-- tenant_integrations      = tenant integration SSOT
+-- Vault                    = OAuth credentials
 --
 -- MUST NOT:
--- - trust tenant_id from caller
--- - trust provider_code from caller
--- - accept redirect_uri from caller
--- - consume state before successful integration update
--- -----------------------------------------------------
+-- - accept tenant_id from caller
+-- - accept provider_code from caller
+-- - accept credentials_ref from caller
+-- - accept OAuth tokens from caller
+-- - store OAuth tokens in PostgreSQL
+-- =====================================================
 
 create or replace function public.integrations_complete_oauth(
-    p_credentials_ref text,
     p_state_token text
 )
 returns jsonb
@@ -2963,21 +2965,17 @@ security definer
 set search_path = ''
 as $$
 declare
-    v_row public.tenant_integrations;
     v_state public.integration_oauth_states;
+    v_row public.tenant_integrations;
+
+    v_tenant_id uuid;
+    v_provider_code text;
+    v_credentials_ref text;
 begin
 
     -- =================================================
     -- 1. INPUT VALIDATION
     -- =================================================
-
-    if p_credentials_ref is null
-       or length(trim(p_credentials_ref)) = 0 then
-
-        raise exception
-            'credentials_ref is required';
-
-    end if;
 
     if p_state_token is null
        or length(trim(p_state_token)) = 0 then
@@ -2989,14 +2987,14 @@ begin
 
 
     -- =================================================
-    -- 2. RESOLVE OAUTH STATE
+    -- 2. RESOLVE OAUTH TRANSACTION
     --
-    -- State is authoritative for:
-    -- - tenant_id
-    -- - user_id
-    -- - provider_code
+    -- OAuth state is authoritative for:
+    -- - tenant
+    -- - provider
+    -- - transaction validity
     --
-    -- Caller cannot override this context.
+    -- State can only be consumed once.
     -- =================================================
 
     select *
@@ -3005,7 +3003,9 @@ begin
     from public.integration_oauth_states s
 
     where s.state_token = trim(p_state_token)
+
       and s.consumed_at is null
+
       and s.expires_at > now()
 
     for update;
@@ -3014,35 +3014,122 @@ begin
     if not found then
 
         raise exception
-            'Invalid or expired OAuth state';
+            'Invalid, expired, or already consumed OAuth state';
 
     end if;
 
 
     -- =================================================
-    -- 3. VALIDATE PROVIDER
+    -- 3. RESOLVE TENANT / PROVIDER FROM STATE
+    -- =================================================
+
+    v_tenant_id :=
+        v_state.tenant_id;
+
+    v_provider_code :=
+        lower(trim(v_state.provider_code));
+
+
+    if v_tenant_id is null then
+
+        raise exception
+            'OAuth state does not contain tenant_id';
+
+    end if;
+
+
+    if v_provider_code is null
+       or v_provider_code = '' then
+
+        raise exception
+            'OAuth state does not contain provider_code';
+
+    end if;
+
+
+    -- =================================================
+    -- 4. VALIDATE PROVIDER
     -- =================================================
 
     if not exists (
+
         select 1
+
         from public.integration_providers ip
-        where ip.code = v_state.provider_code
+
+        where ip.code = v_provider_code
+
           and ip.is_active = true
+
     ) then
 
         raise exception
-            'Integration provider not found or inactive';
+            'Active integration provider not found: %',
+            v_provider_code;
 
     end if;
 
 
     -- =================================================
-    -- 4. CREATE / UPDATE TENANT INTEGRATION
+    -- 5. DERIVE CREDENTIALS REFERENCE
     --
-    -- Existing SSOT:
-    -- unique (tenant_id, provider_code)
+    -- Never accept this from the caller.
     --
-    -- Existing config is preserved.
+    -- Must match the reference generated by
+    -- integrations_exchange_oauth_tokens().
+    -- =================================================
+
+    v_credentials_ref :=
+        format(
+            'integrations/%s/%s',
+            v_tenant_id,
+            v_provider_code
+        );
+
+
+    -- =================================================
+    -- 6. VERIFY CREDENTIALS EXIST IN VAULT
+    --
+    -- The PostgreSQL database stores only the reference.
+    -- OAuth tokens remain in Vault.
+    --
+    -- NOTE:
+    -- Vault lookup is intentionally performed through
+    -- the platform abstraction.
+    -- =================================================
+
+    if platform.get_vault_secret(
+        v_credentials_ref
+    ) is null then
+
+        raise exception
+            'OAuth credentials not found in Vault for provider %',
+            v_provider_code;
+
+    end if;
+
+
+    -- =================================================
+    -- 7. CONSUME OAUTH STATE
+    --
+    -- The transaction is consumed only after:
+    -- - state validation
+    -- - provider validation
+    -- - credential validation
+    --
+    -- Because the state row is locked above, concurrent
+    -- completion attempts cannot consume it twice.
+    -- =================================================
+
+    update public.integration_oauth_states
+
+    set consumed_at = now()
+
+    where id = v_state.id;
+
+
+    -- =================================================
+    -- 8. UPSERT TENANT INTEGRATION
     -- =================================================
 
     insert into public.tenant_integrations (
@@ -3052,10 +3139,11 @@ begin
         config,
         is_enabled
     )
+
     values (
-        v_state.tenant_id,
-        v_state.provider_code,
-        trim(p_credentials_ref),
+        v_tenant_id,
+        v_provider_code,
+        v_credentials_ref,
         '{}'::jsonb,
         true
     )
@@ -3064,7 +3152,9 @@ begin
         tenant_id,
         provider_code
     )
+
     do update
+
     set
         credentials_ref = excluded.credentials_ref,
         is_enabled = true,
@@ -3084,31 +3174,7 @@ begin
 
 
     -- =================================================
-    -- 5. CONSUME OAUTH STATE
-    --
-    -- IMPORTANT:
-    -- State is consumed ONLY after the integration
-    -- was successfully created or updated.
-    -- =================================================
-
-    update public.integration_oauth_states
-    set
-        consumed_at = now()
-
-    where id = v_state.id
-      and consumed_at is null;
-
-
-    if not found then
-
-        raise exception
-            'OAuth state could not be consumed';
-
-    end if;
-
-
-    -- =================================================
-    -- 6. AUDIT
+    -- 9. AUDIT
     -- =================================================
 
     perform platform.log_audit(
@@ -3116,63 +3182,34 @@ begin
         'tenant_integration',
         v_row.id,
         jsonb_build_object(
-            'provider_code', v_state.provider_code,
-            'tenant_id', v_state.tenant_id,
-            'oauth_state_id', v_state.id
+            'provider_code',
+            v_provider_code
         )
     );
 
 
     -- =================================================
-    -- 7. RETURN
+    -- 10. RETURN
+    --
+    -- Never return OAuth tokens.
     -- =================================================
 
-    return to_jsonb(v_row);
+    return jsonb_build_object(
+        'id',
+        v_row.id,
+
+        'tenant_id',
+        v_row.tenant_id,
+
+        'provider_code',
+        v_row.provider_code,
+
+        'is_enabled',
+        v_row.is_enabled
+    );
 
 end;
 $$;
-
--- =====================================================
--- 20. OAUTH HELPERS
--- =====================================================
-
--- -----------------------------------------------------
--- 007: URL encode helper for OAuth query parameters
--- -----------------------------------------------------
-
-create or replace function public.integrations_oauth_url_encode(p_value text)
-returns text
-language plpgsql
-immutable
-set search_path = ''
-as $$
-declare
-    v_bytes bytea;
-    v_result text := '';
-    v_i int;
-    v_byte int;
-begin
-    if p_value is null then
-        return '';
-    end if;
-
-    v_bytes := convert_to(p_value, 'UTF8');
-    for v_i in 0..(length(v_bytes) - 1) loop
-        v_byte := get_byte(v_bytes, v_i);
-        if (v_byte >= 48 and v_byte <= 57)
-           or (v_byte >= 65 and v_byte <= 90)
-           or (v_byte >= 97 and v_byte <= 122)
-           or v_byte in (45, 46, 95, 126) then
-            v_result := v_result || chr(v_byte);
-        else
-            v_result := v_result || '%' || upper(to_hex(v_byte));
-        end if;
-    end loop;
-
-    return v_result;
-end;
-$$;
-
 
 -- =====================================================
 -- 007: GENERIC OAUTH START
@@ -3203,7 +3240,7 @@ create or replace function public.integrations_start_oauth(
 )
 returns jsonb
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -3217,7 +3254,7 @@ declare
     v_state_token text;
     v_expires_at timestamptz;
 
-    v_redirect_uri text;
+    v_redirect_ text;
 
     v_supabase_url text;
     v_client_id text;
@@ -3235,17 +3272,92 @@ begin
 
     -- =================================================
     -- 1. CURRENT USER / TENANT
+-- =====================================================
+-- 007: GENERIC OAUTH START
+--
+-- Responsibility:
+-- - Validate provider OAuth capability
+-- - Resolve OAuth protocol configuration
+-- - Resolve client credentials from Vault
+-- - Resolve redirect 
+-- - Generate OAuth state
+-- - Generate PKCE when required
+-- - Persist complete OAuth transaction state
+-- - Build provider authorization URL
+--
+-- SSOT:
+-- - integration_providers       = provider capability
+-- - integration_oauth_configs   = OAuth protocol config
+-- - integration_oauth_states    = OAuth transaction state
+-- - Vault                       = client credentials
+--
+-- MUST NOT:
+-- - contain provider-specific IF branches
+-- - store client secrets in PostgreSQL
+-- - trust tenant_id from caller
+-- - trust user_id from caller
+-- - return code_verifier
+-- - return client_secret
+-- =====================================================
+
+create or replace function public.integrations_start_oauth(
+    p_payload jsonb default '{}'::jsonb
+)
+returns jsonb
+language plpgsql
+secty definer
+set search_path = ''
+as $$
+declare
+    v_tid uuid;
+    v_uid uuid;
+
+    v_provider_code text;
+
+    v_oauth_config record;
+
+    v_state_token text;
+    v_expires_at timestamptz;
+
+    v_redirect_ text;
+
+    v_supabase_url text;
+    v_client_id text;
+
+    v_code_verifier text;
+    v_code_challenge text;
+
+    v_authorize_url text;
+    v_scope text;
+
+    v_scope_params text := '';
+
+    v_state_id uuid;
+begin
+
+    p_payload := coalesce(
+        p_payload,
+        '{}'::jsonb
+    );
+
+
+    -- =================================================
+    -- 1. CURRENT USER / TENANT
     -- =================================================
 
     v_tid := platform.current_tenant_id();
     v_uid := auth.uid();
 
+
     if v_uid is null then
-        raise exception 'Authentication required';
+        raise exception
+            'Authentication required';
     end if;
 
+
     if v_tid is null then
-        raise exception 'Active tenant context required';
+        raise exception
+            'Active tenant context required';
     end if;
 
 
@@ -3254,16 +3366,30 @@ begin
     -- =================================================
 
     v_provider_code :=
-        lower(trim(p_payload->>'provider_code'));
+        lower(
+            trim(
+                p_payload->>'provider_code'
+            )
+        );
+
 
     if v_provider_code is null
        or v_provider_code = '' then
-        raise exception 'provider_code is required';
+
+        raise exception
+            'provider_code is required';
+
     end if;
 
 
     -- =================================================
     -- 3. PROVIDER + OAUTH CONFIG
+    --
+    -- integration_providers:
+    -- provider capability
+    --
+    -- integration_oauth_configs:
+    -- OAuth protocol configuration
     -- =================================================
 
     select
@@ -3279,7 +3405,7 @@ begin
         oc.client_auth_method,
         oc.pkce_required,
         oc.pkce_method,
-        oc.redirect_uri_mode,
+        oc.redirect__mode,
         oc.is_active as oauth_config_is_active
 
     into v_oauth_config
@@ -3298,25 +3424,26 @@ begin
 
 
     if not found then
+
         raise exception
             'OAuth provider configuration not found or inactive for %',
             v_provider_code;
+
     end if;
 
 
     -- =================================================
     -- 4. CLIENT ID
     --
-    -- Client credentials remain in Vault.
-    -- Naming convention:
-    --
-    -- oauth_client_id_{provider_code}
+    -- Client ID remains outside PostgreSQL business
+    -- tables and is resolved from Vault.
     -- =================================================
 
     v_client_id :=
         platform.get_vault_secret(
             'oauth_client_id_' || v_provider_code
         );
+
 
     if v_client_id is null
        or btrim(v_client_id) = '' then
@@ -3329,18 +3456,22 @@ begin
 
 
     -- =================================================
-    -- 5. REDIRECT URI
+    -- 5. REDIRECT 
     --
-    -- The URI is transaction state and will be stored
-    -- in integration_oauth_states.
+    -- The redirect  becomes part of the OAuth
+    -- transaction state and MUST be reused dng
+    -- token exchange.
     -- =================================================
 
-    case v_oauth_config.redirect_uri_mode
+    case v_oauth_config.redirect__mode
 
         when 'supabase_function' then
 
             v_supabase_url :=
-                platform.get_vault_secret('supabase_url');
+                platform.get_vault_secret(
+                    'supabase_url'
+                );
+
 
             if v_supabase_url is null
                or btrim(v_supabase_url) = '' then
@@ -3350,36 +3481,49 @@ begin
 
             end if;
 
-            v_redirect_uri :=
-                rtrim(v_supabase_url, '/')
-                || '/functions/v1/integrations/oauth-callback';
+
+            v_redirect_ :=
+                rtrim(
+                    v_supabase_url,
+                    '/'
+                )
+                || '/functions/v1/integrations-oauth-callback';
 
 
         when 'configured' then
 
-            v_redirect_uri :=
+            v_redirect_ :=
                 nullif(
-                    btrim(p_payload->>'redirect_uri'),
+                    btrim(
+                        p_payload->>'redirect_'
+                    ),
                     ''
                 );
 
-            if v_redirect_uri is null then
+
+            if v_redirect_ is null then
+
                 raise exception
-                    'redirect_uri is required for configured OAuth redirect mode';
+                    'redirect_ is required for configured OAuth redirect mode';
+
             end if;
 
 
         else
 
             raise exception
-                'Unsupported OAuth redirect_uri_mode: %',
-                v_oauth_config.redirect_uri_mode;
+                'Unsupported OAuth redirect__mode: %',
+                v_oauth_config.redirect__mode;
 
     end case;
 
 
     -- =================================================
     -- 6. GENERATE STATE
+    --
+    -- State is the transaction identifier.
+    -- It is stored before the authorization URL is
+    -- returned to the caller.
     -- =================================================
 
     v_state_token :=
@@ -3387,6 +3531,7 @@ begin
             extensions.gen_random_bytes(32),
             'hex'
         );
+
 
     v_expires_at :=
         now() + interval '10 minutes';
@@ -3399,11 +3544,14 @@ begin
     if v_oauth_config.pkce_required then
 
         if v_oauth_config.pkce_method <> 'S256' then
+
             raise exception
                 'Unsupported PKCE method for provider %: %',
                 v_provider_code,
                 v_oauth_config.pkce_method;
+
         end if;
+
 
         v_code_verifier :=
             encode(
@@ -3411,7 +3559,8 @@ begin
                 'base64'
             );
 
-        -- Convert standard Base64 to Base64URL.
+
+        -- Base64 → Base64URL
         v_code_verifier :=
             rtrim(
                 replace(
@@ -3426,15 +3575,21 @@ begin
                 '='
             );
 
+
         v_code_challenge :=
             encode(
                 extensions.digest(
-                    convert_to(v_code_verifier, 'UTF8'),
+                    convert_to(
+                        v_code_verifier,
+                        'UTF8'
+                    ),
                     'sha256'
                 ),
                 'base64'
             );
 
+
+        -- Base64 → Base64URL
         v_code_challenge :=
             rtrim(
                 replace(
@@ -3457,7 +3612,10 @@ begin
     -- =================================================
 
     if coalesce(
-        array_length(v_oauth_config.default_scopes, 1),
+        array_length(
+            v_oauth_config.default_scopes,
+            1
+        ),
         0
     ) > 0 then
 
@@ -3470,6 +3628,7 @@ begin
                     v_scope_params || ' ';
             end if;
 
+
             v_scope_params :=
                 v_scope_params || v_scope;
 
@@ -3479,7 +3638,10 @@ begin
 
 
     -- =================================================
-    -- 9. PERSIST OAUTH TRANSACTION
+    -- 9. PERSIST COMPLETE OAUTH TRANSACTION
+    --
+    -- integration_oauth_states is the SSOT for the
+    -- complete OAuth transaction.
     -- =================================================
 
     insert into public.integration_oauth_states (
@@ -3487,29 +3649,35 @@ begin
         user_id,
         provider_code,
         state_token,
-        redirect_uri,
+        redirect_,
         code_verifier,
         code_challenge_method,
         expires_at
     )
+
     values (
         v_tid,
         v_uid,
         v_provider_code,
         v_state_token,
-        v_redirect_uri,
+        v_redirect_,
         v_code_verifier,
+
         case
             when v_oauth_config.pkce_required
             then v_oauth_config.pkce_method
             else null
         end,
+
         v_expires_at
-    );
+    )
+
+    returning id
+    into v_state_id;
 
 
     -- =================================================
-    -- 10. BUILD GENERIC AUTHORIZATION URL
+    -- 10. BUILD AUTHORIZATION URL
     -- =================================================
 
     v_authorize_url :=
@@ -3526,15 +3694,19 @@ begin
         || public.integrations_oauth_url_encode(
             v_client_id
         )
-        || '&redirect_uri='
+        || '&redirect_='
         || public.integrations_oauth_url_encode(
-            v_redirect_uri
+            v_redirect_
         )
         || '&state='
         || public.integrations_oauth_url_encode(
             v_state_token
         );
 
+
+    -- =================================================
+    -- 11. OPTIONAL SCOPE
+    -- =================================================
 
     if v_scope_params <> '' then
 
@@ -3547,6 +3719,10 @@ begin
 
     end if;
 
+
+    -- =================================================
+    -- 12. PKCE PARAMETERS
+    -- =================================================
 
     if v_oauth_config.pkce_required then
 
@@ -3565,39 +3741,59 @@ begin
 
 
     -- =================================================
-    -- 11. RETURN
+    -- 13. AUDIT
     --
-    -- Never return code_verifier.
-    -- Never return client_secret.
+    -- Do not log:
+    -- - client_id
+    -- - code_verifier
+    -- - authorization code
+    -- - client_secret
     -- =================================================
 
     perform platform.log_audit(
         'integration.oauth_started',
         'integration_oauth_state',
-        (
-            select s.id
-            from public.integration_oauth_states s
-            where s.state_token = v_state_token
-        ),
+        v_state_id,
         jsonb_build_object(
-            'provider_code', v_provider_code,
-            'pkce_required', v_oauth_config.pkce_required
+            'provider_code',
+            v_provider_code,
+
+            'pkce_required',
+            v_oauth_config.pkce_required,
+
+            'redirect__mode',
+            v_oauth_config.redirect__mode
         )
     );
 
 
+    -- =================================================
+    -- 14. RETURN
+    --
+    -- State is intentionally returned because the
+    -- browser must carry it through the OAuth flow.
+    --
+    -- Never return:
+    -- - code_verifier
+    -- - client_secret
+    -- =================================================
+
     return jsonb_build_object(
-        'authorize_url', v_authorize_url,
-        'state', v_state_token,
-        'provider_code', v_provider_code,
-        'expires_at', v_expires_at
+        'authorize_url',
+        v_authorize_url,
+
+        'state',
+        v_state_token,
+
+        'provider_code',
+        v_provider_code,
+
+        'expires_at',
+        v_expires_at
     );
 
 end;
 $$;
-
-
-
 -- =====================================================
 -- 007 Integrations: OAuth state resolution
 --
@@ -3621,7 +3817,7 @@ create or replace function public.integrations_resolve_oauth_state(
 )
 returns jsonb
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -3710,8 +3906,8 @@ begin
     -- =================================================
     -- 4. RETURN TRANSACTION CONTEXT
     --
-    -- redirect_uri:
-    --   Exact URI used for this authorization request.
+    -- redirect_:
+    --   Exact  used for this authorization request.
     --
     -- code_verifier:
     --   Required for PKCE token exchange.
@@ -3740,8 +3936,8 @@ begin
         'state_token',
         v_state.state_token,
 
-        'redirect_uri',
-        v_state.redirect_uri,
+        'redirect_',
+        v_state.redirect_,
 
         'code_verifier',
         v_state.code_verifier,
@@ -3792,7 +3988,7 @@ drop function if exists public.integrations_exchange_oauth_tokens(
 -- MUST NOT:
 -- - accept tenant_id from caller
 -- - accept provider_code from caller
--- - accept redirect_uri from caller
+-- - accept redirect_ from caller
 -- - contain provider-specific branches
 -- - store tokens in PostgreSQL
 -- -----------------------------------------------------
@@ -3803,7 +3999,7 @@ create or replace function public.integrations_exchange_oauth_tokens(
 )
 returns text
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -3813,7 +4009,7 @@ declare
     v_tenant_id uuid;
     v_provider_code text;
 
-    v_redirect_uri text;
+    v_redirect_ text;
     v_code_verifier text;
     v_code_challenge_method text;
 
@@ -3856,7 +4052,7 @@ begin
     -- The state is the authoritative source for:
     -- - tenant
     -- - provider
-    -- - redirect URI
+    -- - redirect 
     -- - PKCE verifier
     -- =================================================
 
@@ -3871,9 +4067,9 @@ begin
     v_provider_code :=
         lower(trim(v_state->>'provider_code'));
 
-    v_redirect_uri :=
+    v_redirect_ :=
         nullif(
-            trim(v_state->>'redirect_uri'),
+            trim(v_state->>'redirect_'),
             ''
         );
 
@@ -3900,9 +4096,9 @@ begin
             'OAuth state does not contain provider_code';
     end if;
 
-    if v_redirect_uri is null then
+    if v_redirect_ is null then
         raise exception
-            'OAuth state does not contain redirect_uri';
+            'OAuth state does not contain redirect_';
     end if;
 
 
@@ -4031,9 +4227,9 @@ begin
             trim(p_code)
         )
 
-        || '&redirect_uri='
+        || '&redirect_='
         || public.integrations_oauth_url_encode(
-            v_redirect_uri
+            v_redirect_
         );
 
 
@@ -4233,7 +4429,7 @@ $$;
 -- MUST NOT:
 -- - accept tenant_id from caller
 -- - accept provider_code from caller
--- - accept redirect_uri from caller
+-- - accept redirect_ from caller
 -- - contain provider-specific branches
 -- - store tokens in PostgreSQL
 -- -----------------------------------------------------
@@ -4244,7 +4440,7 @@ create or replace function public.integrations_exchange_oauth_tokens(
 )
 returns text
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -4254,7 +4450,7 @@ declare
     v_tenant_id uuid;
     v_provider_code text;
 
-    v_redirect_uri text;
+    v_redirect_ text;
     v_code_verifier text;
     v_code_challenge_method text;
 
@@ -4297,7 +4493,7 @@ begin
     -- The state is the authoritative source for:
     -- - tenant
     -- - provider
-    -- - redirect URI
+    -- - redirect 
     -- - PKCE verifier
     -- =================================================
 
@@ -4312,9 +4508,9 @@ begin
     v_provider_code :=
         lower(trim(v_state->>'provider_code'));
 
-    v_redirect_uri :=
+    v_redirect_ :=
         nullif(
-            trim(v_state->>'redirect_uri'),
+            trim(v_state->>'redirect_'),
             ''
         );
 
@@ -4341,9 +4537,9 @@ begin
             'OAuth state does not contain provider_code';
     end if;
 
-    if v_redirect_uri is null then
+    if v_redirect_ is null then
         raise exception
-            'OAuth state does not contain redirect_uri';
+            'OAuth state does not contain redirect_';
     end if;
 
 
@@ -4472,9 +4668,9 @@ begin
             trim(p_code)
         )
 
-        || '&redirect_uri='
+        || '&redirect_='
         || public.integrations_oauth_url_encode(
-            v_redirect_uri
+            v_redirect_
         );
 
 
@@ -4678,7 +4874,7 @@ create or replace function public.resolve_or_reconcile_provider_device(
 )
 returns uuid
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -4868,7 +5064,7 @@ create or replace function public.process_integration_webhook(
 )
 returns jsonb
 language plpgsql
-security definer
+secty definer
 set search_path = ''
 as $$
 declare
@@ -5197,7 +5393,7 @@ $$;
 
 
 -- =====================================================
--- 22. FUNCTION SECURITY HARDENING
+-- 22. FUNCTION SECTY HARDENING
 -- =====================================================
 
 alter function public.process_integration_webhook(uuid)
@@ -5209,7 +5405,7 @@ alter function public.integrations_resolve_oauth_state(text) set search_path = '
 
 
 -- =====================================================
--- 23. LEGACY / CROSS-MODULE SECURITY HARDENING
+-- 23. LEGACY / CROSS-MODULE SECTY HARDENING
 -- =====================================================
 
 -- -----------------------------------------------------
