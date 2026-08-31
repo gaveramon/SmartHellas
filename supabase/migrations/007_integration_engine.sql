@@ -256,6 +256,9 @@ create table if not exists public.integration_oauth_states (
     user_id uuid not null,
     provider_code text not null,
     state_token text not null,
+    redirect_uri text,
+    code_verifier text,
+    code_challenge_method text,
     expires_at timestamptz not null,
     consumed_at timestamptz,
     created_at timestamptz not null default now(),
@@ -265,6 +268,16 @@ create table if not exists public.integration_oauth_states (
 create index if not exists integration_oauth_states_pending_idx
     on public.integration_oauth_states (expires_at)
     where consumed_at is null;
+
+alter table public.integration_oauth_states
+    drop constraint if exists chk_integration_oauth_state_pkce_method;
+
+alter table public.integration_oauth_states
+    add constraint chk_integration_oauth_state_pkce_method
+    check (
+        code_challenge_method is null
+        or code_challenge_method = 'S256'
+    );
 
 
 -- =====================================================
@@ -2458,13 +2471,33 @@ end;
 $$;
 
 
--- -----------------------------------------------------
--- 007: OAuth start (state registration + authorize URL)
--- Vault secrets: supabase_url, stripe_connect_client_id,
--- oauth_authorize_url_{provider_code}
--- -----------------------------------------------------
+-- =====================================================
+-- 007: GENERIC OAUTH START
+--
+-- Responsibility:
+-- - Validate provider OAuth capability
+-- - Resolve OAuth protocol configuration
+-- - Resolve client credentials from Vault
+-- - Generate OAuth state
+-- - Generate PKCE when required
+-- - Persist transaction state
+-- - Build provider authorization URL
+--
+-- SSOT:
+-- - integration_providers       = provider capability
+-- - integration_oauth_configs   = OAuth protocol config
+-- - integration_oauth_states    = transaction state
+-- - Vault                       = client credentials
+--
+-- MUST NOT:
+-- - contain provider-specific IF branches
+-- - store secrets in PostgreSQL
+-- - trust tenant_id from caller
+-- =====================================================
 
-create or replace function public.integrations_start_oauth(p_payload jsonb)
+create or replace function public.integrations_start_oauth(
+    p_payload jsonb default '{}'::jsonb
+)
 returns jsonb
 language plpgsql
 security definer
@@ -2473,86 +2506,393 @@ as $$
 declare
     v_tid uuid;
     v_uid uuid;
+
     v_provider_code text;
+
+    v_oauth_config record;
+
     v_state_token text;
     v_expires_at timestamptz;
+
     v_redirect_uri text;
+
     v_supabase_url text;
-    v_authorize_url text;
-    v_base_url text;
     v_client_id text;
+
+    v_code_verifier text;
+    v_code_challenge text;
+
+    v_authorize_url text;
+    v_scope text;
+
+    v_scope_params text := '';
 begin
+
     p_payload := coalesce(p_payload, '{}'::jsonb);
+
+    -- =================================================
+    -- 1. CURRENT USER / TENANT
+    -- =================================================
+
     v_tid := platform.current_tenant_id();
     v_uid := auth.uid();
 
-    if p_payload->>'provider_code' is null then
+    if v_uid is null then
+        raise exception 'Authentication required';
+    end if;
+
+    if v_tid is null then
+        raise exception 'Active tenant context required';
+    end if;
+
+
+    -- =================================================
+    -- 2. PROVIDER
+    -- =================================================
+
+    v_provider_code :=
+        lower(trim(p_payload->>'provider_code'));
+
+    if v_provider_code is null
+       or v_provider_code = '' then
         raise exception 'provider_code is required';
     end if;
 
-    v_provider_code := lower(trim(p_payload->>'provider_code'));
 
-    if not exists (
-        select 1 from public.integration_providers ip
-        where ip.code = v_provider_code
-          and ip.supports_oauth = true
-          and ip.is_active = true
-    ) then
-        raise exception 'Integration provider not found or does not support OAuth';
+    -- =================================================
+    -- 3. PROVIDER + OAUTH CONFIG
+    -- =================================================
+
+    select
+        ip.code,
+        ip.supports_oauth,
+        ip.is_active as provider_is_active,
+
+        oc.authorization_url,
+        oc.token_url,
+        oc.default_scopes,
+        oc.response_type,
+        oc.grant_type,
+        oc.client_auth_method,
+        oc.pkce_required,
+        oc.pkce_method,
+        oc.redirect_uri_mode,
+        oc.is_active as oauth_config_is_active
+
+    into v_oauth_config
+
+    from public.integration_providers ip
+
+    join public.integration_oauth_configs oc
+        on oc.provider_code = ip.code
+
+    where ip.code = v_provider_code
+      and ip.is_active = true
+      and ip.supports_oauth = true
+      and oc.is_active = true
+
+    limit 1;
+
+
+    if not found then
+        raise exception
+            'OAuth provider configuration not found or inactive for %',
+            v_provider_code;
     end if;
 
-    v_state_token := encode(extensions.gen_random_bytes(32), 'hex');
-    v_expires_at := now() + interval '10 minutes';
+
+    -- =================================================
+    -- 4. CLIENT ID
+    --
+    -- Client credentials remain in Vault.
+    -- Naming convention:
+    --
+    -- oauth_client_id_{provider_code}
+    -- =================================================
+
+    v_client_id :=
+        platform.get_vault_secret(
+            'oauth_client_id_' || v_provider_code
+        );
+
+    if v_client_id is null
+       or btrim(v_client_id) = '' then
+
+        raise exception
+            'OAuth client ID not configured for provider %',
+            v_provider_code;
+
+    end if;
+
+
+    -- =================================================
+    -- 5. REDIRECT URI
+    --
+    -- The URI is transaction state and will be stored
+    -- in integration_oauth_states.
+    -- =================================================
+
+    case v_oauth_config.redirect_uri_mode
+
+        when 'supabase_function' then
+
+            v_supabase_url :=
+                platform.get_vault_secret('supabase_url');
+
+            if v_supabase_url is null
+               or btrim(v_supabase_url) = '' then
+
+                raise exception
+                    'supabase_url not configured in Vault';
+
+            end if;
+
+            v_redirect_uri :=
+                rtrim(v_supabase_url, '/')
+                || '/functions/v1/integrations/oauth-callback';
+
+
+        when 'configured' then
+
+            v_redirect_uri :=
+                nullif(
+                    btrim(p_payload->>'redirect_uri'),
+                    ''
+                );
+
+            if v_redirect_uri is null then
+                raise exception
+                    'redirect_uri is required for configured OAuth redirect mode';
+            end if;
+
+
+        else
+
+            raise exception
+                'Unsupported OAuth redirect_uri_mode: %',
+                v_oauth_config.redirect_uri_mode;
+
+    end case;
+
+
+    -- =================================================
+    -- 6. GENERATE STATE
+    -- =================================================
+
+    v_state_token :=
+        encode(
+            extensions.gen_random_bytes(32),
+            'hex'
+        );
+
+    v_expires_at :=
+        now() + interval '10 minutes';
+
+
+    -- =================================================
+    -- 7. GENERATE PKCE
+    -- =================================================
+
+    if v_oauth_config.pkce_required then
+
+        if v_oauth_config.pkce_method <> 'S256' then
+            raise exception
+                'Unsupported PKCE method for provider %: %',
+                v_provider_code,
+                v_oauth_config.pkce_method;
+        end if;
+
+        v_code_verifier :=
+            encode(
+                extensions.gen_random_bytes(32),
+                'base64'
+            );
+
+        -- Convert standard Base64 to Base64URL.
+        v_code_verifier :=
+            rtrim(
+                replace(
+                    replace(
+                        v_code_verifier,
+                        '+',
+                        '-'
+                    ),
+                    '/',
+                    '_'
+                ),
+                '='
+            );
+
+        v_code_challenge :=
+            encode(
+                extensions.digest(
+                    convert_to(v_code_verifier, 'UTF8'),
+                    'sha256'
+                ),
+                'base64'
+            );
+
+        v_code_challenge :=
+            rtrim(
+                replace(
+                    replace(
+                        v_code_challenge,
+                        '+',
+                        '-'
+                    ),
+                    '/',
+                    '_'
+                ),
+                '='
+            );
+
+    end if;
+
+
+    -- =================================================
+    -- 8. BUILD SCOPE
+    -- =================================================
+
+    if coalesce(
+        array_length(v_oauth_config.default_scopes, 1),
+        0
+    ) > 0 then
+
+        foreach v_scope in
+            array v_oauth_config.default_scopes
+        loop
+
+            if v_scope_params <> '' then
+                v_scope_params :=
+                    v_scope_params || ' ';
+            end if;
+
+            v_scope_params :=
+                v_scope_params || v_scope;
+
+        end loop;
+
+    end if;
+
+
+    -- =================================================
+    -- 9. PERSIST OAUTH TRANSACTION
+    -- =================================================
 
     insert into public.integration_oauth_states (
-        tenant_id, user_id, provider_code, state_token, expires_at
+        tenant_id,
+        user_id,
+        provider_code,
+        state_token,
+        redirect_uri,
+        code_verifier,
+        code_challenge_method,
+        expires_at
     )
     values (
-        v_tid, v_uid, v_provider_code, v_state_token, v_expires_at
+        v_tid,
+        v_uid,
+        v_provider_code,
+        v_state_token,
+        v_redirect_uri,
+        v_code_verifier,
+        case
+            when v_oauth_config.pkce_required
+            then v_oauth_config.pkce_method
+            else null
+        end,
+        v_expires_at
     );
 
-    v_supabase_url := platform.get_vault_secret('supabase_url');
-    if v_supabase_url is null then
-        raise exception 'supabase_url not configured in vault';
+
+    -- =================================================
+    -- 10. BUILD GENERIC AUTHORIZATION URL
+    -- =================================================
+
+    v_authorize_url :=
+        rtrim(
+            v_oauth_config.authorization_url,
+            '?&'
+        )
+        || '?'
+        || 'response_type='
+        || public.integrations_oauth_url_encode(
+            v_oauth_config.response_type
+        )
+        || '&client_id='
+        || public.integrations_oauth_url_encode(
+            v_client_id
+        )
+        || '&redirect_uri='
+        || public.integrations_oauth_url_encode(
+            v_redirect_uri
+        )
+        || '&state='
+        || public.integrations_oauth_url_encode(
+            v_state_token
+        );
+
+
+    if v_scope_params <> '' then
+
+        v_authorize_url :=
+            v_authorize_url
+            || '&scope='
+            || public.integrations_oauth_url_encode(
+                v_scope_params
+            );
+
     end if;
 
-    v_redirect_uri := coalesce(
-        nullif(trim(p_payload->>'redirect_uri'), ''),
-        rtrim(v_supabase_url, '/') || '/functions/v1/integrations/oauth-callback'
+
+    if v_oauth_config.pkce_required then
+
+        v_authorize_url :=
+            v_authorize_url
+            || '&code_challenge='
+            || public.integrations_oauth_url_encode(
+                v_code_challenge
+            )
+            || '&code_challenge_method='
+            || public.integrations_oauth_url_encode(
+                v_oauth_config.pkce_method
+            );
+
+    end if;
+
+
+    -- =================================================
+    -- 11. RETURN
+    --
+    -- Never return code_verifier.
+    -- Never return client_secret.
+    -- =================================================
+
+    perform platform.log_audit(
+        'integration.oauth_started',
+        'integration_oauth_state',
+        (
+            select s.id
+            from public.integration_oauth_states s
+            where s.state_token = v_state_token
+        ),
+        jsonb_build_object(
+            'provider_code', v_provider_code,
+            'pkce_required', v_oauth_config.pkce_required
+        )
     );
 
-    if v_provider_code = 'stripe' then
-        v_client_id := platform.get_vault_secret('stripe_connect_client_id');
-        if v_client_id is null then
-            raise exception 'stripe_connect_client_id not configured in vault';
-        end if;
-
-        v_authorize_url :=
-            'https://connect.stripe.com/oauth/authorize?' ||
-            'response_type=code&' ||
-            'client_id=' || public.integrations_oauth_url_encode(v_client_id) || '&' ||
-            'scope=read_write&' ||
-            'state=' || public.integrations_oauth_url_encode(v_state_token) || '&' ||
-            'redirect_uri=' || public.integrations_oauth_url_encode(v_redirect_uri);
-    else
-        v_base_url := platform.get_vault_secret('oauth_authorize_url_' || v_provider_code);
-        if v_base_url is null then
-            raise exception 'OAuth authorize URL not configured for %', v_provider_code;
-        end if;
-
-        v_authorize_url :=
-            v_base_url || '?' ||
-            'state=' || public.integrations_oauth_url_encode(v_state_token) || '&' ||
-            'redirect_uri=' || public.integrations_oauth_url_encode(v_redirect_uri);
-    end if;
 
     return jsonb_build_object(
         'authorize_url', v_authorize_url,
         'state', v_state_token,
-        'provider_code', v_provider_code
+        'provider_code', v_provider_code,
+        'expires_at', v_expires_at
     );
+
 end;
 $$;
+
 
 
 -- -----------------------------------------------------
