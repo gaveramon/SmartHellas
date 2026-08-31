@@ -1073,7 +1073,7 @@ end $$;
 -- 12. RLS CONFIGURATION
 -- =====================================================
 
-alter table public.integration_providers enable row level secty;
+alter table public.integration_providers enable row level security;
 
 
 
@@ -1084,7 +1084,7 @@ drop policy if exists integration_providers_write on public.integration_provider
 
 
 
-alter table public.integration_capabilities enable row level secty;
+alter table public.integration_capabilities enable row level security;
 
 
 
@@ -1095,7 +1095,7 @@ drop policy if exists integration_capabilities_write on public.integration_capab
 
 
 
-alter table public.tenant_integrations enable row level secty;
+alter table public.tenant_integrations enable row level security;
 
 
 
@@ -1112,7 +1112,7 @@ drop policy if exists tenant_integrations_delete on public.tenant_integrations;
 
 
 
-alter table public.webhook_definitions enable row level secty;
+alter table public.webhook_definitions enable row level security;
 
 
 
@@ -1129,7 +1129,7 @@ drop policy if exists webhook_definitions_delete on public.webhook_definitions;
 
 
 
-alter table public.device_integration_map enable row level secty;
+alter table public.device_integration_map enable row level security;
 
 
 
@@ -1354,10 +1354,10 @@ create policy webhook_definitions_update on public.webhook_definitions
 -- =====================================================
 
 alter table public.integration_oauth_states
-    enable row level secty;
+    enable row level security;
 
 alter table public.integration_oauth_states
-    force row level secty;
+    force row level security;
 
 
 drop policy if exists integration_oauth_states_select
@@ -1486,7 +1486,7 @@ create or replace function public.resolve_integration_webhook_mapping(
 )
 returns text
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -1604,7 +1604,7 @@ create or replace function public.resolve_provider_device_by_external_id(
 returns uuid
 language sql
 stable
-secty definer
+security definer
 set search_path = ''
 as $$
     select dim.device_id
@@ -1652,7 +1652,7 @@ create or replace function public.resolve_provider_device_by_hardware_id(
 returns uuid
 language sql
 stable
-secty definer
+security definer
 set search_path = ''
 as $$
     select dim.device_id
@@ -1721,7 +1721,7 @@ create or replace function public.reconcile_provider_device(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -1893,7 +1893,7 @@ create or replace function public.integrations_domain(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -2812,7 +2812,7 @@ create or replace function public.integrations_domain_ext(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -3098,9 +3098,9 @@ begin
     -- the platform abstraction.
     -- =================================================
 
-    if platform.get_vault_secret(
+    if not platform.vault_secret_exists(
         v_credentials_ref
-    ) is null then
+    ) then
 
         raise exception
             'OAuth credentials not found in Vault for provider %',
@@ -3240,7 +3240,7 @@ create or replace function public.integrations_start_oauth(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -3305,7 +3305,7 @@ create or replace function public.integrations_start_oauth(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -3794,6 +3794,8 @@ begin
 
 end;
 $$;
+
+
 -- =====================================================
 -- 007 Integrations: OAuth state resolution
 --
@@ -3817,7 +3819,7 @@ create or replace function public.integrations_resolve_oauth_state(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -3843,9 +3845,13 @@ begin
     -- =================================================
     -- 2. RESOLVE ACTIVE OAUTH TRANSACTION
     --
-    -- State itself is the lookup key.
+    -- The state token is the only lookup key supplied
+    -- by the caller.
     --
-    -- Tenant/provider/user are NOT supplied by caller.
+    -- Tenant/provider/user are resolved from the state.
+    --
+    -- FOR UPDATE protects the transaction from concurrent
+    -- processing.
     -- =================================================
 
     select *
@@ -3868,15 +3874,12 @@ begin
     -- =================================================
     -- 3. AUTHENTICATED REQUEST BINDING
     --
-    -- If called from an authenticated portal request,
-    -- bind the OAuth transaction to the current user
-    -- and tenant.
+    -- When called from an authenticated portal request,
+    -- bind the state to the current user and tenant.
     --
-    -- If called from the OAuth callback without a
-    -- Supabase user session, this check is skipped.
-    --
-    -- The state itself remains the authoritative
-    -- transaction context.
+    -- OAuth callback requests may not have a Supabase
+    -- user session. In that case the state itself remains
+    -- the authoritative transaction context.
     -- =================================================
 
     v_uid := auth.uid();
@@ -3906,17 +3909,10 @@ begin
     -- =================================================
     -- 4. RETURN TRANSACTION CONTEXT
     --
-    -- redirect_:
-    --   Exact  used for this authorization request.
+    -- All OAuth transaction-specific values originate
+    -- from integration_oauth_states.
     --
-    -- code_verifier:
-    --   Required for PKCE token exchange.
-    --
-    -- code_challenge_method:
-    --   PKCE method used for this transaction.
-    --
-    -- These values belong to the OAuth transaction,
-    -- not to provider configuration.
+    -- The state is NOT consumed here.
     -- =================================================
 
     return jsonb_build_object(
@@ -3936,8 +3932,8 @@ begin
         'state_token',
         v_state.state_token,
 
-        'redirect_',
-        v_state.redirect_,
+        'redirect_uri',
+        v_state.redirect_uri,
 
         'code_verifier',
         v_state.code_verifier,
@@ -3999,7 +3995,7 @@ create or replace function public.integrations_exchange_oauth_tokens(
 )
 returns text
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -4440,7 +4436,7 @@ create or replace function public.integrations_exchange_oauth_tokens(
 )
 returns text
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -4874,7 +4870,7 @@ create or replace function public.resolve_or_reconcile_provider_device(
 )
 returns uuid
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -5064,7 +5060,7 @@ create or replace function public.process_integration_webhook(
 )
 returns jsonb
 language plpgsql
-secty definer
+security definer
 set search_path = ''
 as $$
 declare
@@ -5393,7 +5389,7 @@ $$;
 
 
 -- =====================================================
--- 22. FUNCTION SECTY HARDENING
+-- 22. FUNCTION security HARDENING
 -- =====================================================
 
 alter function public.process_integration_webhook(uuid)
@@ -5405,7 +5401,7 @@ alter function public.integrations_resolve_oauth_state(text) set search_path = '
 
 
 -- =====================================================
--- 23. LEGACY / CROSS-MODULE SECTY HARDENING
+-- 23. LEGACY / CROSS-MODULE security HARDENING
 -- =====================================================
 
 -- -----------------------------------------------------

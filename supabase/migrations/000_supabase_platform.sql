@@ -5541,6 +5541,48 @@ begin
 end;
 $$;
 
+-- =====================================================
+-- Platform Vault: secret existence check
+-- =====================================================
+
+create or replace function platform.vault_secret_exists(
+    p_name text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+
+    if p_name is null
+       or btrim(p_name) = '' then
+
+        raise exception
+            'vault secret name is required';
+
+    end if;
+
+
+    if not exists (
+        select 1
+        from pg_extension
+        where extname = 'vault'
+    ) then
+
+        return false;
+
+    end if;
+
+
+    return exists (
+        select 1
+        from vault.secrets s
+        where s.name = p_name
+    );
+
+end;
+$$;
 
 
 -- -----------------------------------------------------
