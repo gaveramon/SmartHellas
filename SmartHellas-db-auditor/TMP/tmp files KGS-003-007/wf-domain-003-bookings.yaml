@@ -1,0 +1,2400 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-020 Guest Access Management
+  # ==========================================================
+
+
+  - id: WF-020
+
+    name: guest_access_management
+
+    title: Guest Access Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - booking_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Manages the complete guest access lifecycle
+        from reservation until access removal.
+
+
+
+    scope:
+
+      includes:
+
+        - guest_access_creation
+
+        - access_activation
+
+        - access_revocation
+
+
+
+      excludes:
+
+        - booking_payment
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-020 booking_created
+
+
+
+    preconditions:
+
+
+      - booking_valid
+
+      - property_has_lock
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - booking_information
+
+      - guest_information
+
+      - property_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_booking
+
+
+
+      - step: 2
+
+        action:
+
+          determine_access_window
+
+
+
+      - step: 3
+
+        action:
+
+          request_door_code
+
+
+
+      - step: 4
+
+        action:
+
+          activate_guest_access
+
+
+
+      - step: 5
+
+        action:
+
+          monitor_access_period
+
+
+
+      - step: 6
+
+        action:
+
+          revoke_access_after_checkout
+
+
+
+    outputs:
+
+
+      - guest_access_profile
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-020 booking_created
+
+
+
+      produces:
+
+
+        - EVT-023 access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-001 Guest Access Automation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Airbnb Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - guest_identity_validation
+
+        - temporary_access_control
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        fallback_to_manual_access
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_created_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - guest_access_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-021 Booking Synchronization
+  # ==========================================================
+
+
+  - id: WF-021
+
+    name: booking_synchronization
+
+    title: Booking Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - booking_management
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Synchronizes Airbnb reservations with SmartHellas.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - booking_import
+
+        - booking_update
+
+        - booking_cancellation
+
+
+
+    trigger:
+
+
+      integration_event:
+
+
+        - INT-003 Airbnb Booking Event
+
+
+
+    preconditions:
+
+
+      - integration_authenticated
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - external_booking_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          receive_booking_event
+
+
+
+      - step: 2
+
+        action:
+
+          validate_booking_payload
+
+
+
+      - step: 3
+
+        action:
+
+          create_or_update_booking
+
+
+
+      - step: 4
+
+        action:
+
+          trigger_access_workflow
+
+
+
+    outputs:
+
+
+      - synchronized_booking
+
+
+
+    state_machine:
+
+
+      - SM-020 Booking Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-020 booking_created
+
+        - EVT-021 booking_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-021 Booking Synchronization
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Airbnb Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - api_authentication_required
+
+        - payload_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_external_sync
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - rollback_booking_update
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - booking_sync_latency
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-022 Booking Confirmation Handling
+  # ==========================================================
+
+
+  - id: WF-022
+
+    name: booking_confirmation_handling
+
+    title: Booking Confirmation Handling
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - booking_management
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Processes confirmed reservations and prepares
+        access automation.
+
+
+
+    scope:
+
+      includes:
+
+        - booking_validation
+
+        - reservation_status_update
+
+        - access_preparation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-022 booking_confirmed
+
+
+
+    preconditions:
+
+
+      - booking_exists
+
+      - guest_information_available
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_record
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_booking_status
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_access_window
+
+
+
+      - step: 3
+
+        action:
+
+          create_access_task
+
+
+
+      - step: 4
+
+        action:
+
+          notify_access_engine
+
+
+
+    outputs:
+
+
+      - confirmed_booking
+
+
+
+    state_machine:
+
+
+      - SM-020 Booking Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-020 access_preparation_started
+
+
+
+    orchestration:
+
+
+      - ORCH-021 Booking Processing
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      - Airbnb Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - booking_authorization_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        mark_booking_for_review
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - cancel_access_task
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - confirmation_processing_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-023 Door Code Generation
+  # ==========================================================
+
+
+  - id: WF-023
+
+    name: door_code_generation
+
+    title: Door Code Generation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - access_control
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Automatically generates temporary guest
+        access codes.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - code_creation
+
+        - validity_period_assignment
+
+        - lock_mapping
+
+
+
+      excludes:
+
+
+        - physical_lock_configuration
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-023 access_preparation_started
+
+
+
+    preconditions:
+
+
+      - booking_valid
+
+      - lock_connected
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_period
+
+      - lock_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          generate_unique_access_code
+
+
+
+      - step: 2
+
+        action:
+
+          assign_validity_window
+
+
+
+      - step: 3
+
+        action:
+
+          encrypt_access_data
+
+
+
+      - step: 4
+
+        action:
+
+          send_to_ttlock_gateway
+
+
+
+    outputs:
+
+
+      - temporary_access_code
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-024 door_code_created
+
+
+
+    orchestration:
+
+
+      - ORCH-023 Access Code Generation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - encrypted_code_storage
+
+        - temporary_permission_scope
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        regenerate_code
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - invalidate_code
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - code_generation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-024 Door Code Distribution
+  # ==========================================================
+
+
+  - id: WF-024
+
+    name: door_code_distribution
+
+    title: Door Code Distribution
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - guest_communication
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+
+    purpose:
+
+      description:
+
+        Delivers temporary access information
+        to guests securely.
+
+
+
+    scope:
+
+      includes:
+
+        - guest_notification
+
+        - access_instruction_delivery
+
+        - communication_tracking
+
+
+
+      excludes:
+
+        - code_generation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-024 door_code_created
+
+
+
+    preconditions:
+
+
+      - access_code_valid
+
+      - guest_contact_available
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+
+
+    inputs:
+
+
+      - access_code
+
+      - guest_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_guest_contact
+
+
+
+      - step: 2
+
+        action:
+
+          create_secure_message
+
+
+
+      - step: 3
+
+        action:
+
+          send_access_information
+
+
+
+      - step: 4
+
+        action:
+
+          record_delivery_status
+
+
+
+    outputs:
+
+
+      - guest_access_notification
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-025 access_information_sent
+
+
+
+    orchestration:
+
+
+      - ORCH-024 Guest Notification
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 004_booking_lock_engine
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - secure_message_delivery
+
+        - access_data_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_notification
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_message_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - notification_delivery_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-025 Guest Check-in
+  # ==========================================================
+
+
+  - id: WF-025
+
+    name: guest_check_in
+
+    title: Guest Check-in
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - guest_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Activates and monitors guest arrival process.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - arrival_validation
+
+        - access_activation
+
+        - check_in_registration
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - booking_start_time_reached
+
+
+
+    preconditions:
+
+
+      - booking_active
+
+      - access_code_active
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking
+
+      - guest_access_profile
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_check_in_window
+
+
+
+      - step: 2
+
+        action:
+
+          activate_access
+
+
+
+      - step: 3
+
+        action:
+
+          register_guest_arrival
+
+
+
+      - step: 4
+
+        action:
+
+          start_stay_monitoring
+
+
+
+    outputs:
+
+
+      - active_guest_session
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-026 guest_checked_in
+
+
+
+    orchestration:
+
+
+      - ORCH-025 Check-in Automation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - access_window_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        notify_property_manager
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - deactivate_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - successful_check_in_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-026 Guest Check-out
+  # ==========================================================
+
+
+  - id: WF-026
+
+    name: guest_check_out
+
+    title: Guest Check-out
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - guest_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Handles guest departure and initiates
+        access termination process.
+
+
+
+    scope:
+
+      includes:
+
+        - departure_detection
+
+        - stay_completion
+
+        - access_shutdown_trigger
+
+
+
+      excludes:
+
+        - cleaning_management
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - booking_end_time_reached
+
+
+
+    preconditions:
+
+
+      - active_guest_session_exists
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking
+
+      - guest_access_profile
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_checkout_time
+
+
+
+      - step: 2
+
+        action:
+
+          close_guest_session
+
+
+
+      - step: 3
+
+        action:
+
+          trigger_access_revocation
+
+
+
+      - step: 4
+
+        action:
+
+          update_booking_status
+
+
+
+    outputs:
+
+
+      - completed_booking
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-027 guest_checked_out
+
+
+
+    orchestration:
+
+
+      - ORCH-026 Checkout Automation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - booking_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        manual_checkout_review
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_access_if_required
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - checkout_completion_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-027 Access Revocation
+  # ==========================================================
+
+
+  - id: WF-027
+
+    name: access_revocation
+
+    title: Access Revocation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - access_control
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Removes temporary guest permissions
+        after reservation completion.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - code_deactivation
+
+        - permission_removal
+
+        - lock_update
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-027 guest_checked_out
+
+
+
+    preconditions:
+
+
+      - guest_access_exists
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - access_profile
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          identify_active_permissions
+
+
+
+      - step: 2
+
+        action:
+
+          disable_access_code
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_lock_state
+
+
+
+      - step: 4
+
+        action:
+
+          verify_access_removed
+
+
+
+    outputs:
+
+
+      - revoked_access
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-028 access_revoked
+
+
+
+    orchestration:
+
+
+      - ORCH-027 Access Revocation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - access_removal_confirmation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_lock_synchronization
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_access_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - revocation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-028 Emergency Access
+  # ==========================================================
+
+
+  - id: WF-028
+
+    name: emergency_access
+
+    title: Emergency Access Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - access_control
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Provides controlled emergency access for
+        authorized persons when normal access fails.
+
+
+
+    scope:
+
+      includes:
+
+        - emergency_access_request
+
+        - authorization_check
+
+        - temporary_access_creation
+
+
+
+      excludes:
+
+        - permanent_access_assignment
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-060 emergency_access_requested
+
+
+
+    preconditions:
+
+
+      - emergency_reason_provided
+
+      - requester_authorized
+
+
+
+    actors:
+
+
+      - property_owner
+
+      - support_agent
+
+      - system
+
+
+
+    inputs:
+
+
+      - property_identifier
+
+      - emergency_reason
+
+      - requester_identity
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_emergency_request
+
+
+
+      - step: 2
+
+        action:
+
+          verify_authorization
+
+
+
+      - step: 3
+
+        action:
+
+          generate_emergency_access
+
+
+
+      - step: 4
+
+        action:
+
+          monitor_access_usage
+
+
+
+      - step: 5
+
+        action:
+
+          revoke_emergency_access
+
+
+
+    outputs:
+
+
+      - emergency_access_permission
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-061 emergency_access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-028 Emergency Access
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - elevated_authorization_required
+
+        - full_audit_logging
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_to_support
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - immediately_revoke_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - emergency_access_count
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-029 Lock Failure Recovery
+  # ==========================================================
+
+
+  - id: WF-029
+
+    name: lock_failure_recovery
+
+    title: Lock Failure Recovery
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - lock_operations
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Detects and resolves smart lock failures
+        affecting guest access.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - lock_health_detection
+
+        - connection_recovery
+
+        - support_escalation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-070 lock_failure_detected
+
+
+
+    preconditions:
+
+
+      - lock_registered
+
+      - monitoring_enabled
+
+
+
+    actors:
+
+
+      - system
+
+      - support_agent
+
+
+
+    inputs:
+
+
+      - lock_status
+
+      - gateway_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          analyze_failure
+
+
+
+      - step: 2
+
+        action:
+
+          test_gateway_connection
+
+
+
+      - step: 3
+
+        action:
+
+          attempt_remote_recovery
+
+
+
+      - step: 4
+
+        action:
+
+          create_support_case_if_failed
+
+
+
+    outputs:
+
+
+      - recovered_lock
+
+      - support_case
+
+
+
+    state_machine:
+
+
+      - SM-029 Lock Recovery Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-071 lock_recovered
+
+        - EVT-072 recovery_failed
+
+
+
+    orchestration:
+
+
+      - ORCH-029 Lock Recovery
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - secure_remote_operation
+
+        - operation_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_after_retry_limit
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - enable_manual_access_procedure
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - lock_recovery_time
+
+        - lock_failure_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

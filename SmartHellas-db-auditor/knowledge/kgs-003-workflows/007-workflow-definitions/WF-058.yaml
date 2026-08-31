@@ -1,0 +1,169 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-058 Guest Notification
+  # ==========================================================
+
+
+  - id: WF-058
+
+    name: guest_notification
+
+    title: Guest Notification
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - communication
+
+
+
+      owner:
+
+
+        module: 015_crm_engine
+
+
+
+      classification:
+
+
+        business_process: guest_communication
+
+        criticality: operational_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Sends automated guest communication including
+        access instructions and door codes.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - message_generation
+
+        - delivery
+
+        - reminder_notifications
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-057 access_code_created
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          generate_guest_message
+
+
+
+      - step: 2
+
+        action:
+
+          insert_access_information
+
+
+
+      - step: 3
+
+        action:
+
+          send_notification
+
+
+
+      - step: 4
+
+        action:
+
+          track_delivery
+
+
+
+    outputs:
+
+
+      - notification_status
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 015_crm_engine
+
+        - 004_booking_lock_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Email Provider
+
+        - Messaging Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - prevent_code_exposure
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

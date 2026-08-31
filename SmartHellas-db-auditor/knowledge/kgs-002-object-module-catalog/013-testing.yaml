@@ -1,0 +1,163 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: testing_definition
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+
+# ============================================================
+# TESTING REGISTRY
+# ============================================================
+
+
+testing:
+
+
+  description: >
+
+    Canonical validation model defining required testing
+    before merge, release and production deployment.
+
+
+
+  principles:
+
+
+    - automated_validation
+
+    - regression_prevention
+
+    - security_validation
+
+    - migration_safety
+
+
+
+# ============================================================
+# TEST TYPES
+# ============================================================
+
+
+  test_types:
+
+
+    unit_tests:
+
+
+      validates:
+
+
+        - functions
+
+        - triggers
+
+        - calculations
+
+
+
+    integration_tests:
+
+
+      validates:
+
+
+        - api_contracts
+
+        - rpc
+
+        - events
+
+        - providers
+
+
+
+    migration_tests:
+
+
+      validates:
+
+
+        - schema_changes
+
+        - rollback
+
+        - data_conversion
+
+
+
+    security_tests:
+
+
+      validates:
+
+
+        - authentication
+
+        - authorization
+
+        - rls
+
+        - permissions
+
+
+
+    regression_tests:
+
+
+      validates:
+
+
+        - existing_workflows
+
+        - public_contracts
+
+
+
+
+# ============================================================
+# QUALITY GATES
+# ============================================================
+
+
+  quality_gates:
+
+
+    before_merge:
+
+
+      - lint
+
+      - dependency_validation
+
+      - unit_tests
+
+
+
+    before_release:
+
+
+      - integration_tests
+
+      - security_tests
+
+      - migration_tests
+
+
+
+    before_production:
+
+
+      - all_tests_passed
+
+      - monitoring_enabled
+
+      - rollback_verified
+

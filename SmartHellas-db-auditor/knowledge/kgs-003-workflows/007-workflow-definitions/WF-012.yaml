@@ -1,0 +1,248 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-012 Device Pairing
+  # ==========================================================
+
+
+  - id: WF-012
+
+    name: device_pairing
+
+    title: Device Pairing
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - iot_configuration
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+      description:
+
+        Connects physical smart devices with the
+        SmartHellas platform and external providers.
+
+
+
+    scope:
+
+      includes:
+
+        - aqara_pairing
+
+        - ttlock_pairing
+
+        - gateway_binding
+
+        - connection_validation
+
+
+
+      excludes:
+
+        - customer_training
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-033 device_registered
+
+
+
+    preconditions:
+
+
+      - device_provisioned
+
+      - integration_available
+
+
+
+    actors:
+
+
+      - system
+
+      - installer
+
+
+
+    inputs:
+
+
+      - device_credentials
+
+      - gateway_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_device_identity
+
+
+
+      - step: 2
+
+        action:
+
+          connect_device_gateway
+
+
+
+      - step: 3
+
+        action:
+
+          authenticate_provider_connection
+
+
+
+      - step: 4
+
+        action:
+
+          test_device_communication
+
+
+
+    outputs:
+
+
+      - paired_device
+
+
+
+    state_machine:
+
+
+      - SM-011 Device Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-033 device_registered
+
+
+
+      produces:
+
+
+        - EVT-034 device_paired
+
+
+
+    orchestration:
+
+
+      - ORCH-012 Device Pairing
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - credential_protection
+
+        - encrypted_communication
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_pairing_process
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - unpair_device
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - pairing_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,243 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-009 Customer Data Export
+  # ==========================================================
+
+
+  - id: WF-009
+
+    name: customer_data_export
+
+    title: Customer Data Export
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - compliance
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Exports customer data according to privacy
+        and compliance requirements.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - customer_information_export
+
+        - subscription_data_export
+
+        - audit_data_export
+
+
+
+      excludes:
+
+
+        - restricted_security_data
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - customer_export_requested
+
+
+
+    preconditions:
+
+
+      - customer_identity_verified
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - export_request
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          verify_customer_identity
+
+
+
+      - step: 2
+
+        action:
+
+          collect_customer_data
+
+
+
+      - step: 3
+
+        action:
+
+          generate_export_package
+
+
+
+      - step: 4
+
+        action:
+
+          deliver_export
+
+
+
+    outputs:
+
+
+      - customer_data_export
+
+
+
+    state_machine:
+
+
+      - SM-009 Data Export Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-090 export_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-009 Data Export
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 006_operations_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - identity_verification
+
+        - data_access_control
+
+        - encryption_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_export_generation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_export_link
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - export_completion_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+
+        - customer_data_exported
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+

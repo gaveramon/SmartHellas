@@ -1,0 +1,121 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-031 Shopping Cart Management
+  # ==========================================================
+
+  - id: WF-031
+
+    name: shopping_cart_management
+
+    title: Shopping Cart Management
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - commerce
+
+      owner:
+        module: 009_commerce_engine
+
+    purpose:
+
+      description: >
+        Manages the SmartHellas shopping cart,
+        including products, services and subscriptions.
+
+    scope:
+
+      includes:
+        - cart_creation
+        - cart_update
+        - pricing
+        - discounts
+        - subscription_selection
+
+    trigger:
+
+      action:
+        - product_added
+
+    preconditions:
+      - active_customer_session
+
+    actors:
+      - customer
+
+    inputs:
+      - selected_products
+      - selected_services
+
+    workflow_steps:
+
+      - step: 1
+        action: validate_products
+
+      - step: 2
+        action: calculate_pricing
+
+      - step: 3
+        action: apply_discounts
+
+      - step: 4
+        action: calculate_subscription_cost
+
+      - step: 5
+        action: update_cart
+
+    outputs:
+      - shopping_cart
+
+    state_machine:
+      - SM-030 Commerce Lifecycle
+
+    events:
+
+      produces:
+        - EVT-031 cart_updated
+
+    orchestration:
+      - ORCH-031 Shopping Cart
+
+    dependencies:
+
+      modules:
+        - 009_commerce_engine
+
+    integrations:
+      - Payment Provider
+
+    security:
+
+      requirements:
+        - authenticated_session
+
+    error_handling:
+
+      strategy:
+        restore_previous_cart
+
+    compensation:
+
+      actions:
+        - rollback_cart_changes
+
+    observability:
+
+      metrics:
+        - cart_conversion_rate
+
+    audit:
+
+      enabled: true
+
+    lifecycle:
+
+      policy:
+        LIFE-001

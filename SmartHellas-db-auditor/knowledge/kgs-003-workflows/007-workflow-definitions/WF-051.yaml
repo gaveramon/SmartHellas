@@ -1,0 +1,302 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-051 Device Provider Synchronization
+  # ==========================================================
+
+
+  - id: WF-051
+
+    name: device_provider_synchronization
+
+    title: Device Provider Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - device_integration
+
+
+
+      owner:
+
+
+        module: 005_integration_engine
+
+
+
+      classification:
+
+
+        business_process: device_sync
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Synchronizes external device states from
+        Aqara, TTLock and Shelly into SmartHellas.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - device_discovery
+
+        - state_synchronization
+
+        - capability_update
+
+        - telemetry_import
+
+
+
+      excludes:
+
+
+        - automation_execution
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-050 integration_registered
+
+        - scheduled_sync_cycle
+
+
+
+    preconditions:
+
+
+      - integration_active
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - provider_device_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          retrieve_provider_devices
+
+
+
+      - step: 2
+
+        action:
+
+          match_device_identity
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_device_state
+
+
+
+      - step: 4
+
+        action:
+
+          update_capabilities
+
+
+
+      - step: 5
+
+        action:
+
+          store_telemetry
+
+
+
+    outputs:
+
+
+      - synchronized_devices
+
+
+
+    state_machine:
+
+
+      - SM-051 Synchronization Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-051 device_state_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-051 Device Synchronization
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 003_property_device_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        Aqara:
+
+
+          capabilities:
+
+            - sensors
+
+            - hubs
+
+            - climate
+
+
+        TTLock:
+
+
+          capabilities:
+
+            - locks
+
+            - access_control
+
+
+        Shelly:
+
+
+          capabilities:
+
+            - relays
+
+            - power_metering
+
+            - energy_monitoring
+
+            - switches
+
+            - hvac_control
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_identity_validation
+
+        - secure_api_access
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_provider_sync
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - mark_device_state_unknown
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - synchronization_latency
+
+        - provider_availability
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

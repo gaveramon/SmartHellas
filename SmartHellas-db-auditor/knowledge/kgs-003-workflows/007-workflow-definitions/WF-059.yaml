@@ -1,0 +1,44 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-059 Advanced Automation Orchestration
+  # ==========================================================
+
+
+  - id: WF-059
+
+    name: advanced_automation_orchestration
+
+    title: Advanced Automation Orchestration
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - automation_orchestration
+
+
+
+      owner:
+
+
+        module: 016_automation_engine
+
+
+
+      classification:
+
+
+        business_process: smart_property_management
+
+        criticality: business_critical
+
+        ssot: true

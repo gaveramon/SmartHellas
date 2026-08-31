@@ -1,0 +1,148 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-035 Smart Configuration Planning
+  # ==========================================================
+
+  - id: WF-035
+
+    name: smart_configuration_planning
+
+    title: Smart Configuration Planning
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - preconfiguration
+
+      owner:
+        module: 007_preconfig_engine
+
+    purpose:
+
+      description: >
+        Builds the complete SmartHellas installation plan,
+        processes the pre-onboarding questionnaire,
+        assigns rooms and devices, prepares QR labels,
+        automation templates and installation package.
+
+    scope:
+
+      includes:
+        - pre_onboarding_processing
+        - room_creation
+        - device_assignment
+        - qr_generation
+        - label_generation
+        - automation_planning
+        - firmware_planning
+        - installation_package_creation
+
+    trigger:
+
+      event:
+        - EVT-034 inventory_reserved
+
+    preconditions:
+      - inventory_reserved
+      - customer_questionnaire_completed
+
+    actors:
+      - operations_employee
+      - system
+
+    inputs:
+      - order
+      - questionnaire
+      - reserved_inventory
+
+    workflow_steps:
+
+      - step: 1
+        action: import_questionnaire
+
+      - step: 2
+        action: create_property_structure
+
+      - step: 3
+        action: assign_devices_to_rooms
+
+      - step: 4
+        action: generate_room_labels
+
+      - step: 5
+        action: generate_qr_codes
+
+      - step: 6
+        action: prepare_aqara_configuration
+
+      - step: 7
+        action: prepare_ttlock_configuration
+
+      - step: 8
+        action: prepare_automation_templates
+
+      - step: 9
+        action: build_installation_package
+
+    outputs:
+      - preconfiguration_package
+
+    state_machine:
+      - SM-034 Preconfiguration Lifecycle
+
+    events:
+
+      produces:
+        - EVT-035 preconfiguration_completed
+
+    orchestration:
+      - ORCH-032 Order Processing
+
+    dependencies:
+
+      modules:
+        - 007_preconfig_engine
+        - 003_property_device_engine
+        - 005_integration_engine
+        - 008_logistics_engine
+        - 011_onboarding_engine
+
+    integrations:
+      - Aqara Integration
+      - TTLock Integration
+
+    security:
+
+      requirements:
+        - configuration_validation
+        - asset_traceability
+
+    error_handling:
+
+      strategy:
+        suspend_preconfiguration
+
+    compensation:
+
+      actions:
+        - rollback_device_assignments
+
+    observability:
+
+      metrics:
+        - preconfiguration_completion_time
+        - configuration_accuracy
+
+    audit:
+
+      enabled: true
+
+    lifecycle:
+
+      policy:
+        LIFE-001

@@ -1,0 +1,78 @@
+metadata:
+
+  title: Enterprise Workflow Catalog
+
+  short_name: KGS-003
+
+  version: 2.0.0
+
+  schema_version: 2.0.0
+
+  status: active
+
+  maturity: production
+
+  owner: Enterprise Architecture
+
+  steward: Enterprise Auditor
+
+  authors:
+
+    - SmartHellas
+
+  language: en
+
+  format: yaml
+
+  encoding: UTF-8
+
+  source_of_truth: true
+
+  canonical: true
+
+  visibility: internal
+
+  confidentiality: internal
+
+  lifecycle: managed
+
+  created: null
+
+  last_updated: null
+
+  last_reviewed: null
+
+  next_review: null
+
+  review_frequency: quarterly
+
+  change_control: architecture_review
+
+  approval_required: true
+
+  approved_by: null
+
+  tags:
+
+    - workflows
+    - orchestration
+    - events
+    - state-machines
+    - enterprise
+    - knowledge-graph
+
+  description: >
+    Enterprise-wide catalog containing the canonical definition
+    of all workflows, workflow metadata, orchestration,
+    events, state machines and workflow dependencies.
+
+  purpose: >
+    Acts as the Single Source of Truth for workflow definitions
+    used by the Enterprise Auditor and SmartHellas platform.
+
+  audience:
+
+    - architects
+    - developers
+    - enterprise-auditor
+    - automation-engine

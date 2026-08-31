@@ -1,0 +1,2374 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-001 Customer Registration
+  # ==========================================================
+
+
+  - id: WF-001
+
+    name: customer_registration
+
+    title: Customer Registration
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - customer_lifecycle
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+      description:
+        Creates a new SmartHellas customer account.
+
+
+
+    scope:
+
+      includes:
+
+        - customer_creation
+
+        - organization_creation
+
+        - initial_account_setup
+
+
+
+      excludes:
+
+        - subscription_billing
+
+        - device_configuration
+
+
+
+    trigger:
+
+      type:
+
+        event
+
+
+      events:
+
+        - EVT-001 customer_registered
+
+
+
+    preconditions:
+
+      - customer_data_valid
+
+      - email_verified
+
+
+
+    actors:
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+      - customer_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_customer_data
+
+
+
+      - step: 2
+
+        action:
+
+          create_customer_account
+
+
+
+      - step: 3
+
+        action:
+
+          create_organization
+
+
+
+      - step: 4
+
+        action:
+
+          assign_default_permissions
+
+
+
+    outputs:
+
+
+      - customer_account
+
+      - organization
+
+
+
+    state_machine:
+
+      - SM-001 Customer Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+        - EVT-001
+
+
+
+      produces:
+
+        - EVT-003 customer_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-003 Customer Activation
+
+
+
+    dependencies:
+
+
+      modules:
+
+        - 002_core_saas
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+        - authentication_required
+
+        - authorization_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+        rollback_transaction
+
+
+
+    compensation:
+
+
+      actions:
+
+        - remove_partial_account
+
+
+
+    observability:
+
+
+      metrics:
+
+        - registration_success_rate
+
+        - registration_failure_rate
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+      events:
+
+        - customer_created
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-002 Customer Activation
+  # ==========================================================
+
+
+  - id: WF-002
+
+    name: customer_activation
+
+    title: Customer Activation
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - customer_lifecycle
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Activates customer services after registration.
+
+
+
+    scope:
+
+
+      includes:
+
+        - service_activation
+
+        - portal_enablement
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-003 customer_activated
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+      - registration_completed
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_customer_status
+
+
+
+      - step: 2
+
+        action:
+
+          enable_customer_services
+
+
+
+      - step: 3
+
+        action:
+
+          provision_portal_access
+
+
+
+    outputs:
+
+
+      - active_customer
+
+
+
+    state_machine:
+
+
+      - SM-001
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-003
+
+
+
+      produces:
+
+
+        - EVT-010 portal_access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-003
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - role_validation_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_with_compensation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - disable_partial_activation
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - activation_time
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+  # ==========================================================
+  # WF-003 Subscription Activation
+  # ==========================================================
+
+
+  - id: WF-003
+
+    name: subscription_activation
+
+    title: Subscription Activation
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - subscription_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+      description:
+        Enables purchased SmartHellas subscription features.
+
+
+
+    scope:
+
+      includes:
+
+        - plan_activation
+
+        - feature_assignment
+
+        - entitlement_creation
+
+
+
+      excludes:
+
+        - payment_processing
+
+
+
+    trigger:
+
+      events:
+
+        - EVT-004 subscription_created
+
+
+
+    preconditions:
+
+      - customer_exists
+
+      - payment_confirmed
+
+
+
+    actors:
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+      - subscription_plan
+
+      - customer_account
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_subscription
+
+
+
+      - step: 2
+
+        action:
+
+          create_subscription_record
+
+
+
+      - step: 3
+
+        action:
+
+          assign_features
+
+
+
+      - step: 4
+
+        action:
+
+          activate_entitlements
+
+
+
+    outputs:
+
+
+      - active_subscription
+
+      - customer_entitlements
+
+
+
+    state_machine:
+
+
+      - SM-002 Subscription Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+        - EVT-004
+
+
+
+      produces:
+
+        - EVT-005 subscription_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-004 Subscription Activation
+
+
+
+    dependencies:
+
+
+      modules:
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+        - entitlement_validation_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+        rollback_subscription_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+        - remove_entitlements
+
+
+
+    observability:
+
+
+      metrics:
+
+        - activation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+        - subscription_activated
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-004 Subscription Change
+  # ==========================================================
+
+
+  - id: WF-004
+
+    name: subscription_change
+
+    title: Subscription Upgrade / Downgrade
+
+
+    version: 1.0
+
+    status: active
+
+
+
+    identity:
+
+
+      domain:
+
+        - subscription_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Changes customer subscription level.
+
+
+
+    scope:
+
+
+      includes:
+
+        - upgrade
+
+        - downgrade
+
+        - feature_change
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-005 subscription_change_requested
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - current_plan
+
+      - new_plan
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_plan_change
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_entitlement_difference
+
+
+
+      - step: 3
+
+        action:
+
+          update_subscription
+
+
+
+      - step: 4
+
+        action:
+
+          synchronize_features
+
+
+
+    outputs:
+
+
+      - updated_subscription
+
+
+
+    state_machine:
+
+
+      - SM-002
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-005
+
+
+
+      produces:
+
+
+        - EVT-006 subscription_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-004
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - subscription_permission_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        revert_to_previous_plan
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_entitlements
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - subscription_change_success
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-005 Portal Access Provisioning
+  # ==========================================================
+
+
+  - id: WF-005
+
+    name: portal_access_provisioning
+
+    title: Portal Access Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - access_management
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+
+    purpose:
+
+      description:
+
+        Creates customer portal access and permissions.
+
+
+
+    scope:
+
+      includes:
+
+        - user_access_creation
+
+        - role_assignment
+
+        - portal_permission_setup
+
+
+
+    trigger:
+
+
+      event:
+
+        - EVT-010 portal_access_requested
+
+
+
+    preconditions:
+
+
+      - customer_active
+
+      - subscription_valid
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - subscription_entitlements
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_customer_subscription
+
+
+
+      - step: 2
+
+        action:
+
+          create_portal_user
+
+
+
+      - step: 3
+
+        action:
+
+          assign_portal_roles
+
+
+
+      - step: 4
+
+        action:
+
+          enable_portal_features
+
+
+
+    outputs:
+
+
+      - portal_account
+
+      - permissions
+
+
+
+    state_machine:
+
+
+      - SM-005 Portal Access Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+        - EVT-010
+
+
+
+      produces:
+
+        - EVT-011 portal_access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-005 Portal Provisioning
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - authentication_required
+
+        - authorization_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_access_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - remove_portal_account
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - access_provisioning_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-006 User Invitation
+  # ==========================================================
+
+
+  - id: WF-006
+
+    name: user_invitation
+
+    title: User Invitation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - user_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Invites additional users within a customer organization.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - invitation_creation
+
+        - invitation_tracking
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - customer_invites_user
+
+
+
+    preconditions:
+
+
+      - inviter_has_permission
+
+      - organization_exists
+
+
+
+    actors:
+
+
+      - organization_admin
+
+      - invited_user
+
+
+
+    inputs:
+
+
+      - email
+
+      - role
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_invitation_permission
+
+
+
+      - step: 2
+
+        action:
+
+          create_invitation
+
+
+
+      - step: 3
+
+        action:
+
+          send_invitation
+
+
+
+      - step: 4
+
+        action:
+
+          activate_user_after_acceptance
+
+
+
+    outputs:
+
+
+      - invited_user
+
+
+
+    state_machine:
+
+
+      - SM-006 Invitation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-012 user_invited
+
+
+
+    orchestration:
+
+
+      - ORCH-006 User Invitation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - role_based_access
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_notification
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_invitation
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - invitation_acceptance_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-007 Organization Management
+  # ==========================================================
+
+
+  - id: WF-007
+
+    name: organization_management
+
+    title: Organization Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - tenant_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+      description:
+
+        Manages Airbnb organizations, properties ownership
+        and organizational structure.
+
+
+
+    scope:
+
+      includes:
+
+        - organization_creation
+
+        - organization_update
+
+        - organization_membership
+
+        - ownership_management
+
+
+      excludes:
+
+        - property_device_configuration
+
+
+
+    trigger:
+
+
+      actions:
+
+        - organization_created
+
+        - organization_updated
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+      - authorization_valid
+
+
+
+    actors:
+
+
+      - organization_owner
+
+      - organization_admin
+
+      - system
+
+
+
+    inputs:
+
+
+      - organization_data
+
+      - user_assignments
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_organization_request
+
+
+
+      - step: 2
+
+        action:
+
+          create_or_update_organization
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_members
+
+
+
+      - step: 4
+
+        action:
+
+          update_permissions
+
+
+
+    outputs:
+
+
+      - organization_record
+
+      - membership_records
+
+
+
+    state_machine:
+
+
+      - SM-007 Organization Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-013 organization_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-007 Organization Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_isolation
+
+        - role_based_access_control
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_organization_change
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - organization_change_success
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+
+        - organization_changed
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-008 Customer Deactivation
+  # ==========================================================
+
+
+  - id: WF-008
+
+    name: customer_deactivation
+
+    title: Customer Deactivation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - customer_lifecycle
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Deactivates customer services while preserving
+        required audit information.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - account_disable
+
+        - service_suspend
+
+        - permission_revocation
+
+
+
+      excludes:
+
+
+        - physical_device_removal
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-080 customer_deactivation_requested
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+      - authorization_verified
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+      - administrator
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - deactivation_reason
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_deactivation_request
+
+
+
+      - step: 2
+
+        action:
+
+          suspend_subscription_features
+
+
+
+      - step: 3
+
+        action:
+
+          revoke_portal_access
+
+
+
+      - step: 4
+
+        action:
+
+          archive_customer_status
+
+
+
+    outputs:
+
+
+      - deactivated_customer
+
+
+
+    state_machine:
+
+
+      - SM-001 Customer Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-081 customer_deactivated
+
+
+
+    orchestration:
+
+
+      - ORCH-008 Customer Deactivation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - authorization_required
+
+        - audit_logging_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        controlled_deactivation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_customer_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - deactivation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+
+        - customer_deactivated
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-009 Customer Data Export
+  # ==========================================================
+
+
+  - id: WF-009
+
+    name: customer_data_export
+
+    title: Customer Data Export
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - compliance
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Exports customer data according to privacy
+        and compliance requirements.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - customer_information_export
+
+        - subscription_data_export
+
+        - audit_data_export
+
+
+
+      excludes:
+
+
+        - restricted_security_data
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - customer_export_requested
+
+
+
+    preconditions:
+
+
+      - customer_identity_verified
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - export_request
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          verify_customer_identity
+
+
+
+      - step: 2
+
+        action:
+
+          collect_customer_data
+
+
+
+      - step: 3
+
+        action:
+
+          generate_export_package
+
+
+
+      - step: 4
+
+        action:
+
+          deliver_export
+
+
+
+    outputs:
+
+
+      - customer_data_export
+
+
+
+    state_machine:
+
+
+      - SM-009 Data Export Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-090 export_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-009 Data Export
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 006_operations_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - identity_verification
+
+        - data_access_control
+
+        - encryption_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_export_generation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_export_link
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - export_completion_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+
+        - customer_data_exported
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-010 Device Preparation
+  # ==========================================================
+
+
+  - id: WF-010
+
+    name: device_preparation
+
+    title: Device Preparation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - device_management
+
+
+      owner:
+
+        module: 007_preconfig_engine
+
+
+
+    purpose:
+
+      description:
+
+        Prepares purchased devices before shipment
+        including labeling, configuration and documentation.
+
+
+
+    scope:
+
+      includes:
+
+        - device_inventory_check
+
+        - device_label_generation
+
+        - qr_generation
+
+        - preparation_status_tracking
+
+
+
+      excludes:
+
+        - customer_installation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-031 order_confirmed
+
+
+
+    preconditions:
+
+
+      - payment_completed
+
+      - inventory_available
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_employee
+
+
+
+    inputs:
+
+
+      - order
+
+      - device_list
+
+      - property_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_required_devices
+
+
+
+      - step: 2
+
+        action:
+
+          assign_devices_to_property
+
+
+
+      - step: 3
+
+        action:
+
+          generate_room_labels
+
+
+
+      - step: 4
+
+        action:
+
+          generate_device_qr_codes
+
+
+
+      - step: 5
+
+        action:
+
+          create_installation_package
+
+
+
+    outputs:
+
+
+      - prepared_device_package
+
+
+
+    state_machine:
+
+
+      - SM-010 Device Preparation Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-031 order_confirmed
+
+
+
+      produces:
+
+
+        - EVT-032 device_preparation_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-010 Device Preparation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 007_preconfig_engine
+
+        - 008_logistics_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations:
+
+
+      - Label Provider
+
+      - QR Generator
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_assignment_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        quarantine_invalid_device
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - release_device_assignment
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - preparation_completion_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,265 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-056 Guest Access Automation
+  # ==========================================================
+
+
+  - id: WF-056
+
+    name: guest_access_automation
+
+    title: Guest Access Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - guest_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+      classification:
+
+        business_process: guest_access
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Automatically manages guest access lifecycle
+        from booking confirmation until checkout.
+
+
+
+    scope:
+
+      includes:
+
+        - booking_validation
+
+        - access_permission_creation
+
+        - lock_assignment
+
+        - access_expiration
+
+
+      excludes:
+
+        - physical_lock_installation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - booking_confirmed
+
+
+
+    preconditions:
+
+
+      - property_active
+
+      - smart_lock_available
+
+      - guest_information_available
+
+
+
+    actors:
+
+
+      - guest
+
+      - property_owner
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_information
+
+      - guest_information
+
+      - property_lock_configuration
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_booking
+
+
+
+      - step: 2
+
+        action:
+
+          identify_property_lock
+
+
+
+      - step: 3
+
+        action:
+
+          request_access_creation
+
+
+
+      - step: 4
+
+        action:
+
+          schedule_access_period
+
+
+
+      - step: 5
+
+        action:
+
+          monitor_access_status
+
+
+
+    outputs:
+
+
+      - guest_access_permission
+
+
+
+    state_machine:
+
+
+      - SM-056 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-056 guest_access_requested
+
+
+
+    orchestration:
+
+
+      - ORCH-056 Guest Access Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - TTLock
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - access_permission_validation
+
+        - guest_identity_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        manual_access_review
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_pending_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - access_creation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

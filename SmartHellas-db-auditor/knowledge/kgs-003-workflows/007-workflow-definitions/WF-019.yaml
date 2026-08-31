@@ -1,0 +1,263 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-019 Automation Deployment
+  # ==========================================================
+
+
+  - id: WF-019
+
+    name: automation_deployment
+
+    title: Automation Deployment
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - automation
+
+
+      owner:
+
+        module: 016_automation_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Deploys smart home automation rules
+        to customer properties and devices.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - automation_template_selection
+
+        - rule_creation
+
+        - device_binding
+
+        - automation_testing
+
+
+
+      excludes:
+
+
+        - customer_marketing_automation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-037 installation_completed
+
+
+
+    preconditions:
+
+
+      - devices_online
+
+      - property_configuration_valid
+
+
+
+    actors:
+
+
+      - system
+
+      - installer
+
+
+
+    inputs:
+
+
+      - automation_templates
+
+      - property_configuration
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          select_automation_profile
+
+
+
+      - step: 2
+
+        action:
+
+          create_automation_rules
+
+
+
+      - step: 3
+
+        action:
+
+          bind_rules_to_devices
+
+
+
+      - step: 4
+
+        action:
+
+          execute_test_scenario
+
+
+
+      - step: 5
+
+        action:
+
+          activate_automation
+
+
+
+    outputs:
+
+
+      - deployed_automation
+
+
+
+    state_machine:
+
+
+      - SM-019 Automation Deployment Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-037 installation_completed
+
+
+
+      produces:
+
+
+        - EVT-050 automation_deployed
+
+
+
+    orchestration:
+
+
+      - ORCH-019 Automation Deployment
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_permission_validation
+
+        - device_authorization_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_failed_automation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - disable_partial_rules
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - automation_activation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

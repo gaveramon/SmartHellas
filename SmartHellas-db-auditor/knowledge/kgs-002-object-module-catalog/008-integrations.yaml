@@ -1,0 +1,219 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: integration_reference
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# INTEGRATION REGISTRY
+# ============================================================
+
+
+integrations:
+
+
+  description: >
+
+    Canonical registry of external systems,
+    providers and communication boundaries.
+
+
+
+  principles:
+
+
+    - provider_isolation
+
+    - secret_separation
+
+    - explicit_adapter_contracts
+
+    - failure_resilience
+
+    - observable_integrations
+
+
+
+  ownership:
+
+
+    primary_module:
+
+      "005_integration_engine"
+
+
+
+  providers:
+
+
+
+# ============================================================
+# SMART HOME PROVIDERS
+# ============================================================
+
+
+    aqara:
+
+
+      category:
+
+        smart_home
+
+
+
+      purpose:
+
+        "Management of Aqara smart devices."
+
+
+
+      connected_objects:
+
+
+        - device
+
+        - automation_rule
+
+        - device_state
+
+
+
+      communication:
+
+
+        type:
+
+          api
+
+
+
+      security:
+
+
+        secrets:
+
+          vault_managed: true
+
+
+
+    ttlock:
+
+
+      category:
+
+        smart_lock
+
+
+
+      purpose:
+
+        "Digital lock management and access codes."
+
+
+
+      connected_objects:
+
+
+        - lock
+
+        - access_code
+
+        - guest_access
+
+
+
+      communication:
+
+
+        type:
+
+          api
+
+
+
+      security:
+
+
+        secrets:
+
+          vault_managed: true
+
+
+
+# ============================================================
+# AIRBNB ECOSYSTEM
+# ============================================================
+
+
+    airbnb:
+
+
+      category:
+
+        booking_provider
+
+
+
+      purpose:
+
+        "Reservation and guest lifecycle integration."
+
+
+
+      connected_objects:
+
+
+        - booking
+
+        - guest
+
+
+
+      communication:
+
+
+        type:
+
+          api
+
+
+
+# ============================================================
+# COMMUNICATION PROVIDERS
+# ============================================================
+
+
+    notification_provider:
+
+
+      category:
+
+        messaging
+
+
+
+      purpose:
+
+        "Guest and customer notifications."
+
+
+
+      communication:
+
+
+        types:
+
+
+          - email
+
+          - sms
+
+          - push

@@ -1,0 +1,602 @@
+# ============================================================
+# KGS-003 — Workflow Catalog
+# Section 10 — Orchestration Catalog
+#
+# Version: 1.0
+#
+# Purpose:
+# Defines how events, workflows, state machines and modules
+# are coordinated into end-to-end business processes.
+#
+# Source of Truth:
+# This file is the canonical definition of orchestration logic.
+# ============================================================
+
+
+orchestration:
+
+
+  # ==========================================================
+  # Metadata
+  # ==========================================================
+
+  metadata:
+
+    title: "Enterprise Workflow Orchestration Catalog"
+
+    short_name: "KGS-003-ORCH"
+
+    description: >
+      Defines orchestration flows that coordinate events,
+      workflows, state transitions and module interactions.
+
+    version: "1.0"
+
+    status: active
+
+    canonical: true
+
+    source_of_truth: true
+
+    owner: enterprise_architecture
+
+    tags:
+
+      - workflow
+
+      - orchestration
+
+      - events
+
+      - automation
+
+      - smarthellas
+
+
+
+  # ==========================================================
+  # Validation
+  # ==========================================================
+
+  validation:
+
+    unique_orchestration_ids: true
+
+    unique_orchestration_names: true
+
+    workflow_reference_required: true
+
+    event_reference_required: true
+
+    state_machine_reference_required: true
+
+    dependency_reference_required: true
+
+    compensation_required_for_critical_flows: true
+
+    audit_definition_required: true
+
+
+
+  # ==========================================================
+  # Orchestration Registry
+  # ==========================================================
+
+  orchestration_registry:
+
+
+    # ========================================================
+    # ORCH-001 Guest Access Automation
+    # ========================================================
+
+    - id: ORCH-001
+
+      name: guest_access_automation
+
+      title: Guest Access Automation
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Automatically generates and manages guest access
+        after a confirmed Airbnb booking.
+
+
+      trigger:
+
+        events:
+
+          - EVT-021 booking_confirmed
+
+
+      workflow_chain:
+
+        - WF-GUEST-ACCESS-PREPARATION
+
+        - WF-GENERATE-DOOR-CODE
+
+        - WF-GUEST-NOTIFICATION
+
+
+      steps:
+
+        - step: 1
+
+          action:
+
+            name: create_guest_access_request
+
+
+        - step: 2
+
+          action:
+
+            name: generate_door_code
+
+
+        - step: 3
+
+          action:
+
+            name: synchronize_lock_access
+
+
+        - step: 4
+
+          action:
+
+            name: notify_guest
+
+
+        - step: 5
+
+          action:
+
+            name: activate_guest_access
+
+
+
+      dependencies:
+
+        modules:
+
+          - 004_booking_lock_engine
+
+          - 005_integration_engine
+
+          - 010_service_portal_engine
+
+
+      error_handling:
+
+        strategy:
+
+          retry_then_alert
+
+
+        failure_actions:
+
+          - create_system_alert
+
+          - notify_property_owner
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 3
+
+        backoff_strategy: exponential
+
+
+
+      compensation:
+
+        enabled: true
+
+        actions:
+
+          - revoke_generated_code
+
+          - disable_guest_access
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+        audit_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # ORCH-002 Device Deployment
+    # ========================================================
+
+    - id: ORCH-002
+
+      name: device_deployment
+
+      title: Device Deployment Orchestration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Controls preparation, configuration and delivery
+        of SmartHellas devices.
+
+
+      trigger:
+
+        events:
+
+          - EVT-031 order_confirmed
+
+
+
+      workflow_chain:
+
+        - WF-CUSTOMER-ONBOARDING
+
+        - WF-DEVICE-PREPARATION
+
+        - WF-SHIPMENT-READY
+
+
+
+      steps:
+
+        - step: 1
+
+          action:
+
+            name: collect_customer_configuration
+
+
+        - step: 2
+
+          action:
+
+            name: configure_devices
+
+
+        - step: 3
+
+          action:
+
+            name: update_firmware
+
+
+        - step: 4
+
+          action:
+
+            name: apply_device_labels
+
+
+        - step: 5
+
+          action:
+
+            name: prepare_shipment
+
+
+
+      dependencies:
+
+        modules:
+
+          - 007_preconfig_engine
+
+          - 008_logistics_engine
+
+          - 009_commerce_engine
+
+
+
+      error_handling:
+
+        strategy: retry_then_manual_review
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 3
+
+        backoff_strategy: exponential
+
+
+
+      compensation:
+
+        enabled: true
+
+        actions:
+
+          - mark_configuration_failed
+
+          - create_support_case
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+        audit_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # ORCH-003 Customer Activation
+    # ========================================================
+
+    - id: ORCH-003
+
+      name: customer_activation
+
+      title: Customer Activation Orchestration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Activates a customer account and prepares access
+        to SmartHellas services.
+
+
+      trigger:
+
+        events:
+
+          - EVT-003 customer_activated
+
+
+
+      workflow_chain:
+
+        - WF-PORTAL-ACTIVATION
+
+        - WF-SUBSCRIPTION-ACTIVATION
+
+
+
+      steps:
+
+        - step: 1
+
+          action:
+
+            name: create_customer_workspace
+
+
+        - step: 2
+
+          action:
+
+            name: assign_subscription_permissions
+
+
+        - step: 3
+
+          action:
+
+            name: enable_portal_access
+
+
+
+      dependencies:
+
+        modules:
+
+          - 002_core_saas
+
+          - 010_service_portal_engine
+
+
+
+      error_handling:
+
+        strategy: retry_then_alert
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 3
+
+        backoff_strategy: exponential
+
+
+
+      compensation:
+
+        enabled: true
+
+        actions:
+
+          - disable_portal_access
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+        audit_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # ORCH-004 Device Health Recovery
+    # ========================================================
+
+    - id: ORCH-004
+
+      name: device_health_recovery
+
+      title: Device Health Recovery Orchestration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Handles automatic recovery workflows when devices
+        become unavailable.
+
+
+      trigger:
+
+        events:
+
+          - EVT-015 device_offline
+
+
+
+      workflow_chain:
+
+        - WF-CREATE-ALERT
+
+        - WF-DEVICE-RECOVERY
+
+        - WF-NOTIFY-CUSTOMER
+
+
+
+      steps:
+
+        - step: 1
+
+          action:
+
+            name: evaluate_device_health
+
+
+        - step: 2
+
+          action:
+
+            name: notify_owner_if_required
+
+
+        - step: 3
+
+          action:
+
+            name: attempt_recovery
+
+
+        - step: 4
+
+          action:
+
+            name: resolve_alert
+
+
+
+      dependencies:
+
+        modules:
+
+          - 006_operations_engine
+
+          - 010_service_portal_engine
+
+
+
+      error_handling:
+
+        strategy: escalate_to_support
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 5
+
+        backoff_strategy: exponential
+
+
+
+      compensation:
+
+        enabled: true
+
+        actions:
+
+          - create_support_ticket
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+        audit_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null

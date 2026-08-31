@@ -1,0 +1,268 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-065 SLA & Service Level Monitoring
+  # ==========================================================
+
+
+  - id: WF-065
+
+    name: sla_service_level_monitoring
+
+    title: SLA & Service Level Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - operations_management
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: service_quality
+
+        criticality: operational_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Monitors SmartHellas service availability,
+        response times and operational commitments.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - uptime_monitoring
+
+        - response_tracking
+
+        - incident_measurement
+
+        - service_reporting
+
+
+
+      excludes:
+
+
+        - customer_case_resolution
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_monitoring_cycle
+
+
+
+    preconditions:
+
+
+      - active_service
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_team
+
+
+
+    inputs:
+
+
+      - system_metrics
+
+      - incident_data
+
+      - support_metrics
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_service_metrics
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_sla_values
+
+
+
+      - step: 3
+
+        action:
+
+          detect_sla_breach
+
+
+
+      - step: 4
+
+        action:
+
+          create_service_report
+
+
+
+      - step: 5
+
+        action:
+
+          notify_operations_team
+
+
+
+    outputs:
+
+
+      - sla_report
+
+      - service_health_status
+
+
+
+    state_machine:
+
+
+      - SM-065 SLA Monitoring Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-067 sla_breach_detected
+
+
+
+    orchestration:
+
+
+      - ORCH-065 SLA Monitoring
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+
+      - Monitoring Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - operational_data_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_incident
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - recalculate_sla_metrics
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - uptime_percentage
+
+        - response_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

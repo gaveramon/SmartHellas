@@ -170,3 +170,156 @@
 	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
 2026-07-02 17:29:17.634 UTC [2005] LOG:  could not open file "pg_wal/000000010000000000000006": No such file or directory
 2026-07-02 17:29:17.636 UTC [2005] LOG:  could not remove file "pg_wal/000000010000000000000004": No such file or directory
+2026-07-02 18:58:48.010 UTC [51673] FATAL:  canceling authentication due to timeout
+2026-07-02 18:58:45.291 UTC [51669] FATAL:  canceling authentication due to timeout
+2026-07-02 18:58:58.662 UTC [51674] FATAL:  canceling authentication due to timeout
+2026-07-02 18:59:01.361 UTC [51670] FATAL:  canceling authentication due to timeout
+2026-07-02 19:00:39.273 UTC [51688] LOG:  PID 50765 in cancel request did not match any process
+2026-07-02 19:00:39.863 UTC [51664] ERROR:  canceling statement due to user request
+2026-07-02 19:00:39.863 UTC [51664] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-02 19:00:40.947 UTC [51676] ERROR:  canceling statement due to user request
+2026-07-02 19:00:40.947 UTC [51676] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-02 19:00:41.104 UTC [51672] ERROR:  canceling statement due to user request
+2026-07-02 19:00:41.104 UTC [51672] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-02 19:00:41.126 UTC [51675] ERROR:  canceling statement due to user request
+2026-07-02 19:00:41.126 UTC [51675] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-02 19:00:41.163 UTC [51680] ERROR:  canceling statement due to user request
+2026-07-02 19:00:41.163 UTC [51680] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-02 19:00:41.323 UTC [51677] ERROR:  canceling statement due to user request
+2026-07-02 19:00:41.323 UTC [51677] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-02 19:00:41.575 UTC [51681] ERROR:  canceling statement due to user request
+2026-07-02 19:00:41.575 UTC [51681] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-03 16:46:20.506 UTC [54243] LOG:  PID 54180 in cancel request did not match any process
+2026-07-03 16:46:20.511 UTC [54242] LOG:  PID 54180 in cancel request did not match any process
+2026-07-03 16:46:22.027 UTC [54206] ERROR:  canceling statement due to user request
+2026-07-03 16:46:22.027 UTC [54206] STATEMENT:  DELETE FROM history_scheduled_tasks WHERE shard_id = $1 AND category_id = $2 AND visibility_timestamp >= $3 AND visibility_timestamp < $4
+2026-07-03 16:46:22.467 UTC [54202] ERROR:  canceling statement due to user request
+2026-07-03 16:46:22.467 UTC [54202] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM history_scheduled_tasks 
+	  WHERE shard_id = $1 
+	  AND category_id = $2 
+	  AND ((visibility_timestamp >= $3 AND task_id >= $4) OR visibility_timestamp > $5) 
+	  AND visibility_timestamp < $6
+	  ORDER BY visibility_timestamp,task_id LIMIT $7
+2026-07-03 16:46:23.418 UTC [54219] ERROR:  canceling statement due to user request
+2026-07-03 16:46:23.418 UTC [54219] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-03 16:46:23.464 UTC [54216] ERROR:  canceling statement due to user request
+2026-07-03 16:46:23.464 UTC [54216] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-03 16:46:23.667 UTC [54217] ERROR:  canceling statement due to user request
+2026-07-03 16:46:23.667 UTC [54217] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-03 16:46:23.785 UTC [54222] ERROR:  canceling statement due to user request
+2026-07-03 16:46:23.785 UTC [54222] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-07-03 16:46:23.916 UTC [54237] ERROR:  canceling statement due to user request
+2026-07-03 16:46:23.916 UTC [54237] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM timer_tasks 
+	  WHERE shard_id = $1 
+	  AND ((visibility_timestamp >= $2 AND task_id >= $3) OR visibility_timestamp > $4) 
+	  AND visibility_timestamp < $5
+	  ORDER BY visibility_timestamp,task_id LIMIT $6
+2026-08-22 18:41:40.597 UTC [1721] LOG:  starting PostgreSQL 14.23 (Ubuntu 14.23-1.pgdg24.04+1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+2026-08-22 18:41:40.597 UTC [1721] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-08-22 18:41:40.630 UTC [1721] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-08-22 18:41:40.730 UTC [1887] LOG:  database system was shut down at 2026-08-22 18:41:38 UTC
+2026-08-22 18:41:40.730 UTC [1888] FATAL:  the database system is starting up
+2026-08-22 18:41:40.730 UTC [1893] FATAL:  the database system is starting up
+2026-08-22 18:41:40.791 UTC [1721] LOG:  database system is ready to accept connections
+2026-08-22 18:41:50.743 UTC [2233] FATAL:  no pg_hba.conf entry for host "[local]", user "root", database "root", no encryption
+2026-08-22 18:41:51.958 UTC [2286] ERROR:  duplicate key value violates unique constraint "namespaces_pkey"
+2026-08-22 18:41:51.958 UTC [2286] DETAIL:  Key (partition_id, id)=(54321, \x32049b68787240948e63d0dd59896a83) already exists.
+2026-08-22 18:41:51.958 UTC [2286] STATEMENT:  INSERT INTO 
+	 namespaces (partition_id, id, name, is_global, data, data_encoding, notification_version)
+	 VALUES($1, $2, $3, $4, $5, $6, $7)
+2026-08-22 20:41:45.493 UTC [1942] LOG:  could not open file "pg_wal/000000010000000000000007": No such file or directory
+2026-08-22 20:41:45.494 UTC [1942] LOG:  could not remove file "pg_wal/000000010000000000000005": No such file or directory
+2026-08-26 09:39:03.604 UTC [18867] ERROR:  canceling statement due to user request
+2026-08-26 09:39:03.604 UTC [18867] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:39:03.667 UTC [18856] ERROR:  canceling statement due to user request
+2026-08-26 09:39:03.667 UTC [18856] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM timer_tasks 
+	  WHERE shard_id = $1 
+	  AND ((visibility_timestamp >= $2 AND task_id >= $3) OR visibility_timestamp > $4) 
+	  AND visibility_timestamp < $5
+	  ORDER BY visibility_timestamp,task_id LIMIT $6
+2026-08-26 09:39:03.603 UTC [18870] ERROR:  canceling statement due to user request
+2026-08-26 09:39:03.603 UTC [18870] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:39:03.750 UTC [18872] ERROR:  canceling statement due to user request
+2026-08-26 09:39:03.750 UTC [18872] STATEMENT:  DELETE FROM history_scheduled_tasks WHERE shard_id = $1 AND category_id = $2 AND visibility_timestamp >= $3 AND visibility_timestamp < $4
+2026-08-26 09:39:03.603 UTC [18855] ERROR:  canceling statement due to user request
+2026-08-26 09:39:03.603 UTC [18855] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:39:03.883 UTC [18869] ERROR:  canceling statement due to user request
+2026-08-26 09:39:03.883 UTC [18869] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:40:41.207 UTC [18882] ERROR:  canceling statement due to user request
+2026-08-26 09:40:41.207 UTC [18882] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM timer_tasks 
+	  WHERE shard_id = $1 
+	  AND ((visibility_timestamp >= $2 AND task_id >= $3) OR visibility_timestamp > $4) 
+	  AND visibility_timestamp < $5
+	  ORDER BY visibility_timestamp,task_id LIMIT $6
+2026-08-26 09:41:17.203 UTC [18931] ERROR:  canceling statement due to user request
+2026-08-26 09:41:17.203 UTC [18931] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:41:17.682 UTC [18935] ERROR:  canceling statement due to user request
+2026-08-26 09:41:17.682 UTC [18935] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM timer_tasks 
+	  WHERE shard_id = $1 
+	  AND ((visibility_timestamp >= $2 AND task_id >= $3) OR visibility_timestamp > $4) 
+	  AND visibility_timestamp < $5
+	  ORDER BY visibility_timestamp,task_id LIMIT $6
+2026-08-26 09:41:17.963 UTC [18934] ERROR:  canceling statement due to user request
+2026-08-26 09:41:17.963 UTC [18934] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:41:20.268 UTC [18933] ERROR:  canceling statement due to user request
+2026-08-26 09:41:20.268 UTC [18933] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM history_scheduled_tasks 
+	  WHERE shard_id = $1 
+	  AND category_id = $2 
+	  AND ((visibility_timestamp >= $3 AND task_id >= $4) OR visibility_timestamp > $5) 
+	  AND visibility_timestamp < $6
+	  ORDER BY visibility_timestamp,task_id LIMIT $7
+2026-08-26 09:41:20.278 UTC [18925] ERROR:  canceling statement due to user request
+2026-08-26 09:41:20.278 UTC [18925] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:41:20.742 UTC [18936] ERROR:  canceling statement due to user request
+2026-08-26 09:41:20.742 UTC [18936] STATEMENT:  SELECT visibility_timestamp, task_id, data, data_encoding FROM history_scheduled_tasks 
+	  WHERE shard_id = $1 
+	  AND category_id = $2 
+	  AND ((visibility_timestamp >= $3 AND task_id >= $4) OR visibility_timestamp > $5) 
+	  AND visibility_timestamp < $6
+	  ORDER BY visibility_timestamp,task_id LIMIT $7
+2026-08-26 09:41:20.751 UTC [18926] ERROR:  canceling statement due to user request
+2026-08-26 09:41:20.751 UTC [18926] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:41:21.683 UTC [18927] ERROR:  canceling statement due to user request
+2026-08-26 09:41:21.683 UTC [18927] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:41:38.018 UTC [18928] ERROR:  canceling statement due to user request
+2026-08-26 09:41:38.018 UTC [18928] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM visibility_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:47:27.594 UTC [19013] LOG:  PID 18932 in cancel request did not match any process
+2026-08-26 09:47:27.597 UTC [19014] LOG:  PID 18932 in cancel request did not match any process
+2026-08-26 09:47:55.832 UTC [18966] ERROR:  canceling statement due to user request
+2026-08-26 09:47:55.832 UTC [18966] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:47:55.909 UTC [19055] LOG:  PID 18963 in cancel request did not match any process
+2026-08-26 09:47:55.941 UTC [18981] ERROR:  canceling statement due to user request
+2026-08-26 09:47:55.941 UTC [18981] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:47:55.948 UTC [19058] LOG:  PID 18965 in cancel request did not match any process
+2026-08-26 09:47:55.969 UTC [18975] ERROR:  canceling statement due to user request
+2026-08-26 09:47:55.969 UTC [18975] STATEMENT:  SELECT task_id, data, data_encoding 
+	 FROM transfer_tasks WHERE shard_id = $1 AND task_id >= $2 AND task_id < $3 ORDER BY task_id LIMIT $4
+2026-08-26 09:47:55.992 UTC [19059] LOG:  PID 18979 in cancel request did not match any process
+2026-08-26 09:47:56.056 UTC [19062] LOG:  PID 18980 in cancel request did not match any process
+2026-08-26 09:47:56.199 UTC [19065] LOG:  PID 18976 in cancel request did not match any process
+2026-08-26 09:47:57.398 UTC [19081] LOG:  PID 19011 in cancel request did not match any process
+2026-08-27 07:05:06.445 UTC [1942] LOG:  could not open file "pg_wal/000000010000000000000008": No such file or directory
+2026-08-27 07:05:06.446 UTC [1942] LOG:  could not remove file "pg_wal/000000010000000000000006": No such file or directory

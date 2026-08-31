@@ -1,0 +1,266 @@
+definition_registry:
+
+  # ==============================================
+  # WF-042 Device Validation
+  # ==========================================================
+
+
+  - id: WF-042
+
+    name: device_validation
+
+    title: Device Validation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_activation
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+
+        business_process: validation
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Validates that installed devices are correctly
+        connected, reachable and ready for operation.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - connectivity_check
+
+        - device_registration_validation
+
+        - gateway_validation
+
+        - automation_readiness_check
+
+
+
+      excludes:
+
+
+        - advanced_monitoring
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-042 installation_completed
+
+
+
+    preconditions:
+
+
+      - device_installed
+
+      - customer_completed_installation
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - installed_devices
+
+      - gateway_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          scan_device_status
+
+
+
+      - step: 2
+
+        action:
+
+          validate_gateway_connection
+
+
+
+      - step: 3
+
+        action:
+
+          validate_provider_connection
+
+
+
+      - step: 4
+
+        action:
+
+          execute_device_tests
+
+
+
+      - step: 5
+
+        action:
+
+          approve_property_activation
+
+
+
+    outputs:
+
+
+      - validated_devices
+
+      - validation_report
+
+
+
+    state_machine:
+
+
+      - SM-042 Device Validation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-043 devices_validated
+
+
+
+    orchestration:
+
+
+      - ORCH-042 Device Validation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_identity_validation
+
+        - secure_connection_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_device_issue
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - return_device_to_pending_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - validation_success_rate
+
+        - failed_device_count
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,267 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-040 Customer Onboarding
+  # ==========================================================
+
+
+  - id: WF-040
+
+    name: customer_onboarding
+
+    title: Customer Onboarding
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - onboarding
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+        business_process: customer_activation
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Guides customers through the initial activation
+        of their SmartHellas solution after receiving
+        the configured hardware package.
+
+
+
+    scope:
+
+      includes:
+
+        - customer_activation
+
+        - property_setup
+
+        - onboarding_progress_tracking
+
+        - installation_preparation
+
+
+      excludes:
+
+        - hardware_configuration_execution
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-037 order_shipped
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+      - shipment_completed
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - property_information
+
+      - shipment_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_onboarding_session
+
+
+
+      - step: 2
+
+        action:
+
+          verify_customer_information
+
+
+
+      - step: 3
+
+        action:
+
+          load_property_configuration
+
+
+
+      - step: 4
+
+        action:
+
+          display_required_setup_steps
+
+
+
+      - step: 5
+
+        action:
+
+          track_onboarding_progress
+
+
+
+    outputs:
+
+
+      - onboarding_session
+
+      - onboarding_status
+
+
+
+    state_machine:
+
+
+      - SM-040 Customer Onboarding Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-037 order_shipped
+
+
+
+      produces:
+
+
+        - EVT-040 onboarding_started
+
+
+
+    orchestration:
+
+
+      - ORCH-040 Customer Onboarding
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 010_service_portal_engine
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - customer_identity_validation
+
+        - tenant_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        save_progress_and_resume
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - close_incomplete_onboarding
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - onboarding_completion_rate
+
+        - onboarding_duration
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

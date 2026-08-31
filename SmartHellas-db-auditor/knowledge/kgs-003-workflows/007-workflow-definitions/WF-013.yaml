@@ -1,0 +1,231 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-013 Device Firmware Update
+  # ==========================================================
+
+
+  - id: WF-013
+
+    name: device_firmware_update
+
+    title: Device Firmware Update
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_maintenance
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Keeps connected devices on supported firmware versions.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - firmware_check
+
+        - update_execution
+
+        - validation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-035 firmware_update_required
+
+
+
+    preconditions:
+
+
+      - device_online
+
+      - supported_firmware_available
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_identifier
+
+      - firmware_version
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          check_current_firmware
+
+
+
+      - step: 2
+
+        action:
+
+          download_update
+
+
+
+      - step: 3
+
+        action:
+
+          apply_firmware_update
+
+
+
+      - step: 4
+
+        action:
+
+          validate_device_status
+
+
+
+    outputs:
+
+
+      - updated_device
+
+
+
+    state_machine:
+
+
+      - SM-013 Firmware Update Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-036 firmware_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-013 Firmware Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - firmware_signature_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_or_retry_update
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_firmware
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - firmware_update_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

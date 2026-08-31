@@ -1,0 +1,63 @@
+scope:
+
+  purpose: >
+    Defines the functional boundary of the Enterprise Workflow Catalog.
+    Specifies which workflow-related knowledge is maintained within
+    this catalog and which knowledge is explicitly delegated to
+    other KGS catalogs.
+
+  authoritative_for:
+
+    - workflow_categories
+    - workflow_registry
+    - workflow_definitions
+    - workflow_state_machines
+    - workflow_events
+    - workflow_orchestration
+    - workflow_integrations
+    - workflow_dependencies
+    - workflow_lifecycle
+
+  explicitly_excludes:
+
+    - enterprise_principles
+    - sql_objects
+    - database_schema
+    - modules
+    - ownership
+    - business_rules
+    - security_policies
+    - permissions
+    - implementation_code
+    - api_specifications
+
+  references:
+
+    principles: KGS-001
+    objects: KGS-002
+    ownership: KGS-004
+    business_rules: KGS-005
+
+  assumptions:
+
+    - All referenced modules exist in KGS-002.
+    - All referenced objects exist in KGS-002.
+    - Business constraints are defined in KGS-005.
+    - Ownership is defined in KGS-004.
+
+  guarantees:
+
+    - Every enterprise workflow is registered exactly once.
+    - Every workflow has a unique identifier.
+    - Every workflow belongs to one canonical category.
+    - Every workflow can be validated by the Enterprise Auditor.
+    - Every workflow can be traced to related modules and objects.
+
+  out_of_scope:
+
+    - SQL implementation
+    - Supabase configuration
+    - Edge Functions
+    - Trigger implementation
+    - RLS policies
+    - Physical infrastructure

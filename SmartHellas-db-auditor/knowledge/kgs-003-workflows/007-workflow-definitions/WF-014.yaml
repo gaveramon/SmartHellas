@@ -1,0 +1,235 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-014 Device Installation
+  # ==========================================================
+
+
+  - id: WF-014
+
+    name: device_installation
+
+    title: Device Installation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - installation
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+
+    purpose:
+
+      description:
+
+        Guides installation of SmartHellas devices
+        at the Airbnb property.
+
+
+
+    scope:
+
+      includes:
+
+        - installation_guidance
+
+        - device_location_confirmation
+
+        - installation_completion
+
+
+
+      excludes:
+
+        - hardware_repair
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-034 device_paired
+
+
+
+    preconditions:
+
+
+      - device_paired
+
+      - installation_plan_available
+
+
+
+    actors:
+
+
+      - customer
+
+      - installer
+
+      - system
+
+
+
+    inputs:
+
+
+      - installation_plan
+
+      - room_mapping
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          display_installation_instructions
+
+
+
+      - step: 2
+
+        action:
+
+          confirm_device_location
+
+
+
+      - step: 3
+
+        action:
+
+          confirm_installation_completion
+
+
+
+      - step: 4
+
+        action:
+
+          start_validation
+
+
+
+    outputs:
+
+
+      - installed_device
+
+
+
+    state_machine:
+
+
+      - SM-014 Installation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-037 installation_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-014 Installation Guidance
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 010_service_portal_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - installation_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_installation_issue
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - reopen_installation_task
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - installation_completion_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

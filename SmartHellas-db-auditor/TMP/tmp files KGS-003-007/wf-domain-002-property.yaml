@@ -1,0 +1,2156 @@
+definition_registry:
+
+# ==========================================================
+  # WF-011 Device Provisioning
+  # ==========================================================
+
+
+  - id: WF-011
+
+    name: device_provisioning
+
+    title: Device Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_management
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Registers devices and assigns them
+        to SmartHellas properties.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - device_registration
+
+        - property_assignment
+
+        - device_identity_creation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-032 device_preparation_completed
+
+
+
+    preconditions:
+
+
+      - device_exists
+
+      - property_exists
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_identifier
+
+      - property_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          register_device
+
+
+
+      - step: 2
+
+        action:
+
+          assign_device_to_property
+
+
+
+      - step: 3
+
+        action:
+
+          create_device_identity
+
+
+
+      - step: 4
+
+        action:
+
+          store_device_metadata
+
+
+
+    outputs:
+
+
+      - provisioned_device
+
+
+
+    state_machine:
+
+
+      - SM-011 Device Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-033 device_registered
+
+
+
+    orchestration:
+
+
+      - ORCH-011 Device Provisioning
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_identity_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_device_registration
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - unregister_device
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - provisioning_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-012 Device Pairing
+  # ==========================================================
+
+
+  - id: WF-012
+
+    name: device_pairing
+
+    title: Device Pairing
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - iot_configuration
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+      description:
+
+        Connects physical smart devices with the
+        SmartHellas platform and external providers.
+
+
+
+    scope:
+
+      includes:
+
+        - aqara_pairing
+
+        - ttlock_pairing
+
+        - gateway_binding
+
+        - connection_validation
+
+
+
+      excludes:
+
+        - customer_training
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-033 device_registered
+
+
+
+    preconditions:
+
+
+      - device_provisioned
+
+      - integration_available
+
+
+
+    actors:
+
+
+      - system
+
+      - installer
+
+
+
+    inputs:
+
+
+      - device_credentials
+
+      - gateway_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_device_identity
+
+
+
+      - step: 2
+
+        action:
+
+          connect_device_gateway
+
+
+
+      - step: 3
+
+        action:
+
+          authenticate_provider_connection
+
+
+
+      - step: 4
+
+        action:
+
+          test_device_communication
+
+
+
+    outputs:
+
+
+      - paired_device
+
+
+
+    state_machine:
+
+
+      - SM-011 Device Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-033 device_registered
+
+
+
+      produces:
+
+
+        - EVT-034 device_paired
+
+
+
+    orchestration:
+
+
+      - ORCH-012 Device Pairing
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - credential_protection
+
+        - encrypted_communication
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_pairing_process
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - unpair_device
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - pairing_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-013 Device Firmware Update
+  # ==========================================================
+
+
+  - id: WF-013
+
+    name: device_firmware_update
+
+    title: Device Firmware Update
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_maintenance
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Keeps connected devices on supported firmware versions.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - firmware_check
+
+        - update_execution
+
+        - validation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-035 firmware_update_required
+
+
+
+    preconditions:
+
+
+      - device_online
+
+      - supported_firmware_available
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_identifier
+
+      - firmware_version
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          check_current_firmware
+
+
+
+      - step: 2
+
+        action:
+
+          download_update
+
+
+
+      - step: 3
+
+        action:
+
+          apply_firmware_update
+
+
+
+      - step: 4
+
+        action:
+
+          validate_device_status
+
+
+
+    outputs:
+
+
+      - updated_device
+
+
+
+    state_machine:
+
+
+      - SM-013 Firmware Update Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-036 firmware_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-013 Firmware Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - firmware_signature_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_or_retry_update
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_firmware
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - firmware_update_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-014 Device Installation
+  # ==========================================================
+
+
+  - id: WF-014
+
+    name: device_installation
+
+    title: Device Installation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - installation
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+
+    purpose:
+
+      description:
+
+        Guides installation of SmartHellas devices
+        at the Airbnb property.
+
+
+
+    scope:
+
+      includes:
+
+        - installation_guidance
+
+        - device_location_confirmation
+
+        - installation_completion
+
+
+
+      excludes:
+
+        - hardware_repair
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-034 device_paired
+
+
+
+    preconditions:
+
+
+      - device_paired
+
+      - installation_plan_available
+
+
+
+    actors:
+
+
+      - customer
+
+      - installer
+
+      - system
+
+
+
+    inputs:
+
+
+      - installation_plan
+
+      - room_mapping
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          display_installation_instructions
+
+
+
+      - step: 2
+
+        action:
+
+          confirm_device_location
+
+
+
+      - step: 3
+
+        action:
+
+          confirm_installation_completion
+
+
+
+      - step: 4
+
+        action:
+
+          start_validation
+
+
+
+    outputs:
+
+
+      - installed_device
+
+
+
+    state_machine:
+
+
+      - SM-014 Installation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-037 installation_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-014 Installation Guidance
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 010_service_portal_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - installation_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_installation_issue
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - reopen_installation_task
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - installation_completion_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-015 Device Health Monitoring
+  # ==========================================================
+
+
+  - id: WF-015
+
+    name: device_health_monitoring
+
+    title: Device Health Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - monitoring
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Continuously monitors device availability,
+        connectivity and health.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - heartbeat_monitoring
+
+        - connectivity_check
+
+        - health_status_tracking
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - device_status_changed
+
+
+
+    preconditions:
+
+
+      - device_registered
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_telemetry
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_device_status
+
+
+
+      - step: 2
+
+        action:
+
+          evaluate_health_rules
+
+
+
+      - step: 3
+
+        action:
+
+          update_device_health
+
+
+
+      - step: 4
+
+        action:
+
+          create_alert_if_required
+
+
+
+    outputs:
+
+
+      - device_health_status
+
+
+
+    state_machine:
+
+
+      - SM-015 Device Health Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-015 device_offline
+
+        - EVT-016 device_recovered
+
+
+
+    orchestration:
+
+
+      - ORCH-015 Health Monitoring
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - telemetry_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        mark_device_unknown
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - retry_health_check
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - device_availability
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-016 Device Replacement
+  # ==========================================================
+
+
+  - id: WF-016
+
+    name: device_replacement
+
+    title: Device Replacement
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - service_management
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+
+    purpose:
+
+      description:
+
+        Handles replacement of defective or outdated devices.
+
+
+
+    scope:
+
+      includes:
+
+        - failure_detection
+
+        - replacement_request
+
+        - new_device_assignment
+
+        - device_reactivation
+
+
+
+      excludes:
+
+        - refund_processing
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-045 device_replacement_requested
+
+
+
+    preconditions:
+
+
+      - device_exists
+
+      - replacement_authorized
+
+
+
+    actors:
+
+
+      - customer
+
+      - support_agent
+
+      - system
+
+
+
+    inputs:
+
+
+      - failed_device
+
+      - replacement_device
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_replacement_request
+
+
+
+      - step: 2
+
+        action:
+
+          deactivate_failed_device
+
+
+
+      - step: 3
+
+        action:
+
+          assign_replacement_device
+
+
+
+      - step: 4
+
+        action:
+
+          provision_new_device
+
+
+
+      - step: 5
+
+        action:
+
+          validate_operation
+
+
+
+    outputs:
+
+
+      - replaced_device
+
+
+
+    state_machine:
+
+
+      - SM-016 Device Replacement Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-046 replacement_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-016 Device Replacement
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 003_property_device_engine
+
+        - 008_logistics_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_ownership_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_to_support
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_device_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - replacement_resolution_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-017 Device Removal
+  # ==========================================================
+
+
+  - id: WF-017
+
+    name: device_removal
+
+    title: Device Removal
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_management
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Removes devices from properties and platform.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - device_unassignment
+
+        - integration_disconnect
+
+        - lifecycle_closure
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - device_removal_requested
+
+
+
+    preconditions:
+
+
+      - device_exists
+
+      - authorization_valid
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_removal_request
+
+
+
+      - step: 2
+
+        action:
+
+          disconnect_integrations
+
+
+
+      - step: 3
+
+        action:
+
+          remove_property_assignment
+
+
+
+      - step: 4
+
+        action:
+
+          archive_device_history
+
+
+
+    outputs:
+
+
+      - removed_device
+
+
+
+    state_machine:
+
+
+      - SM-011 Device Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-047 device_removed
+
+
+
+    orchestration:
+
+
+      - ORCH-017 Device Removal
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - ownership_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_disconnect
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_assignment
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - removal_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-018 Property Device Synchronization
+  # ==========================================================
+
+
+  - id: WF-018
+
+    name: property_device_synchronization
+
+    title: Property Device Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - synchronization
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+      description:
+
+        Synchronizes property configuration,
+        rooms and assigned devices.
+
+
+
+    scope:
+
+      includes:
+
+        - property_configuration_sync
+
+        - room_mapping_sync
+
+        - device_assignment_sync
+
+
+
+      excludes:
+
+        - external_booking_sync
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-048 property_configuration_changed
+
+
+
+    preconditions:
+
+
+      - property_exists
+
+      - devices_registered
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - property_configuration
+
+      - device_inventory
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          load_property_configuration
+
+
+
+      - step: 2
+
+        action:
+
+          compare_device_state
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_changes
+
+
+
+      - step: 4
+
+        action:
+
+          validate_consistency
+
+
+
+    outputs:
+
+
+      - synchronized_property_state
+
+
+
+    state_machine:
+
+
+      - SM-018 Synchronization Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-049 synchronization_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-018 Property Synchronization
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - property_access_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_sync_retry_task
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_configuration
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - synchronization_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-019 Automation Deployment
+  # ==========================================================
+
+
+  - id: WF-019
+
+    name: automation_deployment
+
+    title: Automation Deployment
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - automation
+
+
+      owner:
+
+        module: 016_automation_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Deploys smart home automation rules
+        to customer properties and devices.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - automation_template_selection
+
+        - rule_creation
+
+        - device_binding
+
+        - automation_testing
+
+
+
+      excludes:
+
+
+        - customer_marketing_automation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-037 installation_completed
+
+
+
+    preconditions:
+
+
+      - devices_online
+
+      - property_configuration_valid
+
+
+
+    actors:
+
+
+      - system
+
+      - installer
+
+
+
+    inputs:
+
+
+      - automation_templates
+
+      - property_configuration
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          select_automation_profile
+
+
+
+      - step: 2
+
+        action:
+
+          create_automation_rules
+
+
+
+      - step: 3
+
+        action:
+
+          bind_rules_to_devices
+
+
+
+      - step: 4
+
+        action:
+
+          execute_test_scenario
+
+
+
+      - step: 5
+
+        action:
+
+          activate_automation
+
+
+
+    outputs:
+
+
+      - deployed_automation
+
+
+
+    state_machine:
+
+
+      - SM-019 Automation Deployment Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-037 installation_completed
+
+
+
+      produces:
+
+
+        - EVT-050 automation_deployed
+
+
+
+    orchestration:
+
+
+      - ORCH-019 Automation Deployment
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_permission_validation
+
+        - device_authorization_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_failed_automation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - disable_partial_rules
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - automation_activation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

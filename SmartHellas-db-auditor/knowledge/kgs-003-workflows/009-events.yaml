@@ -1,0 +1,3051 @@
+event_registry:
+
+  # ==========================================================
+  # EVT-001 Customer Registered
+  # ==========================================================
+
+  - id: EVT-001
+
+    name: customer_registered
+
+    title: Customer Registered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new customer account has been created.
+
+    category: customer
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-ONBOARDING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-001
+
+      transition:
+
+        from: pending
+
+        to: registered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-002 Customer Verified
+  # ==========================================================
+
+  - id: EVT-002
+
+    name: customer_verified
+
+    title: Customer Verified
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when customer identity verification
+      has been completed successfully.
+
+    category: customer
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-ACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-001
+
+      transition:
+
+        from: registered
+
+        to: verified
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-003 Customer Activated
+  # ==========================================================
+
+  - id: EVT-003
+
+    name: customer_activated
+
+    title: Customer Activated
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a verified customer becomes active
+      within the SmartHellas platform.
+
+    category: customer
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-READY
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-001
+
+      transition:
+
+        from: verified
+
+        to: active
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-004 Organization Created
+  # ==========================================================
+
+  - id: EVT-004
+
+    name: organization_created
+
+    title: Organization Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new customer organization or tenant
+      is created.
+
+    category: organization
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - organization
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ORGANIZATION-SETUP
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-002
+
+      transition:
+
+        from: created
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-005 Subscription Started
+  # ==========================================================
+
+  - id: EVT-005
+
+    name: subscription_started
+
+    title: Subscription Started
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer subscription becomes active.
+
+    category: subscription
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - subscription
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SUBSCRIPTION-ACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-003
+
+      transition:
+
+        from: trial
+
+        to: active
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-006 Subscription Cancelled
+  # ==========================================================
+
+  - id: EVT-006
+
+    name: subscription_cancelled
+
+    title: Subscription Cancelled
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer subscription is cancelled.
+
+    category: subscription
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - subscription
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SUBSCRIPTION-DEACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-003
+
+      transition:
+
+        from: active
+
+        to: cancelled
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-010 Property Created
+  # ==========================================================
+
+  - id: EVT-010
+
+    name: property_created
+
+    title: Property Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new Airbnb property is registered
+      within SmartHellas.
+
+    category: property
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PROPERTY-SETUP
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-004
+
+      transition:
+
+        from: created
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-011 Property Activated
+  # ==========================================================
+
+  - id: EVT-011
+
+    name: property_activated
+
+    title: Property Activated
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a property has completed onboarding
+      and becomes operational.
+
+    category: property
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PROPERTY-ACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-004
+
+      transition:
+
+        from: onboarding
+
+        to: active
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-012 Device Registered
+  # ==========================================================
+
+  - id: EVT-012
+
+    name: device_registered
+
+    title: Device Registered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new smart device is registered
+      in the SmartHellas platform.
+
+    category: device
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-PROVISIONING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-006
+
+        - SM-007
+
+      transition:
+
+        lifecycle:
+
+          from: ordered
+
+          to: received
+
+        provisioning:
+
+          from: detected
+
+          to: registered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-013 Device Configured
+  # ==========================================================
+
+  - id: EVT-013
+
+    name: device_configured
+
+    title: Device Configured
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a device has been configured with
+      required settings and integrations.
+
+    category: device
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-VALIDATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-007
+
+      transition:
+
+        from: registered
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-014 Device Installed
+  # ==========================================================
+
+  - id: EVT-014
+
+    name: device_installed
+
+    title: Device Installed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer has installed a prepared
+      device in the property.
+
+    category: device
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-INSTALLATION-VALIDATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-006
+
+      transition:
+
+        from: shipped
+
+        to: installed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-015 Device Offline
+  # ==========================================================
+
+  - id: EVT-015
+
+    name: device_offline
+
+    title: Device Offline
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when monitoring detects that a device
+      is no longer reachable.
+
+    category: device_health
+
+    source:
+
+      module: 006_operations_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: monitoring_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+        metrics:
+
+          - last_seen
+
+          - connectivity_status
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-RECOVERY
+
+        - WF-CREATE-ALERT
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-008
+
+      transition:
+
+        from: healthy
+
+        to: degraded
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-016 Device Recovered
+  # ==========================================================
+
+  - id: EVT-016
+
+    name: device_recovered
+
+    title: Device Recovered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a previously unavailable device
+      becomes reachable again.
+
+    category: device_health
+
+    source:
+
+      module: 006_operations_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: monitoring_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+
+    consumers:
+
+      workflows:
+
+        - WF-RESOLVE-DEVICE-ALERT
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-008
+
+      transition:
+
+        from: offline
+
+        to: recovered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-020 Booking Created
+  # ==========================================================
+
+  - id: EVT-020
+
+    name: booking_created
+
+    title: Booking Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new guest booking is created
+      for a managed property.
+
+    category: booking
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-BOOKING-PROCESSING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-010
+
+      transition:
+
+        from: created
+
+        to: confirmed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-021 Booking Confirmed
+  # ==========================================================
+
+  - id: EVT-021
+
+    name: booking_confirmed
+
+    title: Booking Confirmed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a booking has been confirmed and
+      guest access preparation may begin.
+
+    category: booking
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - guest
+
+
+    consumers:
+
+      workflows:
+
+        - WF-GUEST-ACCESS-PREPARATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-010
+
+      transition:
+
+        from: created
+
+        to: confirmed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-022 Check In Started
+  # ==========================================================
+
+  - id: EVT-022
+
+    name: check_in_started
+
+    title: Check-in Started
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the guest arrival window starts.
+
+    category: booking
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - guest_access
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ACTIVATE-GUEST-ACCESS
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-010
+
+      transition:
+
+        from: upcoming
+
+        to: checked_in
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-023 Door Code Requested
+  # ==========================================================
+
+  - id: EVT-023
+
+    name: door_code_requested
+
+    title: Door Code Requested
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a valid booking requires generation
+      of a temporary guest access code.
+
+    category: access_control
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: workflow_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - smart_lock
+
+
+    consumers:
+
+      workflows:
+
+        - WF-GENERATE-DOOR-CODE
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-012
+
+      transition:
+
+        from: requested
+
+        to: generated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-024 Door Code Generated
+  # ==========================================================
+
+  - id: EVT-024
+
+    name: door_code_generated
+
+    title: Door Code Generated
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a temporary access code has been
+      successfully created.
+
+    category: access_control
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - door_code
+
+        - booking
+
+
+    consumers:
+
+      workflows:
+
+        - WF-NOTIFY-GUEST-ACCESS
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-012
+
+      transition:
+
+        from: generated
+
+        to: validated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-025 Guest Access Granted
+  # ==========================================================
+
+  - id: EVT-025
+
+    name: guest_access_granted
+
+    title: Guest Access Granted
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when guest access has been activated
+      and is available for use.
+
+    category: guest_access
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - guest_access
+
+        - door_code
+
+
+    consumers:
+
+      workflows:
+
+        - WF-GUEST-NOTIFICATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-013
+
+      transition:
+
+        from: available
+
+        to: activated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-026 Guest Access Expired
+  # ==========================================================
+
+  - id: EVT-026
+
+    name: guest_access_expired
+
+    title: Guest Access Expired
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when guest access automatically expires
+      after the booking period.
+
+    category: guest_access
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: scheduled_event
+
+
+    payload:
+
+      objects:
+
+        - guest_access
+
+        - booking
+
+
+    consumers:
+
+      workflows:
+
+        - WF-REVOKE-GUEST-ACCESS
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-013
+
+      transition:
+
+        from: used
+
+        to: expired
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-030 Order Created
+  # ==========================================================
+
+  - id: EVT-030
+
+    name: order_created
+
+    title: Order Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer creates a new order
+      from the SmartHellas configurator.
+
+    category: commerce
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - order
+
+        - customer
+
+        - solution_configuration
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ORDER-PROCESSING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-014
+
+      transition:
+
+        from: draft
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-031 Order Confirmed
+  # ==========================================================
+
+  - id: EVT-031
+
+    name: order_confirmed
+
+    title: Order Confirmed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when an order has been validated and
+      accepted for processing.
+
+    category: commerce
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PRECONFIGURATION-START
+
+        - WF-PAYMENT-PROCESSING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-014
+
+      transition:
+
+        from: submitted
+
+        to: approved
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-032 Payment Received
+  # ==========================================================
+
+  - id: EVT-032
+
+    name: payment_received
+
+    title: Payment Received
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when payment has been successfully completed.
+
+    category: payment
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - payment
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ORDER-FULFILMENT
+
+        - WF-CUSTOMER-ONBOARDING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-015
+
+      transition:
+
+        from: pending
+
+        to: paid
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-033 Payment Failed
+  # ==========================================================
+
+  - id: EVT-033
+
+    name: payment_failed
+
+    title: Payment Failed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when payment processing fails.
+
+    category: payment
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - payment
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PAYMENT-RECOVERY
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-015
+
+      transition:
+
+        from: pending
+
+        to: failed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-034 Shipment Created
+  # ==========================================================
+
+  - id: EVT-034
+
+    name: shipment_created
+
+    title: Shipment Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a prepared customer package is ready
+      for shipment.
+
+    category: logistics
+
+    source:
+
+      module: 008_logistics_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - shipment
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SHIPMENT-TRACKING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-016
+
+      transition:
+
+        from: preparing
+
+        to: packed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-035 Shipment Delivered
+  # ==========================================================
+
+  - id: EVT-035
+
+    name: shipment_delivered
+
+    title: Shipment Delivered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the customer shipment has arrived
+      at the destination.
+
+    category: logistics
+
+    source:
+
+      module: 008_logistics_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - shipment
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-INSTALLATION-START
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-016
+
+      transition:
+
+        from: in_transit
+
+        to: delivered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-040 Onboarding Started
+  # ==========================================================
+
+  - id: EVT-040
+
+    name: onboarding_started
+
+    title: Onboarding Started
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the customer onboarding process
+      starts after purchase confirmation.
+
+    category: onboarding
+
+    source:
+
+      module: 011_preconfig_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: workflow_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+        - order
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-ONBOARDING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-017
+
+      transition:
+
+        from: initiated
+
+        to: pre_onboarding
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-041 Customer Data Received
+  # ==========================================================
+
+  - id: EVT-041
+
+    name: customer_data_received
+
+    title: Customer Data Received
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when required property, room and device
+      information has been provided by the customer.
+
+    category: onboarding
+
+    source:
+
+      module: 011_preconfig_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+        - property
+
+        - room
+
+        - device_configuration
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-PREPARATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-017
+
+      transition:
+
+        from: pre_onboarding
+
+        to: information_received
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-042 Device Configuration Completed
+  # ==========================================================
+
+  - id: EVT-042
+
+    name: device_configuration_completed
+
+    title: Device Configuration Completed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when devices have been configured,
+      updated, labelled and prepared for installation.
+
+    category: device_preparation
+
+    source:
+
+      module: 007_preconfig_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+        - configuration_profile
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SHIPMENT-READY
+
+        - WF-INSTALLATION-PREPARATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-017
+
+      transition:
+
+        from: configuration_prepared
+
+        to: devices_prepared
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-043 Installation Completed
+  # ==========================================================
+
+  - id: EVT-043
+
+    name: installation_completed
+
+    title: Installation Completed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when devices are installed and validated
+      at the customer property.
+
+    category: installation
+
+    source:
+
+      module: 010_service_portal_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - property
+
+        - devices
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ACTIVATE-SOLUTION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-018
+
+      transition:
+
+        from: validated
+
+        to: completed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-044 Automation Enabled
+  # ==========================================================
+
+  - id: EVT-044
+
+    name: automation_enabled
+
+    title: Automation Enabled
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a SmartHellas automation scenario
+      becomes active.
+
+    category: automation
+
+    source:
+
+      module: 016_automation_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - automation
+
+        - devices
+
+
+    consumers:
+
+      workflows:
+
+        - WF-AUTOMATION-MONITORING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-019
+
+      transition:
+
+        from: tested
+
+        to: enabled
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-045 Alert Created
+  # ==========================================================
+
+  - id: EVT-045
+
+    name: alert_created
+
+    title: Alert Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when monitoring detects an operational
+      issue requiring attention.
+
+    category: operations
+
+    source:
+
+      module: 006_operations_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: monitoring_event
+
+
+    payload:
+
+      objects:
+
+        - alert
+
+        - device
+
+
+      metrics:
+
+        - severity
+
+        - timestamp
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ALERT-HANDLING
+
+        - WF-CUSTOMER-NOTIFICATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-020
+
+      transition:
+
+        from: detected
+
+        to: evaluated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-046 Support Ticket Opened
+  # ==========================================================
+
+  - id: EVT-046
+
+    name: support_ticket_opened
+
+    title: Support Ticket Opened
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer support request is created.
+
+    category: support
+
+    source:
+
+      module: 010_service_portal_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - support_ticket
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SUPPORT-ROUTING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-022
+
+      transition:
+
+        from: opened
+
+        to: classified
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-050 Lead Created
+  # ==========================================================
+
+  - id: EVT-050
+
+    name: lead_created
+
+    title: Lead Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new potential customer enters
+      the SmartHellas CRM system.
+
+    category: crm
+
+    source:
+
+      module: 015_crm_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - lead
+
+
+    consumers:
+
+      workflows:
+
+        - WF-LEAD-NURTURING
+
+        - WF-SALES-FOLLOWUP
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-023
+
+      transition:
+
+        from: created
+
+        to: contacted
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-051 Opportunity Created
+  # ==========================================================
+
+  - id: EVT-051
+
+    name: opportunity_created
+
+    title: Opportunity Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a qualified lead becomes a commercial
+      sales opportunity.
+
+    category: crm
+
+    source:
+
+      module: 015_crm_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - opportunity
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SALES-PIPELINE
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-024
+
+      transition:
+
+        from: identified
+
+        to: discovery
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-052 Opportunity Won
+  # ==========================================================
+
+  - id: EVT-052
+
+    name: opportunity_won
+
+    title: Opportunity Won
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a sales opportunity converts into
+      a successful customer order.
+
+    category: crm
+
+    source:
+
+      module: 015_crm_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - opportunity
+
+        - customer
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-CREATION
+
+        - WF-ORDER-CREATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-024
+
+      transition:
+
+        from: negotiation
+
+        to: won
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-053 Notification Created
+  # ==========================================================
+
+  - id: EVT-053
+
+    name: notification_created
+
+    title: Notification Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the platform creates a notification
+      for a customer, guest or internal user.
+
+    category: notification
+
+    source:
+
+      module: 010_service_portal_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - notification
+
+        - recipient
+
+
+    consumers:
+
+      workflows:
+
+        - WF-NOTIFICATION-DISPATCH
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-025
+
+      transition:
+
+        from: created
+
+        to: queued
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-054 Notification Sent
+  # ==========================================================
+
+  - id: EVT-054
+
+    name: notification_sent
+
+    title: Notification Sent
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a notification has successfully
+      been sent to the intended recipient.
+
+    category: notification
+
+    source:
+
+      module: 010_service_portal_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - notification
+
+        - recipient
+
+
+    consumers:
+
+      workflows:
+
+        - WF-NOTIFICATION-TRACKING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-025
+
+      transition:
+
+        from: processing
+
+        to: sent
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null

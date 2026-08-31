@@ -1,0 +1,278 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: security_policy
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+
+# ============================================================
+# SECURITY REGISTRY
+# ============================================================
+
+
+security:
+
+
+  description: >
+
+    Canonical security model defining authentication,
+    authorization, protection and audit requirements.
+
+
+
+  principles:
+
+
+    - least_privilege
+
+    - deny_by_default
+
+    - tenant_isolation
+
+    - encrypted_secrets
+
+    - auditable_actions
+
+
+
+# ============================================================
+# AUTHENTICATION
+# ============================================================
+
+
+  authentication:
+
+
+    owner:
+
+      "000"
+
+
+
+    provider:
+
+      Supabase Auth
+
+
+
+    methods:
+
+
+      - email
+
+      - oauth
+
+      - service_token
+
+
+
+# ============================================================
+# AUTHORIZATION
+# ============================================================
+
+
+  authorization:
+
+
+    owner:
+
+      "018"
+
+
+
+    managed_by:
+
+      "019"
+
+
+
+    model:
+
+
+      role_based_access_control
+
+
+
+    roles:
+
+
+      - platform_admin
+
+      - organization_owner
+
+      - property_manager
+
+      - service_operator
+
+      - support_agent
+
+      - guest
+
+
+
+    permissions:
+
+
+      naming:
+
+
+        format:
+
+          domain.resource.action
+
+
+
+      examples:
+
+
+        - property.device.read
+
+        - property.device.manage
+
+        - booking.access.generate
+
+        - customer.read
+
+        - automation.execute
+
+
+
+# ============================================================
+# ROW LEVEL SECURITY
+# ============================================================
+
+
+  rls:
+
+
+    enabled:
+
+      true
+
+
+
+    rules:
+
+
+      - tenant_boundary_required
+
+      - authenticated_access_required
+
+      - explicit_permission_required
+
+
+
+    protected_domains:
+
+
+      - tenant
+
+      - property
+
+      - device
+
+      - booking
+
+      - customer
+
+      - audit
+
+
+
+# ============================================================
+# DATA PROTECTION
+# ============================================================
+
+
+  encryption:
+
+
+    required:
+
+
+      at_rest:
+
+        true
+
+
+      in_transit:
+
+        true
+
+
+
+    protected_data:
+
+
+      - api_credentials
+
+      - access_codes
+
+      - personal_information
+
+      - integration_tokens
+
+
+
+# ============================================================
+# PII CLASSIFICATION
+# ============================================================
+
+
+  pii:
+
+
+    restricted:
+
+
+      - guest_identity
+
+      - door_access_data
+
+      - customer_identity
+
+
+
+    confidential:
+
+
+      - property_information
+
+      - operational_data
+
+
+
+# ============================================================
+# SECURITY AUDIT
+# ============================================================
+
+
+  audit:
+
+
+    owner:
+
+      "013"
+
+
+
+    mandatory_events:
+
+
+      - login
+
+      - permission_change
+
+      - access_code_generation
+
+      - configuration_change
+
+      - administrative_action

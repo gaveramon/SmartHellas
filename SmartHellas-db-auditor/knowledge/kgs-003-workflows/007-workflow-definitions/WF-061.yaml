@@ -1,0 +1,262 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-061 Usage Metering & Entitlement Tracking
+  # ==========================================================
+
+
+  - id: WF-061
+
+    name: usage_metering_entitlement_tracking
+
+    title: Usage Metering & Entitlement Tracking
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - saas_usage
+
+
+
+      owner:
+
+
+        module: 002_core_saas
+
+
+
+      classification:
+
+
+        business_process: feature_control
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Measures customer usage and validates which
+        SmartHellas features are available based on
+        subscription entitlements.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - usage_collection
+
+        - feature_validation
+
+        - entitlement_checking
+
+        - usage_reporting
+
+
+
+      excludes:
+
+
+        - billing_generation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - portal_action
+
+        - automation_execution
+
+        - api_request
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - subscription_plan
+
+      - usage_events
+
+      - feature_requests
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_usage_event
+
+
+
+      - step: 2
+
+        action:
+
+          validate_entitlement
+
+
+
+      - step: 3
+
+        action:
+
+          update_usage_counter
+
+
+
+      - step: 4
+
+        action:
+
+          generate_usage_report
+
+
+
+    outputs:
+
+
+      - usage_record
+
+      - entitlement_status
+
+
+
+    state_machine:
+
+
+      - SM-061 Usage Tracking Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-062 usage_record_created
+
+
+
+    orchestration:
+
+
+      - ORCH-061 Usage Metering
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+        - 016_automation_engine
+
+
+
+    integrations: []
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - usage_data_protection
+
+        - tenant_data_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        queue_failed_usage_events
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - recalculate_usage
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - feature_usage
+
+        - entitlement_failures
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

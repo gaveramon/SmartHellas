@@ -1,0 +1,274 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-064 Customer Tenant Management
+  # ==========================================================
+
+
+  - id: WF-064
+
+    name: customer_tenant_management
+
+    title: Customer Tenant Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - multi_tenant_management
+
+
+
+      owner:
+
+
+        module: 002_core_saas
+
+
+
+      classification:
+
+
+        business_process: tenant_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Manages customer tenants, properties,
+        users and isolation boundaries within
+        the SmartHellas SaaS platform.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - tenant_creation
+
+        - property_assignment
+
+        - user_access_management
+
+        - tenant_configuration
+
+
+
+      excludes:
+
+
+        - device_configuration
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - customer_registered
+
+        - property_added
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+      - administrator
+
+
+
+    inputs:
+
+
+      - customer_identity
+
+      - property_information
+
+      - user_roles
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_tenant
+
+
+
+      - step: 2
+
+        action:
+
+          assign_customer_owner
+
+
+
+      - step: 3
+
+        action:
+
+          add_properties
+
+
+
+      - step: 4
+
+        action:
+
+          configure_roles
+
+
+
+      - step: 5
+
+        action:
+
+          validate_isolation
+
+
+
+    outputs:
+
+
+      - tenant
+
+      - tenant_configuration
+
+
+
+    state_machine:
+
+
+      - SM-064 Tenant Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-066 tenant_created
+
+
+
+    orchestration:
+
+
+      - ORCH-064 Tenant Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 003_property_device_engine
+
+        - 015_crm_engine
+
+
+
+    integrations: []
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - row_level_security
+
+        - tenant_isolation
+
+        - role_based_access_control
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_tenant_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - deactivate_tenant
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - active_tenant_count
+
+        - property_count_per_tenant
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

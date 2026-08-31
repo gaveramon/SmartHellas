@@ -1,0 +1,237 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-024 Door Code Distribution
+  # ==========================================================
+
+
+  - id: WF-024
+
+    name: door_code_distribution
+
+    title: Door Code Distribution
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - guest_communication
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+
+    purpose:
+
+      description:
+
+        Delivers temporary access information
+        to guests securely.
+
+
+
+    scope:
+
+      includes:
+
+        - guest_notification
+
+        - access_instruction_delivery
+
+        - communication_tracking
+
+
+
+      excludes:
+
+        - code_generation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-024 door_code_created
+
+
+
+    preconditions:
+
+
+      - access_code_valid
+
+      - guest_contact_available
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+
+
+    inputs:
+
+
+      - access_code
+
+      - guest_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_guest_contact
+
+
+
+      - step: 2
+
+        action:
+
+          create_secure_message
+
+
+
+      - step: 3
+
+        action:
+
+          send_access_information
+
+
+
+      - step: 4
+
+        action:
+
+          record_delivery_status
+
+
+
+    outputs:
+
+
+      - guest_access_notification
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-025 access_information_sent
+
+
+
+    orchestration:
+
+
+      - ORCH-024 Guest Notification
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 004_booking_lock_engine
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - secure_message_delivery
+
+        - access_data_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_notification
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_message_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - notification_delivery_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

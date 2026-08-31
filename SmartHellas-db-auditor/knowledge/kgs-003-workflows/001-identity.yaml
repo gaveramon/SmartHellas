@@ -1,0 +1,50 @@
+identity:
+
+  id: KGS-003
+
+  name: Workflow Catalog
+
+  title: Enterprise Workflow Catalog
+
+  version: 2.0.0
+
+  status: active
+
+  maturity: production
+
+  type: knowledge_catalog
+
+  canonical: true
+
+  ssot: true
+
+  namespace: enterprise_auditor
+
+  domain: workflow_management
+
+  description: >
+    Canonical workflow catalog defining all enterprise workflows,
+    workflow metadata, state machines, events, orchestration,
+    integrations and workflow dependencies for the SmartHellas platform.
+
+  parent: knowledge
+
+  children:
+
+    - workflow_registry
+    - workflow_definitions
+    - state_machines
+    - events
+    - orchestration
+    - integrations
+    - dependencies
+
+  related:
+
+    principles: KGS-001
+
+    objects: KGS-002
+
+    ownership: KGS-004
+
+    business_rules: KGS-005

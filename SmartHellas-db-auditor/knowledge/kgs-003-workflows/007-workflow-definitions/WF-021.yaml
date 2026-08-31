@@ -1,0 +1,229 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-021 Booking Synchronization
+  # ==========================================================
+
+
+  - id: WF-021
+
+    name: booking_synchronization
+
+    title: Booking Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - booking_management
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Synchronizes Airbnb reservations with SmartHellas.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - booking_import
+
+        - booking_update
+
+        - booking_cancellation
+
+
+
+    trigger:
+
+
+      integration_event:
+
+
+        - INT-003 Airbnb Booking Event
+
+
+
+    preconditions:
+
+
+      - integration_authenticated
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - external_booking_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          receive_booking_event
+
+
+
+      - step: 2
+
+        action:
+
+          validate_booking_payload
+
+
+
+      - step: 3
+
+        action:
+
+          create_or_update_booking
+
+
+
+      - step: 4
+
+        action:
+
+          trigger_access_workflow
+
+
+
+    outputs:
+
+
+      - synchronized_booking
+
+
+
+    state_machine:
+
+
+      - SM-020 Booking Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-020 booking_created
+
+        - EVT-021 booking_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-021 Booking Synchronization
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Airbnb Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - api_authentication_required
+
+        - payload_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_external_sync
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - rollback_booking_update
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - booking_sync_latency
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

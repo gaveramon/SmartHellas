@@ -1,0 +1,267 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-020 Guest Access Management
+  # ==========================================================
+
+
+  - id: WF-020
+
+    name: guest_access_management
+
+    title: Guest Access Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - booking_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Manages the complete guest access lifecycle
+        from reservation until access removal.
+
+
+
+    scope:
+
+      includes:
+
+        - guest_access_creation
+
+        - access_activation
+
+        - access_revocation
+
+
+
+      excludes:
+
+        - booking_payment
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-020 booking_created
+
+
+
+    preconditions:
+
+
+      - booking_valid
+
+      - property_has_lock
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - booking_information
+
+      - guest_information
+
+      - property_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_booking
+
+
+
+      - step: 2
+
+        action:
+
+          determine_access_window
+
+
+
+      - step: 3
+
+        action:
+
+          request_door_code
+
+
+
+      - step: 4
+
+        action:
+
+          activate_guest_access
+
+
+
+      - step: 5
+
+        action:
+
+          monitor_access_period
+
+
+
+      - step: 6
+
+        action:
+
+          revoke_access_after_checkout
+
+
+
+    outputs:
+
+
+      - guest_access_profile
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-020 booking_created
+
+
+
+      produces:
+
+
+        - EVT-023 access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-001 Guest Access Automation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Airbnb Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - guest_identity_validation
+
+        - temporary_access_control
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        fallback_to_manual_access
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_created_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - guest_access_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -31,3 +31,412 @@ Appending additional Java properties to JAVA_OPTS
 2026-06-29 08:42:53,877 INFO  [io.quarkus] (main) Keycloak 26.6.2 on JVM (powered by Quarkus 3.33.1.1) started in 10.363s. Listening on: http://0.0.0.0:8081
 2026-06-29 08:42:53,878 INFO  [io.quarkus] (main) Profile prod activated. 
 2026-06-29 08:42:53,878 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, jdbc-h2, keycloak, narayana-jta, opentelemetry, reactive-routes, rest, rest-jackson, smallrye-context-propagation, vertx]
+2026-07-02 18:56:51,010 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5ea7 in state  TRACE
+2026-07-02 18:57:08,355 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5e9b in state  TRACE
+2026-07-02 18:57:09,079 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5ea7 in state  CANCEL
+2026-07-02 18:57:11,552 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 0) ARJUNA012095: Abort of action id 0:ffffac130002:864f:6a423006:5ea7 invoked while multiple threads active within it.
+2026-07-02 18:57:44,557 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012378: ReaperElement appears to be wedged: java.base/jdk.internal.reflect.MethodHandleAccessorFactory.useNativeAccessor(MethodHandleAccessorFactory.java:379)
+java.base/jdk.internal.reflect.MethodHandleAccessorFactory.newConstructorAccessor(MethodHandleAccessorFactory.java:97)
+java.base/jdk.internal.reflect.ReflectionFactory.newConstructorAccessor(ReflectionFactory.java:138)
+java.base/java.lang.reflect.Constructor.acquireConstructorAccessor(Constructor.java:546)
+java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:496)
+java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:483)
+java.base/java.util.ResourceBundle$ResourceBundleProviderHelper.newResourceBundle(ResourceBundle.java:3522)
+java.base/java.util.ResourceBundle$1.newResourceBundle(ResourceBundle.java:408)
+java.base/sun.util.resources.Bundles.findBundleOf(Bundles.java:207)
+java.base/sun.util.resources.Bundles.findBundleOf(Bundles.java:158)
+java.base/sun.util.resources.Bundles.findBundleOf(Bundles.java:158)
+java.base/sun.util.resources.Bundles.loadBundleOf(Bundles.java:143)
+java.base/sun.util.resources.Bundles.of(Bundles.java:104)
+java.base/sun.util.resources.LocaleData.getBundle(LocaleData.java:179)
+java.base/sun.util.resources.LocaleData.getDateFormatData(LocaleData.java:143)
+java.base/java.text.DateFormatSymbols.initializeData(DateFormatSymbols.java:745)
+java.base/java.text.DateFormatSymbols.<init>(DateFormatSymbols.java:151)
+java.base/sun.util.locale.provider.DateFormatSymbolsProviderImpl.getInstance(DateFormatSymbolsProviderImpl.java:85)
+java.base/java.text.DateFormatSymbols.getProviderInstance(DateFormatSymbols.java:357)
+java.base/java.text.DateFormatSymbols.getInstance(DateFormatSymbols.java:347)
+java.base/java.text.SimpleDateFormat.<init>(SimpleDateFormat.java:629)
+java.base/java.text.SimpleDateFormat.<init>(SimpleDateFormat.java:606)
+com.arjuna.ats.arjuna.coordinator.BasicAction.outputCapturedStackTraces(BasicAction.java:3533)
+com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator.outputCapturedStackTraces(TwoPhaseCoordinator.java:599)
+com.arjuna.ats.arjuna.coordinator.TransactionReaper.doWork(TransactionReaper.java:396)
+com.arjuna.ats.internal.arjuna.coordinator.ReaperWorkerThread.run(ReaperWorkerThread.java:61)
+
+2026-07-02 18:57:45,037 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5e9b in state  SCHEDULE_CANCEL
+2026-07-02 18:57:45,643 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5ea7 in state  CANCEL_INTERRUPTED
+2026-07-02 18:57:49,282 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012120: TransactionReaper::check worker Thread[#72,Transaction Reaper Worker 0,5,main] not responding to interrupt when cancelling TX 0:ffffac130002:864f:6a423006:5ea7 -- worker marked as zombie and TX scheduled for mark-as-rollback
+2026-07-02 18:59:17,494 WARN  [org.hibernate.orm.jdbc.error] (user-session-purge-expired) HHH000247: ErrorCode: 0, SQLState: null
+2026-07-02 18:59:17,177 WARN  [org.hibernate.orm.jdbc.error] (Timer-0) HHH000247: ErrorCode: 0, SQLState: null
+2026-07-02 18:59:22,082 WARN  [org.hibernate.orm.jdbc.error] (Timer-0) Acquisition timeout while waiting for new connection
+2026-07-02 18:59:21,290 WARN  [org.hibernate.orm.jdbc.error] (user-session-purge-expired) Acquisition timeout while waiting for new connection
+2026-07-02 18:59:27,373 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 0) ARJUNA012381: Action id 0:ffffac130002:864f:6a423006:5ea7 completed with multiple threads - thread user-session-purge-expired was in progress with java.base/java.lang.invoke.MethodHandleNatives.resolve(Native Method)
+java.base/java.lang.invoke.MemberName$Factory.resolve(MemberName.java:957)
+java.base/java.lang.invoke.MemberName$Factory.resolveOrFail(MemberName.java:986)
+java.base/java.lang.invoke.InvokerBytecodeGenerator.resolveInvokerMember(InvokerBytecodeGenerator.java:234)
+java.base/java.lang.invoke.InvokerBytecodeGenerator.loadMethod(InvokerBytecodeGenerator.java:228)
+java.base/java.lang.invoke.InvokerBytecodeGenerator.generateCustomizedCode(InvokerBytecodeGenerator.java:514)
+java.base/java.lang.invoke.LambdaForm.compileToBytecode(LambdaForm.java:804)
+java.base/java.lang.invoke.LambdaForm.prepare(LambdaForm.java:761)
+java.base/java.lang.invoke.MethodHandle.<init>(MethodHandle.java:484)
+java.base/java.lang.invoke.BoundMethodHandle.<init>(BoundMethodHandle.java:52)
+java.base/java.lang.invoke.BoundMethodHandle$Species_LL.<init>(BoundMethodHandle$Species_LL)
+java.base/java.lang.invoke.BoundMethodHandle$Species_LL.make(BoundMethodHandle$Species_LL)
+java.base/java.lang.invoke.BoundMethodHandle$Species_L.copyWithExtendL(BoundMethodHandle.java:268)
+java.base/java.lang.invoke.LambdaFormEditor.bindArgumentL(LambdaFormEditor.java:524)
+java.base/java.lang.invoke.BoundMethodHandle.bindArgumentL(BoundMethodHandle.java:104)
+java.base/java.lang.invoke.MethodHandle.bindArgumentL(MethodHandle.java:1725)
+java.base/java.lang.invoke.MethodHandle.bindTo(MethodHandle.java:1631)
+java.base/java.lang.invoke.StringConcatFactory$InlineHiddenClassStrategy.generate(StringConcatFactory.java:1368)
+java.base/java.lang.invoke.StringConcatFactory.makeConcatWithConstants(StringConcatFactory.java:397)
+java.base/java.lang.invoke.BootstrapMethodInvoker.invoke(BootstrapMethodInvoker.java:102)
+java.base/java.lang.invoke.CallSite.makeSite(CallSite.java:310)
+java.base/java.lang.invoke.MethodHandleNatives.linkCallSiteImpl(MethodHandleNatives.java:250)
+java.base/java.lang.invoke.MethodHandleNatives.linkCallSite(MethodHandleNatives.java:240)
+org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:114)
+org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:101)
+org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquire(LogicalConnectionManagedImpl.java:190)
+org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquireConnectionIfNeeded(LogicalConnectionManagedImpl.java:87)
+org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.getPhysicalConnection(LogicalConnectionManagedImpl.java:126)
+org.hibernate.engine.jdbc.internal.StatementPreparerImpl.connection(StatementPreparerImpl.java:53)
+org.hibernate.engine.jdbc.internal.StatementPreparerImpl$4.doPrepare(StatementPreparerImpl.java:155)
+org.hibernate.engine.jdbc.internal.StatementPreparerImpl$StatementPreparationTemplate.prepareStatement(StatementPreparerImpl.java:183)
+org.hibernate.engine.jdbc.internal.StatementPreparerImpl.prepareQueryStatement(StatementPreparerImpl.java:157)
+org.hibernate.sql.exec.internal.StandardStatementCreator.createStatement(StandardStatementCreator.java:46)
+org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess.executeQuery(DeferredResultSetAccess.java:257)
+org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess.getResultSet(DeferredResultSetAccess.java:190)
+org.hibernate.sql.results.jdbc.internal.JdbcValuesResultSetImpl.<init>(JdbcValuesResultSetImpl.java:71)
+org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.resolveJdbcValues(JdbcSelectExecutorStandardImpl.java:393)
+org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.resolveJdbcValuesSource(JdbcSelectExecutorStandardImpl.java:354)
+org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.doExecuteQuery(JdbcSelectExecutorStandardImpl.java:135)
+org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.executeQuery(JdbcSelectExecutorStandardImpl.java:100)
+org.hibernate.sql.exec.spi.JdbcSelectExecutor.scroll(JdbcSelectExecutor.java:167)
+org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.lambda$new$2(ConcreteSqmSelectQueryPlan.java:148)
+org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.withCacheableSqmInterpretation(ConcreteSqmSelectQueryPlan.java:427)
+org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.performScroll(ConcreteSqmSelectQueryPlan.java:362)
+org.hibernate.query.sqm.internal.SqmQueryImpl.doScroll(SqmQueryImpl.java:440)
+org.hibernate.query.spi.AbstractSelectionQuery.scroll(AbstractSelectionQuery.java:265)
+org.hibernate.query.spi.AbstractSelectionQuery.stream(AbstractSelectionQuery.java:281)
+org.hibernate.query.spi.AbstractSelectionQuery.getResultStream(AbstractSelectionQuery.java:276)
+org.keycloak.models.jpa.session.UserSessionExpirationLogic.findAndRemoveSessions(UserSessionExpirationLogic.java:256)
+org.keycloak.models.jpa.session.UserSessionExpirationLogic.lambda$expireOfflineSessions$2(UserSessionExpirationLogic.java:92)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+org.keycloak.models.jpa.session.UserSessionExpirationLogic.runInBatches(UserSessionExpirationLogic.java:309)
+org.keycloak.models.jpa.session.UserSessionExpirationLogic.expireOfflineSessions(UserSessionExpirationLogic.java:91)
+org.keycloak.models.jpa.session.JpaUserSessionPersisterProvider.removeExpired(JpaUserSessionPersisterProvider.java:254)
+java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:186)
+java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+java.base/java.util.Iterator.forEachRemaining(Iterator.java:133)
+java.base/java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1939)
+java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153)
+java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176)
+java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:632)
+org.keycloak.utils.ClosingStream.forEach(ClosingStream.java:128)
+org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.lambda$purgeExpired$2(BaseExpirationTask.java:101)
+org.keycloak.models.utils.KeycloakModelUtils.lambda$runJobInTransaction$1(KeycloakModelUtils.java:355)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:354)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:344)
+org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.purgeExpired(BaseExpirationTask.java:93)
+java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1825)
+java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+java.base/java.lang.Thread.run(Thread.java:1474)
+
+2026-07-02 18:59:40,809 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 0) ARJUNA012108: CheckedAction::check - atomic action 0:ffffac130002:864f:6a423006:5ea7 aborting with 1 threads active!
+2026-07-02 19:00:32,698 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012110: TransactionReaper::check successfuly marked TX 0:ffffac130002:864f:6a423006:5ea7 as rollback only
+2026-07-02 19:00:39,127 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5e9b in state  SCHEDULE_CANCEL
+2026-07-02 19:00:39,128 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5ead in state  TRACE
+2026-07-02 19:00:39,628 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5e9b in state  CANCEL
+2026-07-02 19:00:39,637 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012378: ReaperElement appears to be wedged: java.base/java.lang.ClassLoader.defineClass1(Native Method)
+java.base/java.lang.ClassLoader.defineClass(ClassLoader.java:962)
+io.quarkus.bootstrap.runner.RunnerClassLoader.defineClass(RunnerClassLoader.java:176)
+io.quarkus.bootstrap.runner.RunnerClassLoader.loadClass(RunnerClassLoader.java:132)
+io.quarkus.bootstrap.runner.RunnerClassLoader.loadClass(RunnerClassLoader.java:86)
+com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator.afterCompletion(TwoPhaseCoordinator.java:529)
+com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator.afterCompletion(TwoPhaseCoordinator.java:462)
+com.arjuna.ats.arjuna.coordinator.TwoPhaseCoordinator.cancel(TwoPhaseCoordinator.java:102)
+com.arjuna.ats.arjuna.AtomicAction.cancel(AtomicAction.java:188)
+com.arjuna.ats.arjuna.coordinator.TransactionReaper.doWork(TransactionReaper.java:404)
+com.arjuna.ats.internal.arjuna.coordinator.ReaperWorkerThread.run(ReaperWorkerThread.java:61)
+
+2026-07-02 19:00:39,638 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper) ARJUNA012117: TransactionReaper::check processing TX 0:ffffac130002:864f:6a423006:5ead in state  SCHEDULE_CANCEL
+2026-07-02 19:00:39,679 WARN  [com.arjuna.ats.arjuna] (user-session-purge-expired) ARJUNA012077: Abort called on already aborted atomic action 0:ffffac130002:864f:6a423006:5ea7
+2026-07-02 19:00:39,771 WARN  [org.hibernate.orm.jta] (Transaction Reaper Worker 1) HHH90007020: Transaction afterCompletion called by a background thread; delaying afterCompletion processing until the original thread can handle it. [status=4]
+2026-07-02 19:00:39,772 WARN  [org.hibernate.orm.jta] (Transaction Reaper Worker 0) HHH90007020: Transaction afterCompletion called by a background thread; delaying afterCompletion processing until the original thread can handle it. [status=4]
+2026-07-02 19:00:39,774 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 0) ARJUNA012121: TransactionReaper::doCancellations worker Thread[#72,Transaction Reaper Worker 0,5,main] successfully canceled TX 0:ffffac130002:864f:6a423006:5ea7
+2026-07-02 19:00:39,777 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 1) ARJUNA012095: Abort of action id 0:ffffac130002:864f:6a423006:5ead invoked while multiple threads active within it.
+2026-07-02 19:00:39,814 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 1) ARJUNA012381: Action id 0:ffffac130002:864f:6a423006:5ead completed with multiple threads - thread Timer-0 was in progress with org.hibernate.internal.AbstractSharedSessionContract.getExceptionConverter(AbstractSharedSessionContract.java:1537)
+org.hibernate.internal.SessionImpl.getExceptionConverter(SessionImpl.java:155)
+org.hibernate.query.spi.AbstractCommonQueryContract.getExceptionConverter(AbstractCommonQueryContract.java:140)
+org.hibernate.query.sqm.internal.SqmQueryImpl.executeUpdate(SqmQueryImpl.java:489)
+org.keycloak.models.jpa.session.JpaRevokedTokensPersisterProvider.expireTokens(JpaRevokedTokensPersisterProvider.java:82)
+org.keycloak.services.scheduled.ClearExpiredRevokedTokens.run(ClearExpiredRevokedTokens.java:40)
+org.keycloak.services.scheduled.ClusterAwareScheduledTaskRunner$1.call(ClusterAwareScheduledTaskRunner.java:57)
+org.keycloak.services.scheduled.ClusterAwareScheduledTaskRunner$1.call(ClusterAwareScheduledTaskRunner.java:53)
+org.keycloak.cluster.infinispan.InfinispanClusterProvider.executeIfNotExecuted(InfinispanClusterProvider.java:96)
+org.keycloak.services.scheduled.ClusterAwareScheduledTaskRunner.runTask(ClusterAwareScheduledTaskRunner.java:53)
+org.keycloak.services.scheduled.ScheduledTaskRunner$1.run(ScheduledTaskRunner.java:68)
+org.keycloak.models.utils.KeycloakModelUtils.lambda$runJobInTransaction$1(KeycloakModelUtils.java:355)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:354)
+org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:344)
+org.keycloak.services.scheduled.ScheduledTaskRunner.lambda$run$0(ScheduledTaskRunner.java:59)
+org.keycloak.tracing.NoopTracingProvider.trace(NoopTracingProvider.java:59)
+org.keycloak.services.scheduled.ScheduledTaskRunner.run(ScheduledTaskRunner.java:58)
+org.keycloak.timer.basic.BasicTimerProvider$BasicTimerTask.run(BasicTimerProvider.java:119)
+java.base/java.util.TimerThread.mainLoop(Timer.java:572)
+java.base/java.util.TimerThread.run(Timer.java:522)
+
+2026-07-02 19:00:39,816 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 1) ARJUNA012108: CheckedAction::check - atomic action 0:ffffac130002:864f:6a423006:5ead aborting with 1 threads active!
+2026-07-02 19:00:39,823 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 0) ARJUNA012077: Abort called on already aborted atomic action 0:ffffac130002:864f:6a423006:5ead
+2026-07-02 19:00:39,818 WARN  [org.hibernate.orm.jta] (Transaction Reaper Worker 1) HHH90007020: Transaction afterCompletion called by a background thread; delaying afterCompletion processing until the original thread can handle it. [status=4]
+2026-07-02 19:00:39,839 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 1) ARJUNA012121: TransactionReaper::doCancellations worker Thread[#1839,Transaction Reaper Worker 1,5,main] successfully canceled TX 0:ffffac130002:864f:6a423006:5ead
+2026-07-02 19:00:39,839 WARN  [com.arjuna.ats.arjuna] (Transaction Reaper Worker 0) ARJUNA012121: TransactionReaper::doCancellations worker Thread[#72,Transaction Reaper Worker 0,5,main] successfully canceled TX 0:ffffac130002:864f:6a423006:5ead
+2026-07-02 19:00:39,960 WARN  [com.arjuna.ats.arjuna] (Timer-0) ARJUNA012077: Abort called on already aborted atomic action 0:ffffac130002:864f:6a423006:5ead
+2026-07-02 19:00:40,032 WARN  [org.keycloak.services.DefaultKeycloakSession] (user-session-purge-expired) Unable to close provider org.keycloak.connections.jpa.DefaultJpaConnectionProvider: org.keycloak.models.ModelException: Database operation failed
+	at org.keycloak.connections.jpa.support.EntityManagerProxy.convert(EntityManagerProxy.java:151)
+	at org.keycloak.connections.jpa.support.EntityManagerProxy.invoke(EntityManagerProxy.java:113)
+	at jdk.proxy2/jdk.proxy2.$Proxy55.close(Unknown Source)
+	at org.keycloak.connections.jpa.DefaultJpaConnectionProvider.close(DefaultJpaConnectionProvider.java:44)
+	at org.keycloak.services.DefaultKeycloakSession.lambda$close$5(DefaultKeycloakSession.java:362)
+	at java.base/java.util.HashMap$Values.forEach(HashMap.java:1074)
+	at org.keycloak.services.DefaultKeycloakSession.close(DefaultKeycloakSession.java:368)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:463)
+	at org.keycloak.models.jpa.session.UserSessionExpirationLogic.runInBatches(UserSessionExpirationLogic.java:309)
+	at org.keycloak.models.jpa.session.UserSessionExpirationLogic.expireOfflineSessions(UserSessionExpirationLogic.java:91)
+	at org.keycloak.models.jpa.session.JpaUserSessionPersisterProvider.removeExpired(JpaUserSessionPersisterProvider.java:254)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:186)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.Iterator.forEachRemaining(Iterator.java:133)
+	at java.base/java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1939)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:632)
+	at org.keycloak.utils.ClosingStream.forEach(ClosingStream.java:128)
+	at org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.lambda$purgeExpired$2(BaseExpirationTask.java:101)
+	at org.keycloak.models.utils.KeycloakModelUtils.lambda$runJobInTransaction$1(KeycloakModelUtils.java:355)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:354)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:344)
+	at org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.purgeExpired(BaseExpirationTask.java:93)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1825)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: org.hibernate.HibernateException: Transaction was rolled back in a different thread
+	at org.hibernate.resource.transaction.backend.jta.internal.synchronization.SynchronizationCallbackCoordinatorTrackingImpl.processAnyDelayedAfterCompletion(SynchronizationCallbackCoordinatorTrackingImpl.java:87)
+	at org.hibernate.internal.AbstractSharedSessionContract.delayedAfterCompletion(AbstractSharedSessionContract.java:719)
+	at org.hibernate.internal.SessionImpl.delayedAfterCompletion(SessionImpl.java:589)
+	at org.hibernate.internal.AbstractSharedSessionContract.close(AbstractSharedSessionContract.java:511)
+	at org.hibernate.internal.SessionImpl.closeWithoutOpenChecks(SessionImpl.java:389)
+	at org.hibernate.internal.SessionImpl.close(SessionImpl.java:371)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.keycloak.connections.jpa.support.EntityManagerProxy.invoke(EntityManagerProxy.java:101)
+	... 34 more
+
+2026-07-02 19:00:40,234 WARN  [com.arjuna.ats.arjuna] (user-session-purge-expired) ARJUNA012077: Abort called on already aborted atomic action 0:ffffac130002:864f:6a423006:5e9b
+2026-07-02 19:00:39,966 ERROR [org.keycloak.services.scheduled.ScheduledTaskRunner] (Timer-0) Failed to run scheduled task ClearExpiredRevokedTokens: org.hibernate.exception.GenericJDBCException: Unable to acquire JDBC Connection [Acquisition timeout while waiting for new connection] [n/a]
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:39)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:115)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:101)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquire(LogicalConnectionManagedImpl.java:190)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquireConnectionIfNeeded(LogicalConnectionManagedImpl.java:87)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.getPhysicalConnection(LogicalConnectionManagedImpl.java:126)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.connection(StatementPreparerImpl.java:53)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl$1.doPrepare(StatementPreparerImpl.java:99)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl$StatementPreparationTemplate.prepareStatement(StatementPreparerImpl.java:183)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.prepareStatement(StatementPreparerImpl.java:84)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.prepareStatement(StatementPreparerImpl.java:78)
+	at org.hibernate.query.sqm.internal.SimpleNonSelectQueryPlan.lambda$execute$0(SimpleNonSelectQueryPlan.java:67)
+	at org.hibernate.sql.exec.internal.StandardJdbcMutationExecutor.execute(StandardJdbcMutationExecutor.java:47)
+	at org.hibernate.query.sqm.internal.SimpleNonSelectQueryPlan.execute(SimpleNonSelectQueryPlan.java:61)
+	at org.hibernate.query.sqm.internal.SimpleDeleteQueryPlan.execute(SimpleDeleteQueryPlan.java:154)
+	at org.hibernate.query.sqm.internal.SimpleNonSelectQueryPlan.executeUpdate(SimpleNonSelectQueryPlan.java:56)
+	at org.hibernate.query.sqm.internal.SqmQueryImpl.doExecuteUpdate(SqmQueryImpl.java:509)
+	at org.hibernate.query.sqm.internal.SqmQueryImpl.executeUpdate(SqmQueryImpl.java:481)
+	at org.keycloak.models.jpa.session.JpaRevokedTokensPersisterProvider.expireTokens(JpaRevokedTokensPersisterProvider.java:82)
+	at org.keycloak.services.scheduled.ClearExpiredRevokedTokens.run(ClearExpiredRevokedTokens.java:40)
+	at org.keycloak.services.scheduled.ClusterAwareScheduledTaskRunner$1.call(ClusterAwareScheduledTaskRunner.java:57)
+	at org.keycloak.services.scheduled.ClusterAwareScheduledTaskRunner$1.call(ClusterAwareScheduledTaskRunner.java:53)
+	at org.keycloak.cluster.infinispan.InfinispanClusterProvider.executeIfNotExecuted(InfinispanClusterProvider.java:96)
+	at org.keycloak.services.scheduled.ClusterAwareScheduledTaskRunner.runTask(ClusterAwareScheduledTaskRunner.java:53)
+	at org.keycloak.services.scheduled.ScheduledTaskRunner$1.run(ScheduledTaskRunner.java:68)
+	at org.keycloak.models.utils.KeycloakModelUtils.lambda$runJobInTransaction$1(KeycloakModelUtils.java:355)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:354)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:344)
+	at org.keycloak.services.scheduled.ScheduledTaskRunner.lambda$run$0(ScheduledTaskRunner.java:59)
+	at org.keycloak.tracing.NoopTracingProvider.trace(NoopTracingProvider.java:59)
+	at org.keycloak.services.scheduled.ScheduledTaskRunner.run(ScheduledTaskRunner.java:58)
+	at org.keycloak.timer.basic.BasicTimerProvider$BasicTimerTask.run(BasicTimerProvider.java:119)
+	at java.base/java.util.TimerThread.mainLoop(Timer.java:572)
+	at java.base/java.util.TimerThread.run(Timer.java:522)
+Caused by: java.sql.SQLException: Acquisition timeout while waiting for new connection
+	at io.agroal.pool.ConnectionPool.handlerFromSharedCache(ConnectionPool.java:428)
+	at io.agroal.pool.ConnectionPool.internalGetConnection(ConnectionPool.java:321)
+	at io.agroal.pool.ConnectionPool.getConnection(ConnectionPool.java:294)
+	at io.agroal.pool.DataSource.getConnection(DataSource.java:86)
+	at io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider.getConnection(QuarkusConnectionProvider.java:27)
+	at org.hibernate.internal.NonContextualJdbcConnectionAccess.obtainConnection(NonContextualJdbcConnectionAccess.java:47)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquire(LogicalConnectionManagedImpl.java:187)
+	... 31 more
+Caused by: java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:206)
+	at io.agroal.pool.ConnectionPool.handlerFromSharedCache(ConnectionPool.java:390)
+	... 37 more
+
+2026-07-02 19:00:40,277 WARN  [org.keycloak.services.DefaultKeycloakSession] (user-session-purge-expired) Unable to close provider org.keycloak.connections.jpa.DefaultJpaConnectionProvider: org.keycloak.models.ModelException: Database operation failed
+	at org.keycloak.connections.jpa.support.EntityManagerProxy.convert(EntityManagerProxy.java:151)
+	at org.keycloak.connections.jpa.support.EntityManagerProxy.invoke(EntityManagerProxy.java:113)
+	at jdk.proxy2/jdk.proxy2.$Proxy55.close(Unknown Source)
+	at org.keycloak.connections.jpa.DefaultJpaConnectionProvider.close(DefaultJpaConnectionProvider.java:44)
+	at org.keycloak.services.DefaultKeycloakSession.lambda$close$5(DefaultKeycloakSession.java:362)
+	at java.base/java.util.HashMap$Values.forEach(HashMap.java:1074)
+	at org.keycloak.services.DefaultKeycloakSession.close(DefaultKeycloakSession.java:368)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:463)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:354)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:344)
+	at org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.purgeExpired(BaseExpirationTask.java:93)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1825)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: org.hibernate.HibernateException: Transaction was rolled back in a different thread
+	at org.hibernate.resource.transaction.backend.jta.internal.synchronization.SynchronizationCallbackCoordinatorTrackingImpl.processAnyDelayedAfterCompletion(SynchronizationCallbackCoordinatorTrackingImpl.java:87)
+	at org.hibernate.internal.AbstractSharedSessionContract.delayedAfterCompletion(AbstractSharedSessionContract.java:719)
+	at org.hibernate.internal.SessionImpl.delayedAfterCompletion(SessionImpl.java:589)
+	at org.hibernate.internal.AbstractSharedSessionContract.close(AbstractSharedSessionContract.java:511)
+	at org.hibernate.internal.SessionImpl.closeWithoutOpenChecks(SessionImpl.java:389)
+	at org.hibernate.internal.SessionImpl.close(SessionImpl.java:371)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.keycloak.connections.jpa.support.EntityManagerProxy.invoke(EntityManagerProxy.java:101)
+	... 13 more
+
+2026-07-02 19:00:40,287 ERROR [org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask] (user-session-purge-expired) Unexpected error while removing expired entries from database: org.hibernate.exception.GenericJDBCException: Unable to acquire JDBC Connection [Acquisition timeout while waiting for new connection] [n/a]
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:39)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:115)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:101)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquire(LogicalConnectionManagedImpl.java:190)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquireConnectionIfNeeded(LogicalConnectionManagedImpl.java:87)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.getPhysicalConnection(LogicalConnectionManagedImpl.java:126)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.connection(StatementPreparerImpl.java:53)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl$4.doPrepare(StatementPreparerImpl.java:155)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl$StatementPreparationTemplate.prepareStatement(StatementPreparerImpl.java:183)
+	at org.hibernate.engine.jdbc.internal.StatementPreparerImpl.prepareQueryStatement(StatementPreparerImpl.java:157)
+	at org.hibernate.sql.exec.internal.StandardStatementCreator.createStatement(StandardStatementCreator.java:46)
+	at org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess.executeQuery(DeferredResultSetAccess.java:257)
+	at org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess.getResultSet(DeferredResultSetAccess.java:190)
+	at org.hibernate.sql.results.jdbc.internal.JdbcValuesResultSetImpl.<init>(JdbcValuesResultSetImpl.java:71)
+	at org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.resolveJdbcValues(JdbcSelectExecutorStandardImpl.java:393)
+	at org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.resolveJdbcValuesSource(JdbcSelectExecutorStandardImpl.java:354)
+	at org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.doExecuteQuery(JdbcSelectExecutorStandardImpl.java:135)
+	at org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.executeQuery(JdbcSelectExecutorStandardImpl.java:100)
+	at org.hibernate.sql.exec.spi.JdbcSelectExecutor.scroll(JdbcSelectExecutor.java:167)
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.lambda$new$2(ConcreteSqmSelectQueryPlan.java:148)
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.withCacheableSqmInterpretation(ConcreteSqmSelectQueryPlan.java:427)
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.performScroll(ConcreteSqmSelectQueryPlan.java:362)
+	at org.hibernate.query.sqm.internal.SqmQueryImpl.doScroll(SqmQueryImpl.java:440)
+	at org.hibernate.query.spi.AbstractSelectionQuery.scroll(AbstractSelectionQuery.java:265)
+	at org.hibernate.query.spi.AbstractSelectionQuery.stream(AbstractSelectionQuery.java:281)
+	at org.hibernate.query.spi.AbstractSelectionQuery.getResultStream(AbstractSelectionQuery.java:276)
+	at org.keycloak.models.jpa.session.UserSessionExpirationLogic.findAndRemoveSessions(UserSessionExpirationLogic.java:256)
+	at org.keycloak.models.jpa.session.UserSessionExpirationLogic.lambda$expireOfflineSessions$2(UserSessionExpirationLogic.java:92)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+	at org.keycloak.models.jpa.session.UserSessionExpirationLogic.runInBatches(UserSessionExpirationLogic.java:309)
+	at org.keycloak.models.jpa.session.UserSessionExpirationLogic.expireOfflineSessions(UserSessionExpirationLogic.java:91)
+	at org.keycloak.models.jpa.session.JpaUserSessionPersisterProvider.removeExpired(JpaUserSessionPersisterProvider.java:254)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:186)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:214)
+	at java.base/java.util.Iterator.forEachRemaining(Iterator.java:133)
+	at java.base/java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1939)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:632)
+	at org.keycloak.utils.ClosingStream.forEach(ClosingStream.java:128)
+	at org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.lambda$purgeExpired$2(BaseExpirationTask.java:101)
+	at org.keycloak.models.utils.KeycloakModelUtils.lambda$runJobInTransaction$1(KeycloakModelUtils.java:355)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWithResult(KeycloakModelUtils.java:469)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:354)
+	at org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction(KeycloakModelUtils.java:344)
+	at org.keycloak.models.sessions.infinispan.expiration.BaseExpirationTask.purgeExpired(BaseExpirationTask.java:93)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1825)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: java.sql.SQLException: Acquisition timeout while waiting for new connection
+	at io.agroal.pool.ConnectionPool.handlerFromSharedCache(ConnectionPool.java:428)
+	at io.agroal.pool.ConnectionPool.internalGetConnection(ConnectionPool.java:321)
+	at io.agroal.pool.ConnectionPool.getConnection(ConnectionPool.java:294)
+	at io.agroal.pool.DataSource.getConnection(DataSource.java:86)
+	at io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider.getConnection(QuarkusConnectionProvider.java:27)
+	at org.hibernate.internal.NonContextualJdbcConnectionAccess.obtainConnection(NonContextualJdbcConnectionAccess.java:47)
+	at org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl.acquire(LogicalConnectionManagedImpl.java:187)
+	... 53 more
+Caused by: java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:206)
+	at io.agroal.pool.ConnectionPool.handlerFromSharedCache(ConnectionPool.java:390)
+	... 59 more
+
+Appending additional Java properties to JAVA_OPTS
+INFO: The following run time options were found, but will be ignored during build time: kc.db-username, kc.db-password
+
+Updating the configuration and installing your custom providers, if any. Please wait.
+2026-08-22 18:41:48,373 INFO  [io.quarkus.deployment.QuarkusAugmentor] (main) Quarkus augmentation completed in 5458ms
+Server configuration updated and persisted. Run the following command to review the configuration:
+
+	kc.sh show-config
+
+Appending additional Java properties to JAVA_OPTS
+2026-08-22 18:41:51,601 INFO  [org.infinispan.CONTAINER] (main) ISPN000974: Virtual threads support: enabled
+2026-08-22 18:41:53,022 INFO  [org.hibernate.orm.jdbc.batch] (JPA Startup Thread) HHH100501: Automatic JDBC statement batching enabled (maximum batch size 32)
+2026-08-22 18:41:53,618 INFO  [org.keycloak.spi.infinispan.impl.embedded.JGroupsConfigurator] (main) JGroups JDBC_PING discovery enabled.
+2026-08-22 18:41:53,626 INFO  [org.keycloak.spi.infinispan.impl.embedded.JGroupsConfigurator] (main) JGroups Encryption enabled (mTLS).
+2026-08-22 18:41:53,962 INFO  [org.keycloak.jgroups.certificates.CertificateReloadManager] (main) Starting JGroups certificate reload manager
+2026-08-22 18:41:54,166 INFO  [org.infinispan.CONTAINER] (main) ISPN000556: Starting user marshaller 'org.infinispan.commons.marshall.ImmutableProtoStreamMarshaller'
+2026-08-22 18:41:54,251 INFO  [org.infinispan.CLUSTER] (main) ISPN000078: Starting JGroups channel `ISPN` with stack `jdbc-ping`
+2026-08-22 18:41:54,253 INFO  [org.jgroups.JChannel] (main) local_addr: 00000000-0000-0000-0000-000000000002(v=16.0.8), name: b1c76244859a-40844
+2026-08-22 18:41:54,262 INFO  [org.jgroups.protocols.FD_SOCK2] (main) server listening on *:57800
+2026-08-22 18:41:56,274 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 1
+2026-08-22 18:41:58,282 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 2
+2026-08-22 18:42:00,285 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 3
+2026-08-22 18:42:02,289 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 4
+2026-08-22 18:42:04,304 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 5
+2026-08-22 18:42:06,306 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 6
+2026-08-22 18:42:08,303 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 7
+2026-08-22 18:42:10,309 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 8
+2026-08-22 18:42:12,312 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): JOIN(b1c76244859a-40844(v=16.0.8)) sent to b1c76244859a-58442 timed out (after 2000 ms), on try 9
+2026-08-22 18:42:12,312 WARN  [org.jgroups.protocols.pbcast.GMS] (main) b1c76244859a-40844(v=16.0.8): too many JOIN attempts (10): becoming singleton
+2026-08-22 18:42:12,328 INFO  [org.infinispan.CLUSTER] (main) ISPN000094: Received new cluster view for channel ISPN: [b1c76244859a-40844(v=16.0.8)|0] (1) [b1c76244859a-40844(v=16.0.8)]
+2026-08-22 18:42:12,329 INFO  [org.keycloak.jgroups.certificates.CertificateReloadManager] (main) Reloading JGroups Certificate
+2026-08-22 18:42:12,333 INFO  [org.keycloak.jgroups.certificates.CertificateReloadManager] () Rotating JGroups certificate
+2026-08-22 18:42:12,379 INFO  [org.infinispan.CLUSTER] (main) ISPN000079: Channel `ISPN` local address is `b1c76244859a-40844`, physical addresses are `[172.19.0.2:7800]`
+2026-08-22 18:42:12,505 INFO  [org.keycloak.jgroups.certificates.CertificateReloadManager] () Reloading JGroups Certificate
+2026-08-22 18:42:12,723 INFO  [org.keycloak.connections.infinispan.DefaultInfinispanConnectionProviderFactory] (main) Node name: b1c76244859a-40844, Site name: null
+2026-08-22 18:42:12,728 INFO  [org.keycloak.models.workflow.WorkflowsEventListenerFactory] (main) Workflow runner task scheduled: next execution at 06:42:12, then every PT12H
+2026-08-22 18:42:13,363 INFO  [org.keycloak.services.resources.KeycloakApplication] (main) Bootstrap completed in 20.306000 seconds
+2026-08-22 18:42:13,458 INFO  [io.quarkus] (main) Keycloak 26.6.2 on JVM (powered by Quarkus 3.33.1.1) started in 24.871s. Listening on: http://0.0.0.0:8081
+2026-08-22 18:42:13,458 INFO  [io.quarkus] (main) Profile prod activated. 
+2026-08-22 18:42:13,458 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, jdbc-h2, keycloak, narayana-jta, opentelemetry, reactive-routes, rest, rest-jackson, smallrye-context-propagation, vertx]

@@ -1,0 +1,262 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-063 Plan Upgrade & Downgrade Management
+  # ==========================================================
+
+
+  - id: WF-063
+
+    name: plan_upgrade_downgrade_management
+
+    title: Plan Upgrade & Downgrade Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - saas_subscription
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+      classification:
+
+        business_process: subscription_change
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Manages subscription plan changes while preserving
+        customer data, permissions and service continuity.
+
+
+
+    scope:
+
+      includes:
+
+        - plan_upgrade
+
+        - plan_downgrade
+
+        - feature_activation
+
+        - feature_deactivation
+
+
+      excludes:
+
+        - payment_collection
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - customer_plan_change_requested
+
+        - subscription_renewal
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+      - valid_target_plan_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - current_subscription
+
+      - requested_plan
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_plan_change
+
+
+
+      - step: 2
+
+        action:
+
+          compare_entitlements
+
+
+
+      - step: 3
+
+        action:
+
+          update_subscription_plan
+
+
+
+      - step: 4
+
+        action:
+
+          activate_or_disable_features
+
+
+
+      - step: 5
+
+        action:
+
+          notify_customer
+
+
+
+    outputs:
+
+
+      - updated_subscription
+
+      - updated_entitlements
+
+
+
+    state_machine:
+
+
+      - SM-063 Subscription Change Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-065 subscription_plan_changed
+
+
+
+    orchestration:
+
+
+      - ORCH-063 Subscription Change
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+        - 009_commerce_engine
+
+
+
+    integrations:
+
+
+      - Payment Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - subscription_authorization
+
+        - permission_recalculation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_plan_change
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_plan
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - upgrade_rate
+
+        - downgrade_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

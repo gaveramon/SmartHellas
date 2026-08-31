@@ -1,0 +1,242 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-023 Door Code Generation
+  # ==========================================================
+
+
+  - id: WF-023
+
+    name: door_code_generation
+
+    title: Door Code Generation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - access_control
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Automatically generates temporary guest
+        access codes.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - code_creation
+
+        - validity_period_assignment
+
+        - lock_mapping
+
+
+
+      excludes:
+
+
+        - physical_lock_configuration
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-023 access_preparation_started
+
+
+
+    preconditions:
+
+
+      - booking_valid
+
+      - lock_connected
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_period
+
+      - lock_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          generate_unique_access_code
+
+
+
+      - step: 2
+
+        action:
+
+          assign_validity_window
+
+
+
+      - step: 3
+
+        action:
+
+          encrypt_access_data
+
+
+
+      - step: 4
+
+        action:
+
+          send_to_ttlock_gateway
+
+
+
+    outputs:
+
+
+      - temporary_access_code
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-024 door_code_created
+
+
+
+    orchestration:
+
+
+      - ORCH-023 Access Code Generation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - encrypted_code_storage
+
+        - temporary_permission_scope
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        regenerate_code
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - invalidate_code
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - code_generation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+

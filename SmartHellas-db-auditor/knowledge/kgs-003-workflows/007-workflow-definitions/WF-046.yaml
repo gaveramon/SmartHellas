@@ -1,0 +1,267 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-046 Remote Device Diagnostics
+  # ==========================================================
+
+
+  - id: WF-046
+
+    name: remote_device_diagnostics
+
+    title: Remote Device Diagnostics
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - operations
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+      classification:
+
+        business_process: device_support
+
+        criticality: operational_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Performs remote analysis of connected devices,
+        gateways and integrations to identify failures
+        without requiring physical intervention.
+
+
+
+    scope:
+
+      includes:
+
+        - device_health_analysis
+
+        - connectivity_testing
+
+        - integration_testing
+
+        - diagnostic_reporting
+
+
+      excludes:
+
+        - physical_device_repair
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-015 device_offline
+
+        - EVT-090 support_requested
+
+
+
+    preconditions:
+
+
+      - device_registered
+
+      - remote_access_authorized
+
+
+
+    actors:
+
+
+      - system
+
+      - support_agent
+
+
+
+    inputs:
+
+
+      - device_status
+
+      - telemetry_data
+
+      - integration_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_device_diagnostics
+
+
+
+      - step: 2
+
+        action:
+
+          analyze_device_state
+
+
+
+      - step: 3
+
+        action:
+
+          test_connectivity
+
+
+
+      - step: 4
+
+        action:
+
+          identify_root_cause
+
+
+
+      - step: 5
+
+        action:
+
+          generate_diagnostic_report
+
+
+
+    outputs:
+
+
+      - diagnostic_report
+
+      - recommended_action
+
+
+
+    state_machine:
+
+
+      - SM-046 Diagnostic Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-092 diagnostic_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-046 Remote Diagnostics
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - remote_operation_authorization
+
+        - encrypted_device_communication
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_failed_diagnostics
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - clear_diagnostic_session
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - diagnostic_success_rate
+
+        - mean_resolution_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

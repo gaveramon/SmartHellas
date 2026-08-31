@@ -202,3 +202,5 @@
 2026-06-29T08:42:48.522Z	[34mINFO[0m	UpdateSchemeTask done	{"logging-call-at": "updatetask.go:120"}
 2026/06/29 08:42:48 Loading config; env=development-postgres,zone=,configDir=/tmp/appsmith/temporal/config
 2026/06/29 08:42:48 Loading config files=[/tmp/appsmith/temporal/config/development-postgres.yaml]
+2026/08/22 18:41:51 Loading config; env=development-postgres,zone=,configDir=/tmp/appsmith/temporal/config
+2026/08/22 18:41:51 Loading config files=[/tmp/appsmith/temporal/config/development-postgres.yaml]

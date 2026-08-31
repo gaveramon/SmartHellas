@@ -1,0 +1,75 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-039 Subscription Provisioning
+  # ==========================================================
+
+  - id: WF-039
+
+    name: subscription_provisioning
+
+    title: Subscription Provisioning
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - saas
+
+      owner:
+        module: 002_core_saas
+
+    purpose:
+
+      description: >
+        Activates subscriptions, assigns portal
+        permissions and enables SmartHellas services.
+
+    trigger:
+
+      event:
+        - EVT-033 payment_completed
+
+    workflow_steps:
+
+      - step: 1
+        action: create_subscription
+
+      - step: 2
+        action: assign_permissions
+
+      - step: 3
+        action: enable_portal_features
+
+      - step: 4
+        action: activate_automation_services
+
+    outputs:
+      - active_subscription
+
+    state_machine:
+      - SM-038 Subscription Lifecycle
+
+    events:
+
+      produces:
+        - EVT-040 subscription_activated
+
+    orchestration:
+      - ORCH-039 Subscription Provisioning
+
+    dependencies:
+
+      modules:
+        - 002_core_saas
+        - 010_service_portal_engine
+        - 011_onboarding_engine
+
+    audit:
+      enabled: true
+
+    lifecycle:
+      policy: LIFE-001

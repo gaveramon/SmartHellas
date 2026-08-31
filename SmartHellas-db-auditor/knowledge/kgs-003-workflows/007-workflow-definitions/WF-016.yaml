@@ -1,0 +1,250 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-016 Device Replacement
+  # ==========================================================
+
+
+  - id: WF-016
+
+    name: device_replacement
+
+    title: Device Replacement
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - service_management
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+
+    purpose:
+
+      description:
+
+        Handles replacement of defective or outdated devices.
+
+
+
+    scope:
+
+      includes:
+
+        - failure_detection
+
+        - replacement_request
+
+        - new_device_assignment
+
+        - device_reactivation
+
+
+
+      excludes:
+
+        - refund_processing
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-045 device_replacement_requested
+
+
+
+    preconditions:
+
+
+      - device_exists
+
+      - replacement_authorized
+
+
+
+    actors:
+
+
+      - customer
+
+      - support_agent
+
+      - system
+
+
+
+    inputs:
+
+
+      - failed_device
+
+      - replacement_device
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_replacement_request
+
+
+
+      - step: 2
+
+        action:
+
+          deactivate_failed_device
+
+
+
+      - step: 3
+
+        action:
+
+          assign_replacement_device
+
+
+
+      - step: 4
+
+        action:
+
+          provision_new_device
+
+
+
+      - step: 5
+
+        action:
+
+          validate_operation
+
+
+
+    outputs:
+
+
+      - replaced_device
+
+
+
+    state_machine:
+
+
+      - SM-016 Device Replacement Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-046 replacement_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-016 Device Replacement
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 003_property_device_engine
+
+        - 008_logistics_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_ownership_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_to_support
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_device_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - replacement_resolution_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

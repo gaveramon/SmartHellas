@@ -1,0 +1,219 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-002 Customer Activation
+  # ==========================================================
+
+
+  - id: WF-002
+
+    name: customer_activation
+
+    title: Customer Activation
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - customer_lifecycle
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Activates customer services after registration.
+
+
+
+    scope:
+
+
+      includes:
+
+        - service_activation
+
+        - portal_enablement
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-003 customer_activated
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+      - registration_completed
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_customer_status
+
+
+
+      - step: 2
+
+        action:
+
+          enable_customer_services
+
+
+
+      - step: 3
+
+        action:
+
+          provision_portal_access
+
+
+
+    outputs:
+
+
+      - active_customer
+
+
+
+    state_machine:
+
+
+      - SM-001
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-003
+
+
+
+      produces:
+
+
+        - EVT-010 portal_access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-003
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - role_validation_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_with_compensation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - disable_partial_activation
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - activation_time
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

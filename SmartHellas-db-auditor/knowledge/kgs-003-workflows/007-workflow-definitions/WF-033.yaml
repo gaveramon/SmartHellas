@@ -1,0 +1,128 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-033 Payment Processing
+  # ==========================================================
+
+  - id: WF-033
+
+    name: payment_processing
+
+    title: Payment Processing
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - commerce
+
+      owner:
+        module: 009_commerce_engine
+
+    purpose:
+
+      description: >
+        Processes customer payments, verifies payment status,
+        creates financial records and authorizes order execution.
+
+    scope:
+
+      includes:
+        - payment_authorization
+        - payment_capture
+        - payment_confirmation
+        - invoice_creation
+
+      excludes:
+        - refund_processing
+
+    trigger:
+
+      event:
+        - EVT-032 order_created
+
+    preconditions:
+      - valid_order_exists
+      - payment_method_selected
+
+    actors:
+      - customer
+      - payment_provider
+      - system
+
+    inputs:
+      - order
+      - payment_method
+
+    workflow_steps:
+
+      - step: 1
+        action: validate_payment_request
+
+      - step: 2
+        action: authorize_payment
+
+      - step: 3
+        action: capture_payment
+
+      - step: 4
+        action: create_invoice
+
+      - step: 5
+        action: notify_order_processing
+
+    outputs:
+      - payment
+      - invoice
+
+    state_machine:
+      - SM-032 Payment Lifecycle
+
+    events:
+
+      produces:
+        - EVT-033 payment_completed
+
+    orchestration:
+      - ORCH-032 Order Processing
+
+    dependencies:
+
+      modules:
+        - 009_commerce_engine
+
+    integrations:
+      - Payment Provider
+
+    security:
+
+      requirements:
+        - pci_compliance
+        - encrypted_payment_data
+
+    error_handling:
+
+      strategy:
+        retry_payment
+
+    compensation:
+
+      actions:
+        - cancel_payment
+
+    observability:
+
+      metrics:
+        - payment_success_rate
+
+    audit:
+
+      enabled: true
+
+    lifecycle:
+
+      policy:
+        LIFE-001

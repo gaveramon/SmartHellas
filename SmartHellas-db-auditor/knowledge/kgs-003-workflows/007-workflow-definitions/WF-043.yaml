@@ -1,0 +1,273 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-043 Property Activation
+  # ==========================================================
+
+
+  - id: WF-043
+
+    name: property_activation
+
+    title: Property Activation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - property_activation
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+        business_process: property_go_live
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Activates a SmartHellas property after successful
+        installation and validation of all required devices.
+
+
+
+    scope:
+
+      includes:
+
+        - property_activation
+
+        - device_status_confirmation
+
+        - service_enablement
+
+        - go_live_validation
+
+
+      excludes:
+
+        - subscription_billing
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-043 devices_validated
+
+
+
+    preconditions:
+
+
+      - validation_completed
+
+      - required_devices_online
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - property_configuration
+
+      - validated_devices
+
+      - subscription_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          verify_activation_requirements
+
+
+
+      - step: 2
+
+        action:
+
+          activate_property_status
+
+
+
+      - step: 3
+
+        action:
+
+          enable_property_services
+
+
+
+      - step: 4
+
+        action:
+
+          register_property_as_live
+
+
+
+      - step: 5
+
+        action:
+
+          notify_customer
+
+
+
+    outputs:
+
+
+      - active_property
+
+      - operational_status
+
+
+
+    state_machine:
+
+
+      - SM-043 Property Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-043 devices_validated
+
+
+
+      produces:
+
+
+        - EVT-044 property_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-043 Property Activation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_validation
+
+        - property_ownership_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        block_activation_until_resolved
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - deactivate_property
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - activation_success_rate
+
+        - activation_duration
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

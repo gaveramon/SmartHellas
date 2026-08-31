@@ -1,160 +1,136 @@
----
 alwaysApply: true
----
 
-# Fixed Database Architecture (REV19)
+# Fixed Database Architecture (REV19 - ENHANCED)
 
 The architecture is LOCKED.
 
 Do not redesign modules.
 
-Each module owns its own Single Source Of Truth (SSOT).
+Each module owns its Single Source Of Truth (SSOT).
 
 ------------------------------------------------
 
-000 Platform
+# 000 Platform (HARD INFRA LAYER)
 
 Owns ONLY:
 
-- infrastructure
-- auth integration
+- database infrastructure
+- auth integration (Supabase)
 - RLS helpers
-- audit
-- logging
+- audit logging
 - monitoring
 - queues
 - events
 - webhooks
-- scheduler
-- cron
-- vault
+- scheduler / cron
+- vault / secrets
 - storage
 - platform utilities
+- shared SQL helpers (generic only)
 
-Never contains business entities.
+❗ NEVER contains business entities or domain logic
+
+RULE:
+000_supabase_platform.sql MUST be:
+- dependency-free
+- reset-safe
+- executable in isolation
+- safe for `supabase db reset`
+
+------------------------------------------------
+
+# 001–013 BUSINESS DOMAINS (SSOT ENFORCED)
+
+Each module is the ONLY owner of its domain.
+
+No cross-module ownership.
 
 ------------------------------------------------
 
 001 Core Types (Global SSOT)
-
-Owns ONLY:
-
 - enums
-- shared domains
-- shared SQL types
+- shared types
 - lifecycle states
-- reusable lookup definitions
+- reusable lookup structures
 
-No business tables.
+NO business tables
 
 ------------------------------------------------
 
 002 Core SaaS (SSOT)
-
-Owns:
-
 - tenants
 - memberships
 - subscriptions
 - permissions
 - portal identity
-- tenant configuration
+- tenant config
 
 ------------------------------------------------
 
 003 Property & Device Engine (SSOT)
-
-Owns:
-
 - properties
 - rooms
 - devices
-- categories
+- device categories
 - assignments
-- configurations
+- device configuration
+- device workflows & triggers
 - device business logic
-- device workflows
-- device triggers
 
 ------------------------------------------------
 
 004 Booking & Lock Engine (SSOT)
-
-Owns:
-
 - bookings
 - guest access
-- lock access
-- credentials
-- policies
-- booking business logic
-- booking workflows
+- lock credentials
+- access policies
+- booking workflows & logic
 
 ------------------------------------------------
 
 005 Integration Engine (SSOT)
-
-Owns:
-
 - providers
-- provider mappings
+- mappings
 - integration state
 - provider capabilities
 
 ------------------------------------------------
 
 006 Operations Engine (SSOT)
-
-Owns:
-
 - workflows
 - templates
-- operational state
+- operational execution state
 
 ------------------------------------------------
 
 007 Preconfig Engine (SSOT)
-
-Owns:
-
 - blueprints
-- preconfiguration templates
+- configuration templates
 - bundle mapping
 
-Never stores runtime state.
+❗ NEVER runtime state
 
 ------------------------------------------------
 
 008 Logistics Engine (SSOT)
-
-Owns:
-
 - fulfilment
-- warehouse
+- warehouses
 - shipping
 - package definitions
-- logistics business logic
+- logistics workflows & logic
 
 ------------------------------------------------
 
 009 Commerce Engine (SSOT)
-
-Owns:
-
 - plans
 - pricing
 - proposals
-- monetization
 - payments
-- subscriptions
-- commerce business logic
+- monetization logic
 
 ------------------------------------------------
 
 010 Service & Portal Engine (SSOT)
-
-Owns:
-
 - portal configuration
 - services
 - feature entitlements
@@ -162,9 +138,6 @@ Owns:
 ------------------------------------------------
 
 011 Onboarding Engine (SSOT)
-
-Owns:
-
 - onboarding sessions
 - onboarding progress
 - onboarding mappings
@@ -172,143 +145,144 @@ Owns:
 ------------------------------------------------
 
 012 Intelligence Engine (SSOT)
-
-Owns:
-
 - recommendations
 - scoring
 - insights
-- optimization
+- optimization logic
 
 ------------------------------------------------
 
 013 Growth Engine (SSOT)
-
-Owns:
-
 - CRM integrations
 - campaigns
 - conversions
-- upsell
+- upsell logic
 - marketing analytics
 
 ------------------------------------------------
 
 014 Bootstrap
-
-Owns ONLY:
-
-- bootstrap data
-- reference seed data
-- initial configuration
+- seed data
+- reference initialization
+- initial configuration only
 
 ------------------------------------------------
 
-015 CRM
-
-Owns:
-
-- CRM entities
+015 CRM (SSOT)
 - contacts
 - companies
 - deals
 - pipelines
 - activities
 - communication timeline
-- CRM business logic
-- CRM triggers
-- CRM workflows
+- CRM workflows & logic
 
 ------------------------------------------------
 
-Architecture Rules
+# CORE ARCHITECTURE RULES
+
+## SSOT RULE (HARD)
+Each domain owns its data + logic.
+
+No duplicate ownership allowed.
+
+Never split a domain across modules.
+
+------------------------------------------------
+
+## PLATFORM RULE
+Platform defines HOW execution works.
 
 Business modules define WHAT exists.
 
-Platform defines HOW it executes.
+Platform NEVER contains domain behavior.
 
-Execution never belongs inside business modules.
+------------------------------------------------
 
-Business logic must exist only once.
+## LOGIC RULE (CRITICAL)
+
+Business logic must exist ONLY once.
 
 Never duplicate:
 
-- business rules
-- lifecycle logic
-- ownership
+- lifecycle rules
 - state transitions
+- ownership rules
+- workflow logic
 - triggers
-- workflows
 - domain functions
 
 ------------------------------------------------
 
-# Domain Evolution
+## MIGRATION RULE (IMPORTANT CLARIFICATION)
 
-Migration numbers are NOT the SSOT.
+Migration numbers are NOT architecture.
 
 Domains are the SSOT.
 
-Business modules may evolve through multiple migrations.
+A domain evolves over multiple migrations:
 
 Example:
+- 003_devices_rev19.sql
+- 024_devices_extensions_rev19.sql
+- 041_devices_automation_rev20.sql
 
-003_devices_rev19.sql
+All belong to the SAME domain.
 
-024_devices_extensions_rev19.sql
+❗ You must NEVER move logic to another module just because a migration is newer.
 
-041_devices_automation_rev20.sql
+If new functionality is needed:
+→ Add a new migration in the SAME domain
 
-All belong to the same Device Engine.
-
-Immutable migrations NEVER justify placing business logic into another module.
-
-If a new Device function is required:
-
-Create a new Device migration.
-
-NOT an Edge migration.
+NOT:
+→ Edge
+→ Another module
 
 ------------------------------------------------
 
-# Edge Layer
+## EDGE LAYER (API ONLY)
 
-Edge is an API layer only.
+Edge is strictly a transport layer.
 
-Edge may contain:
+Allowed in Edge:
 
 - RPC wrappers
-- authentication guards
-- authorization helpers
+- auth guards
+- authorization checks
 - tenant validation
 - request validation
-- response helpers
+- response formatting
 - logging helpers
 - API utilities
 
-Edge must NEVER contain:
+❗ Edge must NEVER contain:
 
 - business logic
-- triggers
 - workflows
-- lifecycle management
 - state transitions
 - device logic
 - booking logic
 - CRM logic
-- logistics logic
 - commerce logic
+- logistics logic
 
-Edge calls business modules.
+RULE:
+Edge only CALLS domain functions.
 
-Business modules never belong to Edge.
+Never owns behavior.
 
 ------------------------------------------------
+
+## DECISION RULE (WHEN UNCLEAR)
 
 If ownership is unclear:
 
 STOP
 
-Explain which module owns the SSOT.
+Identify the single SSOT module.
 
-Never invent a second owner.
+If two modules seem responsible → architecture is wrong.
+
+Never create dual ownership.
+
+------------------------------------------------

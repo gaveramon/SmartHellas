@@ -1,0 +1,229 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-005 Portal Access Provisioning
+  # ==========================================================
+
+
+  - id: WF-005
+
+    name: portal_access_provisioning
+
+    title: Portal Access Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - access_management
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+
+    purpose:
+
+      description:
+
+        Creates customer portal access and permissions.
+
+
+
+    scope:
+
+      includes:
+
+        - user_access_creation
+
+        - role_assignment
+
+        - portal_permission_setup
+
+
+
+    trigger:
+
+
+      event:
+
+        - EVT-010 portal_access_requested
+
+
+
+    preconditions:
+
+
+      - customer_active
+
+      - subscription_valid
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - subscription_entitlements
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_customer_subscription
+
+
+
+      - step: 2
+
+        action:
+
+          create_portal_user
+
+
+
+      - step: 3
+
+        action:
+
+          assign_portal_roles
+
+
+
+      - step: 4
+
+        action:
+
+          enable_portal_features
+
+
+
+    outputs:
+
+
+      - portal_account
+
+      - permissions
+
+
+
+    state_machine:
+
+
+      - SM-005 Portal Access Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+        - EVT-010
+
+
+
+      produces:
+
+        - EVT-011 portal_access_created
+
+
+
+    orchestration:
+
+
+      - ORCH-005 Portal Provisioning
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - authentication_required
+
+        - authorization_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_access_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - remove_portal_account
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - access_provisioning_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,129 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-030 Configurator Recommendation
+  # ==========================================================
+
+  - id: WF-030
+
+    name: configurator_recommendation
+
+    title: Configurator Recommendation
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - commerce
+
+      owner:
+        module: 009_commerce_engine
+
+    purpose:
+
+      description: >
+        Converts customer requirements into a complete
+        SmartHellas solution including hardware,
+        services and subscription recommendations.
+
+    scope:
+
+      includes:
+        - questionnaire_processing
+        - room_analysis
+        - hardware_calculation
+        - service_selection
+        - subscription_recommendation
+
+      excludes:
+        - payment_processing
+
+    trigger:
+
+      action:
+        - configurator_completed
+
+    preconditions:
+      - questionnaire_completed
+
+    actors:
+      - customer
+      - system
+
+    inputs:
+      - questionnaire_answers
+      - property_information
+
+    workflow_steps:
+
+      - step: 1
+        action: validate_questionnaire
+
+      - step: 2
+        action: calculate_required_devices
+
+      - step: 3
+        action: determine_required_services
+
+      - step: 4
+        action: recommend_subscription
+
+      - step: 5
+        action: build_solution_package
+
+    outputs:
+      - recommended_solution
+      - recommended_devices
+      - recommended_services
+      - recommended_subscription
+
+    state_machine:
+      - SM-030 Commerce Lifecycle
+
+    events:
+
+      produces:
+        - EVT-030 solution_generated
+
+    orchestration:
+      - ORCH-030 Commerce Recommendation
+
+    dependencies:
+
+      modules:
+        - 009_commerce_engine
+        - 002_core_saas
+
+    integrations: []
+
+    security:
+
+      requirements:
+        - customer_session_required
+
+    error_handling:
+
+      strategy:
+        restart_configuration
+
+    compensation:
+
+      actions:
+        - discard_partial_configuration
+
+    observability:
+
+      metrics:
+        - recommendation_generation_time
+
+    audit:
+
+      enabled: true
+
+    lifecycle:
+
+      policy:
+        LIFE-001

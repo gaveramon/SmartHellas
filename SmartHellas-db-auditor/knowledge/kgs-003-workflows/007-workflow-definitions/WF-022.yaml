@@ -1,0 +1,225 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-022 Booking Confirmation Handling
+  # ==========================================================
+
+
+  - id: WF-022
+
+    name: booking_confirmation_handling
+
+    title: Booking Confirmation Handling
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - booking_management
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Processes confirmed reservations and prepares
+        access automation.
+
+
+
+    scope:
+
+      includes:
+
+        - booking_validation
+
+        - reservation_status_update
+
+        - access_preparation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-022 booking_confirmed
+
+
+
+    preconditions:
+
+
+      - booking_exists
+
+      - guest_information_available
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_record
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_booking_status
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_access_window
+
+
+
+      - step: 3
+
+        action:
+
+          create_access_task
+
+
+
+      - step: 4
+
+        action:
+
+          notify_access_engine
+
+
+
+    outputs:
+
+
+      - confirmed_booking
+
+
+
+    state_machine:
+
+
+      - SM-020 Booking Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-020 access_preparation_started
+
+
+
+    orchestration:
+
+
+      - ORCH-021 Booking Processing
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      - Airbnb Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - booking_authorization_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        mark_booking_for_review
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - cancel_access_task
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - confirmation_processing_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

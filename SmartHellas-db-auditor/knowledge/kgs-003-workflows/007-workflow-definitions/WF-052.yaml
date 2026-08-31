@@ -1,0 +1,261 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-052 Webhook Event Processing
+  # ==========================================================
+
+
+  - id: WF-052
+
+    name: webhook_event_processing
+
+    title: Webhook Event Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - integration_events
+
+
+      owner:
+
+        module: 005_integration_engine
+
+
+      classification:
+
+        business_process: event_ingestion
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Receives, validates and processes external events
+        from Aqara, TTLock and Shelly integrations.
+
+
+
+    scope:
+
+      includes:
+
+        - webhook_receiving
+
+        - event_validation
+
+        - event_normalization
+
+        - event_routing
+
+
+      excludes:
+
+        - device_command_execution
+
+
+
+    trigger:
+
+      webhook:
+
+        - provider_event_received
+
+
+
+    preconditions:
+
+
+      - integration_registered
+
+      - webhook_endpoint_active
+
+
+
+    actors:
+
+
+      - external_provider
+
+      - system
+
+
+
+    inputs:
+
+
+      - provider_event_payload
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          receive_webhook
+
+
+
+      - step: 2
+
+        action:
+
+          validate_signature
+
+
+
+      - step: 3
+
+        action:
+
+          normalize_event_format
+
+
+
+      - step: 4
+
+        action:
+
+          map_device_identity
+
+
+
+      - step: 5
+
+        action:
+
+          publish_internal_event
+
+
+
+    outputs:
+
+
+      - internal_event
+
+
+
+    state_machine:
+
+
+      - SM-052 Event Processing Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-052 normalized_provider_event
+
+
+
+    orchestration:
+
+
+      - ORCH-052 Event Processing
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 006_operations_engine
+
+        - 016_automation_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - webhook_signature_validation
+
+        - payload_sanitization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        quarantine_invalid_events
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - replay_event_processing
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - webhook_success_rate
+
+        - event_processing_latency
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

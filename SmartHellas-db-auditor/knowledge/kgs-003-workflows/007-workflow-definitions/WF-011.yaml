@@ -1,0 +1,231 @@
+definition_registry:
+
+# ==========================================================
+  # WF-011 Device Provisioning
+  # ==========================================================
+
+
+  - id: WF-011
+
+    name: device_provisioning
+
+    title: Device Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_management
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Registers devices and assigns them
+        to SmartHellas properties.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - device_registration
+
+        - property_assignment
+
+        - device_identity_creation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-032 device_preparation_completed
+
+
+
+    preconditions:
+
+
+      - device_exists
+
+      - property_exists
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_identifier
+
+      - property_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          register_device
+
+
+
+      - step: 2
+
+        action:
+
+          assign_device_to_property
+
+
+
+      - step: 3
+
+        action:
+
+          create_device_identity
+
+
+
+      - step: 4
+
+        action:
+
+          store_device_metadata
+
+
+
+    outputs:
+
+
+      - provisioned_device
+
+
+
+    state_machine:
+
+
+      - SM-011 Device Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-033 device_registered
+
+
+
+    orchestration:
+
+
+      - ORCH-011 Device Provisioning
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_identity_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_device_registration
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - unregister_device
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - provisioning_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

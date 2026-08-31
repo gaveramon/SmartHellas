@@ -1,0 +1,231 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-025 Guest Check-in
+  # ==========================================================
+
+
+  - id: WF-025
+
+    name: guest_check_in
+
+    title: Guest Check-in
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - guest_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Activates and monitors guest arrival process.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - arrival_validation
+
+        - access_activation
+
+        - check_in_registration
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - booking_start_time_reached
+
+
+
+    preconditions:
+
+
+      - booking_active
+
+      - access_code_active
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking
+
+      - guest_access_profile
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_check_in_window
+
+
+
+      - step: 2
+
+        action:
+
+          activate_access
+
+
+
+      - step: 3
+
+        action:
+
+          register_guest_arrival
+
+
+
+      - step: 4
+
+        action:
+
+          start_stay_monitoring
+
+
+
+    outputs:
+
+
+      - active_guest_session
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-026 guest_checked_in
+
+
+
+    orchestration:
+
+
+      - ORCH-025 Check-in Automation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - access_window_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        notify_property_manager
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - deactivate_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - successful_check_in_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

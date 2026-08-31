@@ -1,0 +1,240 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: performance_constraint
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# PERFORMANCE REGISTRY
+# ============================================================
+
+
+performance:
+
+
+  description: >
+
+    Canonical performance requirements defining scalability,
+    optimization and operational expectations.
+
+
+
+  principles:
+
+
+    - scalable_by_design
+
+    - indexed_access
+
+    - asynchronous_processing
+
+    - observable_latency
+
+
+
+# ============================================================
+# SCALE MODEL
+# ============================================================
+
+
+  expected_scale:
+
+
+    tenants:
+
+
+      model:
+
+        multi_tenant
+
+
+
+    properties:
+
+
+      model:
+
+        customer_growth
+
+
+
+    devices:
+
+
+      model:
+
+        property_based_scaling
+
+
+
+    bookings:
+
+
+      model:
+
+        time_series_growth
+
+
+
+# ============================================================
+# QUERY PATTERNS
+# ============================================================
+
+
+  query_patterns:
+
+
+    required_filters:
+
+
+      - tenant_id
+
+
+
+    common_queries:
+
+
+      property:
+
+
+        - property_dashboard
+
+        - device_overview
+
+
+
+      booking:
+
+
+        - active_booking_lookup
+
+        - guest_access_validation
+
+
+
+      portal:
+
+
+        - customer_dashboard
+
+        - onboarding_progress
+
+
+
+# ============================================================
+# INDEX STRATEGY
+# ============================================================
+
+
+  indexing:
+
+
+    required:
+
+
+      - foreign_keys
+
+      - tenant_columns
+
+      - timestamps
+
+      - status_fields
+
+
+
+# ============================================================
+# ASYNCHRONOUS PROCESSING
+# ============================================================
+
+
+  async_required_for:
+
+
+    - external_api_calls
+
+    - device_events
+
+    - notifications
+
+    - automation_execution
+
+    - reporting
+
+
+
+# ============================================================
+# CACHING
+# ============================================================
+
+
+  caching:
+
+
+    allowed:
+
+
+      - dashboard_data
+
+      - provider_metadata
+
+      - read_models
+
+
+
+    forbidden:
+
+
+      - permissions
+
+      - financial_truth
+
+      - security_state
+
+
+
+# ============================================================
+# PERFORMANCE VALIDATION
+# ============================================================
+
+
+validation:
+
+
+  rules:
+
+
+    - id:
+
+        PERF-001
+
+      rule:
+
+        "High volume objects require indexes."
+
+
+
+    - id:
+
+        PERF-002
+
+      rule:
+
+        "External providers may not block critical flows."
+
+
+
+    - id:
+
+        PERF-003
+
+      rule:
+
+        "Performance degradation must be observable."

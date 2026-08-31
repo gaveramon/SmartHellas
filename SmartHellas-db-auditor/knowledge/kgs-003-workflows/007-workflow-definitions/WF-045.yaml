@@ -1,0 +1,276 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-045 Customer Support Case Management
+  # ==========================================================
+
+
+  - id: WF-045
+
+    name: customer_support_case_management
+
+    title: Customer Support Case Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - support_operations
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+      classification:
+
+
+        business_process: support
+
+        criticality: operational_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Manages customer support requests,
+        diagnostics, communication and resolution tracking.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - support_case_creation
+
+        - issue_classification
+
+        - communication_tracking
+
+        - resolution_tracking
+
+
+
+      excludes:
+
+
+        - physical_service_visit
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-090 support_requested
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - support_agent
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_issue
+
+      - property_information
+
+      - device_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_support_case
+
+
+
+      - step: 2
+
+        action:
+
+          classify_issue
+
+
+
+      - step: 3
+
+        action:
+
+          collect_diagnostic_information
+
+
+
+      - step: 4
+
+        action:
+
+          assign_support_owner
+
+
+
+      - step: 5
+
+        action:
+
+          resolve_case
+
+
+
+      - step: 6
+
+        action:
+
+          close_case_and_record_solution
+
+
+
+    outputs:
+
+
+      - support_case
+
+      - resolution_record
+
+
+
+    state_machine:
+
+
+      - SM-045 Support Case Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-091 support_case_closed
+
+
+
+    orchestration:
+
+
+      - ORCH-045 Support Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 006_operations_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - customer_data_protection
+
+        - support_role_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_to_specialist
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - reopen_support_case
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - resolution_time
+
+        - customer_satisfaction
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

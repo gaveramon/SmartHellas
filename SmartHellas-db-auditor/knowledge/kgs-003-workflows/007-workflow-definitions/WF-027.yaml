@@ -1,0 +1,228 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-027 Access Revocation
+  # ==========================================================
+
+
+  - id: WF-027
+
+    name: access_revocation
+
+    title: Access Revocation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - access_control
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Removes temporary guest permissions
+        after reservation completion.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - code_deactivation
+
+        - permission_removal
+
+        - lock_update
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-027 guest_checked_out
+
+
+
+    preconditions:
+
+
+      - guest_access_exists
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - access_profile
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          identify_active_permissions
+
+
+
+      - step: 2
+
+        action:
+
+          disable_access_code
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_lock_state
+
+
+
+      - step: 4
+
+        action:
+
+          verify_access_removed
+
+
+
+    outputs:
+
+
+      - revoked_access
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-028 access_revoked
+
+
+
+    orchestration:
+
+
+      - ORCH-027 Access Revocation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - access_removal_confirmation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_lock_synchronization
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_access_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - revocation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

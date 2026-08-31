@@ -1,0 +1,2678 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-040 Customer Onboarding
+  # ==========================================================
+
+
+  - id: WF-040
+
+    name: customer_onboarding
+
+    title: Customer Onboarding
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - onboarding
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+        business_process: customer_activation
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Guides customers through the initial activation
+        of their SmartHellas solution after receiving
+        the configured hardware package.
+
+
+
+    scope:
+
+      includes:
+
+        - customer_activation
+
+        - property_setup
+
+        - onboarding_progress_tracking
+
+        - installation_preparation
+
+
+      excludes:
+
+        - hardware_configuration_execution
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-037 order_shipped
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+      - shipment_completed
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - property_information
+
+      - shipment_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_onboarding_session
+
+
+
+      - step: 2
+
+        action:
+
+          verify_customer_information
+
+
+
+      - step: 3
+
+        action:
+
+          load_property_configuration
+
+
+
+      - step: 4
+
+        action:
+
+          display_required_setup_steps
+
+
+
+      - step: 5
+
+        action:
+
+          track_onboarding_progress
+
+
+
+    outputs:
+
+
+      - onboarding_session
+
+      - onboarding_status
+
+
+
+    state_machine:
+
+
+      - SM-040 Customer Onboarding Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-037 order_shipped
+
+
+
+      produces:
+
+
+        - EVT-040 onboarding_started
+
+
+
+    orchestration:
+
+
+      - ORCH-040 Customer Onboarding
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 010_service_portal_engine
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - customer_identity_validation
+
+        - tenant_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        save_progress_and_resume
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - close_incomplete_onboarding
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - onboarding_completion_rate
+
+        - onboarding_duration
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-041 Guided Device Installation
+  # ==========================================================
+
+
+  - id: WF-041
+
+    name: guided_device_installation
+
+    title: Guided Device Installation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - onboarding
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+
+        business_process: device_activation
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Provides step-by-step installation guidance
+        for customers installing SmartHellas devices
+        in their Airbnb property.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - installation_instructions
+
+        - room_device_mapping
+
+        - installation_checklist
+
+        - progress_tracking
+
+
+      excludes:
+
+
+        - physical_installation_by_employee
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-040 onboarding_started
+
+
+
+    preconditions:
+
+
+      - onboarding_active
+
+      - device_package_received
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - installation_package
+
+      - room_mapping
+
+      - device_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          load_device_installation_plan
+
+
+
+      - step: 2
+
+        action:
+
+          display_room_specific_instructions
+
+
+
+      - step: 3
+
+        action:
+
+          guide_device_mounting
+
+
+
+      - step: 4
+
+        action:
+
+          request_customer_confirmation
+
+
+
+      - step: 5
+
+        action:
+
+          mark_installation_completed
+
+
+
+    outputs:
+
+
+      - installation_progress
+
+      - installed_device_list
+
+
+
+    state_machine:
+
+
+      - SM-041 Installation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-041 installation_started
+
+        - EVT-042 installation_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-041 Installation Guidance
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - property_access_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_installation_support_task
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - reopen_installation_step
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - installation_completion_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-042 Device Validation
+  # ==========================================================
+
+
+  - id: WF-042
+
+    name: device_validation
+
+    title: Device Validation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_activation
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+
+        business_process: validation
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Validates that installed devices are correctly
+        connected, reachable and ready for operation.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - connectivity_check
+
+        - device_registration_validation
+
+        - gateway_validation
+
+        - automation_readiness_check
+
+
+
+      excludes:
+
+
+        - advanced_monitoring
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-042 installation_completed
+
+
+
+    preconditions:
+
+
+      - device_installed
+
+      - customer_completed_installation
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - installed_devices
+
+      - gateway_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          scan_device_status
+
+
+
+      - step: 2
+
+        action:
+
+          validate_gateway_connection
+
+
+
+      - step: 3
+
+        action:
+
+          validate_provider_connection
+
+
+
+      - step: 4
+
+        action:
+
+          execute_device_tests
+
+
+
+      - step: 5
+
+        action:
+
+          approve_property_activation
+
+
+
+    outputs:
+
+
+      - validated_devices
+
+      - validation_report
+
+
+
+    state_machine:
+
+
+      - SM-042 Device Validation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-043 devices_validated
+
+
+
+    orchestration:
+
+
+      - ORCH-042 Device Validation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_identity_validation
+
+        - secure_connection_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_device_issue
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - return_device_to_pending_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - validation_success_rate
+
+        - failed_device_count
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-043 Property Activation
+  # ==========================================================
+
+
+  - id: WF-043
+
+    name: property_activation
+
+    title: Property Activation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - property_activation
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+        business_process: property_go_live
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Activates a SmartHellas property after successful
+        installation and validation of all required devices.
+
+
+
+    scope:
+
+      includes:
+
+        - property_activation
+
+        - device_status_confirmation
+
+        - service_enablement
+
+        - go_live_validation
+
+
+      excludes:
+
+        - subscription_billing
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-043 devices_validated
+
+
+
+    preconditions:
+
+
+      - validation_completed
+
+      - required_devices_online
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - property_configuration
+
+      - validated_devices
+
+      - subscription_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          verify_activation_requirements
+
+
+
+      - step: 2
+
+        action:
+
+          activate_property_status
+
+
+
+      - step: 3
+
+        action:
+
+          enable_property_services
+
+
+
+      - step: 4
+
+        action:
+
+          register_property_as_live
+
+
+
+      - step: 5
+
+        action:
+
+          notify_customer
+
+
+
+    outputs:
+
+
+      - active_property
+
+      - operational_status
+
+
+
+    state_machine:
+
+
+      - SM-043 Property Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-043 devices_validated
+
+
+
+      produces:
+
+
+        - EVT-044 property_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-043 Property Activation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_validation
+
+        - property_ownership_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        block_activation_until_resolved
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - deactivate_property
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - activation_success_rate
+
+        - activation_duration
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-044 Portal Provisioning
+  # ==========================================================
+
+
+  - id: WF-044
+
+    name: portal_provisioning
+
+    title: Portal Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - portal_management
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+      classification:
+
+
+        business_process: customer_enablement
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Creates and configures customer portal access
+        based on subscription level and enabled services.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - tenant_creation
+
+        - user_permission_assignment
+
+        - portal_feature_activation
+
+        - dashboard_configuration
+
+
+
+      excludes:
+
+
+        - device_configuration
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-044 property_activated
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+      - active_subscription_exists
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - subscription_plan
+
+      - property_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_portal_workspace
+
+
+
+      - step: 2
+
+        action:
+
+          assign_customer_permissions
+
+
+
+      - step: 3
+
+        action:
+
+          enable_subscription_features
+
+
+
+      - step: 4
+
+        action:
+
+          configure_dashboard
+
+
+
+      - step: 5
+
+        action:
+
+          send_portal_invitation
+
+
+
+    outputs:
+
+
+      - portal_account
+
+      - portal_permissions
+
+
+
+    state_machine:
+
+
+      - SM-044 Portal Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-045 portal_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-044 Portal Provisioning
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 002_core_saas
+
+        - 015_crm_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - role_based_access_control
+
+        - tenant_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_portal_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - remove_portal_workspace
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - portal_activation_time
+
+        - active_customer_count
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-045 Customer Support Case Management
+  # ==========================================================
+
+
+  - id: WF-045
+
+    name: customer_support_case_management
+
+    title: Customer Support Case Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - support_operations
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+      classification:
+
+
+        business_process: support
+
+        criticality: operational_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Manages customer support requests,
+        diagnostics, communication and resolution tracking.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - support_case_creation
+
+        - issue_classification
+
+        - communication_tracking
+
+        - resolution_tracking
+
+
+
+      excludes:
+
+
+        - physical_service_visit
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-090 support_requested
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - support_agent
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_issue
+
+      - property_information
+
+      - device_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_support_case
+
+
+
+      - step: 2
+
+        action:
+
+          classify_issue
+
+
+
+      - step: 3
+
+        action:
+
+          collect_diagnostic_information
+
+
+
+      - step: 4
+
+        action:
+
+          assign_support_owner
+
+
+
+      - step: 5
+
+        action:
+
+          resolve_case
+
+
+
+      - step: 6
+
+        action:
+
+          close_case_and_record_solution
+
+
+
+    outputs:
+
+
+      - support_case
+
+      - resolution_record
+
+
+
+    state_machine:
+
+
+      - SM-045 Support Case Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-091 support_case_closed
+
+
+
+    orchestration:
+
+
+      - ORCH-045 Support Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 006_operations_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - customer_data_protection
+
+        - support_role_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_to_specialist
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - reopen_support_case
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - resolution_time
+
+        - customer_satisfaction
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-046 Remote Device Diagnostics
+  # ==========================================================
+
+
+  - id: WF-046
+
+    name: remote_device_diagnostics
+
+    title: Remote Device Diagnostics
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - operations
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+      classification:
+
+        business_process: device_support
+
+        criticality: operational_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Performs remote analysis of connected devices,
+        gateways and integrations to identify failures
+        without requiring physical intervention.
+
+
+
+    scope:
+
+      includes:
+
+        - device_health_analysis
+
+        - connectivity_testing
+
+        - integration_testing
+
+        - diagnostic_reporting
+
+
+      excludes:
+
+        - physical_device_repair
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-015 device_offline
+
+        - EVT-090 support_requested
+
+
+
+    preconditions:
+
+
+      - device_registered
+
+      - remote_access_authorized
+
+
+
+    actors:
+
+
+      - system
+
+      - support_agent
+
+
+
+    inputs:
+
+
+      - device_status
+
+      - telemetry_data
+
+      - integration_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_device_diagnostics
+
+
+
+      - step: 2
+
+        action:
+
+          analyze_device_state
+
+
+
+      - step: 3
+
+        action:
+
+          test_connectivity
+
+
+
+      - step: 4
+
+        action:
+
+          identify_root_cause
+
+
+
+      - step: 5
+
+        action:
+
+          generate_diagnostic_report
+
+
+
+    outputs:
+
+
+      - diagnostic_report
+
+      - recommended_action
+
+
+
+    state_machine:
+
+
+      - SM-046 Diagnostic Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-092 diagnostic_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-046 Remote Diagnostics
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - remote_operation_authorization
+
+        - encrypted_device_communication
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_failed_diagnostics
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - clear_diagnostic_session
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - diagnostic_success_rate
+
+        - mean_resolution_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-047 Maintenance & Firmware Campaign
+  # ==========================================================
+
+
+  - id: WF-047
+
+    name: maintenance_firmware_campaign
+
+    title: Maintenance & Firmware Campaign
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - maintenance
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+      classification:
+
+
+        business_process: platform_maintenance
+
+        criticality: operational_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Manages planned maintenance activities,
+        firmware updates and lifecycle management
+        of deployed devices.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - firmware_inventory
+
+        - update_planning
+
+        - update_execution
+
+        - maintenance_reporting
+
+
+
+      excludes:
+
+
+        - hardware_replacement
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-035 firmware_update_required
+
+
+
+    preconditions:
+
+
+      - device_online
+
+      - maintenance_window_available
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_employee
+
+
+
+    inputs:
+
+
+      - device_inventory
+
+      - firmware_versions
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          identify_outdated_devices
+
+
+
+      - step: 2
+
+        action:
+
+          create_maintenance_plan
+
+
+
+      - step: 3
+
+        action:
+
+          execute_updates
+
+
+
+      - step: 4
+
+        action:
+
+          validate_device_health
+
+
+
+      - step: 5
+
+        action:
+
+          close_maintenance_campaign
+
+
+
+    outputs:
+
+
+      - maintenance_report
+
+
+
+    state_machine:
+
+
+      - SM-047 Maintenance Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-093 maintenance_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-047 Maintenance Campaign
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - firmware_integrity_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_failed_update
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_firmware
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - update_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-048 Automation Lifecycle Management
+  # ==========================================================
+
+
+  - id: WF-048
+
+    name: automation_lifecycle_management
+
+    title: Automation Lifecycle Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - automation
+
+
+      owner:
+
+        module: 016_automation_engine
+
+
+      classification:
+
+
+        business_process: automation_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Creates, deploys, updates and manages
+        smart home automation rules across properties.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - automation_creation
+
+        - automation_updates
+
+        - automation_testing
+
+        - automation_activation
+
+        - automation_retirement
+
+
+
+      excludes:
+
+
+        - physical_device_installation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-050 automation_deployed
+
+        - customer_automation_change_requested
+
+
+
+    preconditions:
+
+
+      - devices_available
+
+      - automation_engine_active
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+      - operations_employee
+
+
+
+    inputs:
+
+
+      - automation_template
+
+      - property_configuration
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_automation_request
+
+
+
+      - step: 2
+
+        action:
+
+          create_or_update_rules
+
+
+
+      - step: 3
+
+        action:
+
+          bind_devices
+
+
+
+      - step: 4
+
+        action:
+
+          execute_test_run
+
+
+
+      - step: 5
+
+        action:
+
+          activate_automation
+
+
+
+    outputs:
+
+
+      - active_automation_set
+
+
+
+    state_machine:
+
+
+      - SM-048 Automation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-094 automation_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-048 Automation Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_permission_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        disable_failed_automation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_rule_version
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - automation_execution_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-049 Property Operations Monitoring
+  # ==========================================================
+
+
+  - id: WF-049
+
+    name: property_operations_monitoring
+
+    title: Property Operations Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - operations_monitoring
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+      classification:
+
+
+        business_process: property_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Provides continuous monitoring of SmartHellas
+        properties, devices and operational status.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - property_health_monitoring
+
+        - device_status_monitoring
+
+        - alert_generation
+
+        - operational_dashboard
+
+
+
+      excludes:
+
+
+        - customer_support_resolution
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_monitoring_cycle
+
+
+
+    preconditions:
+
+
+      - property_active
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - property_status
+
+      - device_health
+
+      - automation_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_property_metrics
+
+
+
+      - step: 2
+
+        action:
+
+          evaluate_health_rules
+
+
+
+      - step: 3
+
+        action:
+
+          generate_alerts
+
+
+
+      - step: 4
+
+        action:
+
+          update_operations_dashboard
+
+
+
+    outputs:
+
+
+      - property_health_status
+
+      - operational_alerts
+
+
+
+    state_machine:
+
+
+      - SM-049 Operations Monitoring Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-095 operational_alert_created
+
+
+
+    orchestration:
+
+
+      - ORCH-049 Property Monitoring
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+        - 016_automation_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_data_isolation
+
+        - monitoring_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_monitoring_incident
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - disable_false_positive_alert
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - property_uptime
+
+        - device_availability
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

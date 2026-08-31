@@ -1,0 +1,811 @@
+# ============================================================
+# KGS-003 — Workflow Catalog
+# Section 11 — Integration Catalog
+#
+# Version: 1.0
+#
+# Purpose:
+# Defines all internal and external integration contracts
+# used by SmartHellas.
+#
+# Source of Truth:
+# Canonical definition of integration boundaries.
+# ============================================================
+
+
+integrations:
+
+
+  # ==========================================================
+  # Metadata
+  # ==========================================================
+
+  metadata:
+
+    title: "Enterprise Integration Catalog"
+
+    short_name: "KGS-003-INT"
+
+    description: >
+      Defines integration contracts between SmartHellas
+      modules, external providers and platform services.
+
+    version: "1.0"
+
+    status: active
+
+    canonical: true
+
+    source_of_truth: true
+
+    owner: enterprise_architecture
+
+    tags:
+
+      - integrations
+
+      - api
+
+      - iot
+
+      - external_systems
+
+      - contracts
+
+
+
+  # ==========================================================
+  # Validation
+  # ==========================================================
+
+  validation:
+
+    unique_integration_ids: true
+
+    unique_integration_names: true
+
+    provider_required: true
+
+    authentication_required: true
+
+    interface_contract_required: true
+
+    security_definition_required: true
+
+    observability_required: true
+
+    dependency_definition_required: true
+
+    event_contract_required: true
+
+
+
+  # ==========================================================
+  # Integration Registry
+  # ==========================================================
+
+  integration_registry:
+
+
+    # ========================================================
+    # INT-001 TTLock Integration
+    # ========================================================
+
+    - id: INT-001
+
+      name: ttlock_integration
+
+      title: TTLock Smart Lock Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Provides automated smart lock control for guest
+        access management.
+
+
+      category:
+
+        - smart_lock
+
+        - access_control
+
+
+      direction:
+
+        type: bidirectional
+
+
+      provider:
+
+        name: TTLock
+
+        type: external_provider
+
+
+
+      authentication:
+
+        method:
+
+          - oauth2
+
+          - api_key
+
+        credential_storage:
+
+          vault_required: true
+
+
+
+      interface:
+
+        type: REST_API
+
+        protocol: HTTPS
+
+
+
+      operations:
+
+        - create_access_code
+
+        - update_access_code
+
+        - delete_access_code
+
+        - get_lock_status
+
+        - retrieve_access_logs
+
+
+
+      events:
+
+        consumes:
+
+          - EVT-023 door_code_requested
+
+
+        produces:
+
+          - EVT-024 door_code_generated
+
+
+
+      dependencies:
+
+        modules:
+
+          - 004_booking_lock_engine
+
+          - 005_integration_engine
+
+
+
+      security:
+
+        encryption_required: true
+
+        secret_management_required: true
+
+        audit_logging_required: true
+
+
+
+      error_handling:
+
+        strategy: retry_then_alert
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 3
+
+        backoff_strategy: exponential
+
+
+
+      observability:
+
+        logging_required: true
+
+        metrics_required: true
+
+        tracing_required: true
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # INT-002 Aqara Integration
+    # ========================================================
+
+    - id: INT-002
+
+      name: aqara_integration
+
+      title: Aqara Smart Home Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Integration with Aqara hubs and smart devices
+        for monitoring and automation.
+
+
+      category:
+
+        - iot
+
+        - smart_home
+
+
+      direction:
+
+        type: bidirectional
+
+
+
+      provider:
+
+        name: Aqara
+
+        type: external_provider
+
+
+
+      authentication:
+
+        method:
+
+          - oauth2
+
+
+        credential_storage:
+
+          vault_required: true
+
+
+
+      interface:
+
+        type: cloud_api
+
+        protocol: HTTPS
+
+
+
+      operations:
+
+        - register_device
+
+        - read_sensor_data
+
+        - control_device
+
+        - synchronize_device_state
+
+
+
+      events:
+
+        consumes:
+
+          - EVT-012 device_registered
+
+
+        produces:
+
+          - EVT-015 device_offline
+
+          - EVT-016 device_recovered
+
+
+
+      dependencies:
+
+        modules:
+
+          - 003_property_device_engine
+
+          - 005_integration_engine
+
+          - 006_operations_engine
+
+
+
+      security:
+
+        encryption_required: true
+
+        device_identity_required: true
+
+
+
+      error_handling:
+
+        strategy: retry_then_alert
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 5
+
+        backoff_strategy: exponential
+
+
+
+      observability:
+
+        logging_required: true
+
+        metrics_required: true
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # INT-003 Airbnb Integration
+    # ========================================================
+
+    - id: INT-003
+
+      name: airbnb_integration
+
+      title: Airbnb Booking Integration
+
+      version: 1.0
+
+      status: planned
+
+      description: >
+        Synchronizes booking information between Airbnb
+        and SmartHellas.
+
+
+      category:
+
+        - booking
+
+        - hospitality
+
+
+
+      direction:
+
+        type: inbound
+
+
+
+      provider:
+
+        name: Airbnb
+
+        type: external_provider
+
+
+
+      authentication:
+
+        method:
+
+          - oauth2
+
+
+
+      interface:
+
+        type: API
+
+        protocol: HTTPS
+
+
+
+      operations:
+
+        - synchronize_bookings
+
+        - retrieve_guest_information
+
+        - retrieve_checkin_data
+
+
+
+      events:
+
+        consumes:
+
+          - booking_created_external
+
+
+        produces:
+
+          - EVT-020 booking_created
+
+          - EVT-021 booking_confirmed
+
+
+
+      dependencies:
+
+        modules:
+
+          - 004_booking_lock_engine
+
+          - 005_integration_engine
+
+
+
+      security:
+
+        encryption_required: true
+
+        privacy_controls_required: true
+
+
+
+      error_handling:
+
+        strategy: retry_then_queue
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 5
+
+        backoff_strategy: exponential
+
+
+
+      observability:
+
+        logging_required: true
+
+        audit_required: true
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # INT-004 Payment Provider
+    # ========================================================
+
+    - id: INT-004
+
+      name: payment_provider
+
+      title: Payment Provider Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Handles payment processing and subscription billing.
+
+
+      category:
+
+        - payment
+
+        - billing
+
+
+
+      direction:
+
+        type: bidirectional
+
+
+
+      provider:
+
+        name: external_payment_provider
+
+        type: external_provider
+
+
+
+      authentication:
+
+        method:
+
+          - api_key
+
+
+        credential_storage:
+
+          vault_required: true
+
+
+
+      interface:
+
+        type: API
+
+        protocol: HTTPS
+
+
+
+      operations:
+
+        - create_payment
+
+        - verify_payment
+
+        - process_subscription
+
+
+
+      events:
+
+        produces:
+
+          - EVT-032 payment_received
+
+          - EVT-033 payment_failed
+
+
+
+      dependencies:
+
+        modules:
+
+          - 009_commerce_engine
+
+          - 002_core_saas
+
+
+
+      security:
+
+        pci_controls_required: true
+
+        encryption_required: true
+
+
+
+      error_handling:
+
+        strategy: retry_then_alert
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 3
+
+        backoff_strategy: exponential
+
+
+
+      observability:
+
+        logging_required: true
+
+        metrics_required: true
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # INT-005 Notification Provider
+    # ========================================================
+
+    - id: INT-005
+
+      name: notification_provider
+
+      title: Communication Provider Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Sends email, SMS and push notifications.
+
+
+      category:
+
+        - communication
+
+
+
+      direction:
+
+        type: outbound
+
+
+
+      provider:
+
+        name: notification_service
+
+        type: external_provider
+
+
+
+      authentication:
+
+        method:
+
+          - api_key
+
+
+
+      interface:
+
+        type: API
+
+        protocol: HTTPS
+
+
+
+      operations:
+
+        - send_email
+
+        - send_sms
+
+        - send_push_notification
+
+
+
+      events:
+
+        consumes:
+
+          - EVT-053 notification_created
+
+
+        produces:
+
+          - EVT-054 notification_sent
+
+
+
+      dependencies:
+
+        modules:
+
+          - 010_service_portal_engine
+
+          - 005_integration_engine
+
+
+
+      security:
+
+        encryption_required: true
+
+
+
+      error_handling:
+
+        strategy: retry_queue
+
+
+
+      retry_policy:
+
+        enabled: true
+
+        max_attempts: 5
+
+        backoff_strategy: exponential
+
+
+
+      observability:
+
+        logging_required: true
+
+        delivery_tracking_required: true
+
+
+
+      rules:
+
+        asynchronous: true
+
+        idempotent: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+

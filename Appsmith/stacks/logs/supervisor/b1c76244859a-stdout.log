@@ -35,3 +35,39 @@
 2026-06-29 08:42:42,993 INFO success: temporal entered RUNNING state, process has stayed up for > than 10 seconds (startsecs)
 2026-06-30 15:53:33,638 INFO reaped unknown pid 16646 (exit status 1)
 2026-06-30 15:58:45,763 INFO reaped unknown pid 16657 (exit status 1)
+2026-08-22 18:41:39,115 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2026-08-22 18:41:39,117 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/backend.conf" during parsing
+2026-08-22 18:41:39,118 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/editor.conf" during parsing
+2026-08-22 18:41:39,120 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/keycloak.conf" during parsing
+2026-08-22 18:41:39,121 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/postgres.conf" during parsing
+2026-08-22 18:41:39,122 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/redis.conf" during parsing
+2026-08-22 18:41:39,124 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/rts.conf" during parsing
+2026-08-22 18:41:39,125 INFO Included extra file "/tmp/appsmith/supervisor-conf.d/temporal.conf" during parsing
+2026-08-22 18:41:39,436 INFO RPC interface 'supervisor' initialized
+2026-08-22 18:41:39,439 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2026-08-22 18:41:39,440 INFO supervisord started with pid 1
+2026-08-22 18:41:40,446 INFO spawned: 'stdout' with pid 1720
+2026-08-22 18:41:40,474 INFO spawned: 'postgres' with pid 1721
+2026-08-22 18:41:40,494 INFO spawned: 'redis' with pid 1723
+2026-08-22 18:41:40,519 INFO spawned: 'keycloak' with pid 1729
+2026-08-22 18:41:40,556 INFO spawned: 'temporal' with pid 1766
+2026-08-22 18:41:40,584 INFO spawned: 'rts' with pid 1808
+2026-08-22 18:41:40,607 INFO spawned: 'backend' with pid 1827
+2026-08-22 18:41:40,686 INFO spawned: 'editor' with pid 1850
+2026-08-22 18:41:40,691 WARN exited: backend (exit status 1; not expected)
+2026-08-22 18:41:40,712 INFO success: redis entered RUNNING state, process has stayed up for > than 0 seconds (startsecs)
+2026-08-22 18:41:40,713 INFO success: rts entered RUNNING state, process has stayed up for > than 0 seconds (startsecs)
+2026-08-22 18:41:40,714 INFO success: editor entered RUNNING state, process has stayed up for > than 0 seconds (startsecs)
+2026-08-22 18:41:40,842 INFO reaped unknown pid 82 (exit status 0)
+2026-08-22 18:41:41,726 INFO success: stdout entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-22 18:41:41,732 INFO success: postgres entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-22 18:41:41,744 INFO spawned: 'backend' with pid 1978
+2026-08-22 18:41:41,764 WARN exited: backend (exit status 1; not expected)
+2026-08-22 18:41:43,917 INFO spawned: 'backend' with pid 2016
+2026-08-22 18:41:43,941 WARN exited: backend (exit status 1; not expected)
+2026-08-22 18:41:47,355 INFO spawned: 'backend' with pid 2070
+2026-08-22 18:41:47,389 WARN exited: backend (exit status 1; not expected)
+2026-08-22 18:41:47,399 INFO gave up: backend entered FATAL state, too many start retries too quickly
+2026-08-22 18:41:50,514 INFO success: keycloak entered RUNNING state, process has stayed up for > than 10 seconds (startsecs)
+2026-08-22 18:41:50,744 INFO success: temporal entered RUNNING state, process has stayed up for > than 10 seconds (startsecs)
+2026-08-29 05:20:27,346 INFO reaped unknown pid 21178 (exit status 1)

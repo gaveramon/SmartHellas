@@ -1,0 +1,212 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-055 Smart Climate Control
+  # ==========================================================
+
+
+  - id: WF-055
+
+    name: smart_climate_control
+
+    title: Smart Climate Control
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - climate_automation
+
+
+
+      owner:
+
+
+        module: 016_automation_engine
+
+
+
+      classification:
+
+
+        business_process: energy_saving
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Controls climate behavior using occupancy,
+        temperature and energy information.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - temperature_monitoring
+
+        - airco_control
+
+        - energy_saving_rules
+
+        - occupancy_based_control
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-052 normalized_provider_event
+
+
+
+    preconditions:
+
+
+      - climate_devices_available
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - temperature_data
+
+      - occupancy_data
+
+      - energy_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          evaluate_climate_rules
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_required_action
+
+
+
+      - step: 3
+
+        action:
+
+          execute_climate_command
+
+
+
+      - step: 4
+
+        action:
+
+          validate_result
+
+
+
+    outputs:
+
+
+      - climate_state
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 005_integration_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_authorization
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - energy_savings
+
+        - climate_rule_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

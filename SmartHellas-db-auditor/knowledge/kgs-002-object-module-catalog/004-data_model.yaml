@@ -1,0 +1,204 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: data_model
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# DATA MODEL
+# ============================================================
+
+
+data_model:
+
+
+  description: >
+
+    Canonical representation of entities, tables,
+    relationships and database structures.
+
+
+
+  entities:
+
+
+    tenant:
+
+
+      module:
+        "002"
+
+
+
+      tables:
+
+
+        - saas.tenants
+
+
+
+    property:
+
+
+      module:
+        "003"
+
+
+
+      tables:
+
+
+        - property.properties
+
+        - property.rooms
+
+
+
+    device:
+
+
+      module:
+        "003"
+
+
+
+      tables:
+
+
+        - device.devices
+
+        - device.capabilities
+
+
+
+    booking:
+
+
+      module:
+        "004"
+
+
+
+      tables:
+
+
+        - booking.bookings
+
+
+
+    access_control:
+
+
+      module:
+        "004"
+
+
+
+      tables:
+
+
+        - lock.access_codes
+
+
+
+    customer:
+
+
+      module:
+        "015"
+
+
+
+      tables:
+
+
+        - crm.customers
+
+        - crm.interactions
+
+
+
+    order:
+
+
+      module:
+        "009"
+
+
+
+      tables:
+
+
+        - commerce.orders
+
+
+
+    audit:
+
+
+      module:
+        "013"
+
+
+
+      tables:
+
+
+        - audit.events
+
+
+
+
+  relationships:
+
+
+    tenant_property:
+
+
+      type:
+
+        one_to_many
+
+
+
+    property_room:
+
+
+      type:
+
+        one_to_many
+
+
+
+    room_device:
+
+
+      type:
+
+        one_to_many
+
+
+
+    booking_property:
+
+
+      type:
+
+        many_to_one
+
+
+
+    customer_property:
+
+
+      type:
+
+        many_to_many

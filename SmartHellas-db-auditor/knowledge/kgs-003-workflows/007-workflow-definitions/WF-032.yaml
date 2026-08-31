@@ -1,0 +1,124 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-032 Order Processing
+  # ==========================================================
+
+  - id: WF-032
+
+    name: order_processing
+
+    title: Order Processing
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - commerce
+
+      owner:
+        module: 009_commerce_engine
+
+    purpose:
+
+      description: >
+        Converts an approved shopping cart into
+        a SmartHellas order and starts downstream workflows.
+
+    scope:
+
+      includes:
+        - order_creation
+        - order_validation
+        - workflow_initialization
+
+      excludes:
+        - shipment
+
+    trigger:
+
+      event:
+        - EVT-031 checkout_completed
+
+    preconditions:
+      - payment_pending_or_authorized
+
+    actors:
+      - customer
+      - system
+
+    inputs:
+      - shopping_cart
+
+    workflow_steps:
+
+      - step: 1
+        action: validate_order
+
+      - step: 2
+        action: create_order
+
+      - step: 3
+        action: allocate_order_number
+
+      - step: 4
+        action: trigger_inventory_workflow
+
+      - step: 5
+        action: trigger_preconfiguration_workflow
+
+    outputs:
+      - order
+
+    state_machine:
+      - SM-031 Order Lifecycle
+
+    events:
+
+      produces:
+        - EVT-032 order_created
+
+    orchestration:
+      - ORCH-032 Order Processing
+
+    dependencies:
+
+      modules:
+        - 009_commerce_engine
+        - 007_preconfig_engine
+        - 008_logistics_engine
+
+    integrations:
+      - Payment Provider
+
+    security:
+
+      requirements:
+        - order_validation_required
+
+    error_handling:
+
+      strategy:
+        rollback_order
+
+    compensation:
+
+      actions:
+        - cancel_created_order
+
+    observability:
+
+      metrics:
+        - order_processing_time
+
+    audit:
+
+      enabled: true
+
+    lifecycle:
+
+      policy:
+        LIFE-001

@@ -1,0 +1,2282 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-050 Integration Registration
+  # ==========================================================
+
+
+  - id: WF-050
+
+    name: integration_registration
+
+    title: Integration Registration
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - integration_management
+
+
+      owner:
+
+        module: 005_integration_engine
+
+
+      classification:
+
+        business_process: platform_connectivity
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Registers and validates external smart home
+        integrations such as Aqara, TTLock and Shelly
+        within the SmartHellas platform.
+
+
+
+    scope:
+
+      includes:
+
+        - provider_registration
+
+        - credential_management
+
+        - api_validation
+
+        - capability_discovery
+
+
+      excludes:
+
+        - device_configuration
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - integration_setup_requested
+
+
+
+    preconditions:
+
+
+      - customer_authorized
+
+      - provider_supported
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - provider_information
+
+      - authentication_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_provider
+
+
+
+      - step: 2
+
+        action:
+
+          store_credentials_securely
+
+
+
+      - step: 3
+
+        action:
+
+          authenticate_provider_connection
+
+
+
+      - step: 4
+
+        action:
+
+          discover_provider_capabilities
+
+
+
+      - step: 5
+
+        action:
+
+          activate_integration
+
+
+
+    outputs:
+
+
+      - active_integration
+
+
+
+    state_machine:
+
+
+      - SM-050 Integration Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-050 integration_registered
+
+
+
+    orchestration:
+
+
+      - ORCH-050 Integration Setup
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - encrypted_credentials
+
+        - api_permission_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        disable_failed_integration
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_provider_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - integration_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+  # ==========================================================
+  # WF-051 Device Provider Synchronization
+  # ==========================================================
+
+
+  - id: WF-051
+
+    name: device_provider_synchronization
+
+    title: Device Provider Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - device_integration
+
+
+
+      owner:
+
+
+        module: 005_integration_engine
+
+
+
+      classification:
+
+
+        business_process: device_sync
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Synchronizes external device states from
+        Aqara, TTLock and Shelly into SmartHellas.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - device_discovery
+
+        - state_synchronization
+
+        - capability_update
+
+        - telemetry_import
+
+
+
+      excludes:
+
+
+        - automation_execution
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-050 integration_registered
+
+        - scheduled_sync_cycle
+
+
+
+    preconditions:
+
+
+      - integration_active
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - provider_device_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          retrieve_provider_devices
+
+
+
+      - step: 2
+
+        action:
+
+          match_device_identity
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_device_state
+
+
+
+      - step: 4
+
+        action:
+
+          update_capabilities
+
+
+
+      - step: 5
+
+        action:
+
+          store_telemetry
+
+
+
+    outputs:
+
+
+      - synchronized_devices
+
+
+
+    state_machine:
+
+
+      - SM-051 Synchronization Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-051 device_state_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-051 Device Synchronization
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 003_property_device_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        Aqara:
+
+
+          capabilities:
+
+            - sensors
+
+            - hubs
+
+            - climate
+
+
+        TTLock:
+
+
+          capabilities:
+
+            - locks
+
+            - access_control
+
+
+        Shelly:
+
+
+          capabilities:
+
+            - relays
+
+            - power_metering
+
+            - energy_monitoring
+
+            - switches
+
+            - hvac_control
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_identity_validation
+
+        - secure_api_access
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_provider_sync
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - mark_device_state_unknown
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - synchronization_latency
+
+        - provider_availability
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-052 Webhook Event Processing
+  # ==========================================================
+
+
+  - id: WF-052
+
+    name: webhook_event_processing
+
+    title: Webhook Event Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - integration_events
+
+
+      owner:
+
+        module: 005_integration_engine
+
+
+      classification:
+
+        business_process: event_ingestion
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Receives, validates and processes external events
+        from Aqara, TTLock and Shelly integrations.
+
+
+
+    scope:
+
+      includes:
+
+        - webhook_receiving
+
+        - event_validation
+
+        - event_normalization
+
+        - event_routing
+
+
+      excludes:
+
+        - device_command_execution
+
+
+
+    trigger:
+
+      webhook:
+
+        - provider_event_received
+
+
+
+    preconditions:
+
+
+      - integration_registered
+
+      - webhook_endpoint_active
+
+
+
+    actors:
+
+
+      - external_provider
+
+      - system
+
+
+
+    inputs:
+
+
+      - provider_event_payload
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          receive_webhook
+
+
+
+      - step: 2
+
+        action:
+
+          validate_signature
+
+
+
+      - step: 3
+
+        action:
+
+          normalize_event_format
+
+
+
+      - step: 4
+
+        action:
+
+          map_device_identity
+
+
+
+      - step: 5
+
+        action:
+
+          publish_internal_event
+
+
+
+    outputs:
+
+
+      - internal_event
+
+
+
+    state_machine:
+
+
+      - SM-052 Event Processing Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-052 normalized_provider_event
+
+
+
+    orchestration:
+
+
+      - ORCH-052 Event Processing
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 006_operations_engine
+
+        - 016_automation_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - webhook_signature_validation
+
+        - payload_sanitization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        quarantine_invalid_events
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - replay_event_processing
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - webhook_success_rate
+
+        - event_processing_latency
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-053 Provider Command Execution
+  # ==========================================================
+
+
+  - id: WF-053
+
+    name: provider_command_execution
+
+    title: Provider Command Execution
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - device_control
+
+
+
+      owner:
+
+
+        module: 005_integration_engine
+
+
+
+      classification:
+
+
+        business_process: device_control
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Executes validated commands from SmartHellas
+        automations and portal actions towards external
+        device providers.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - command_validation
+
+        - provider_translation
+
+        - command_execution
+
+        - result_tracking
+
+
+
+      excludes:
+
+
+        - automation_rule_creation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-060 device_command_requested
+
+
+
+    preconditions:
+
+
+      - device_online
+
+      - permission_validated
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - device_command
+
+      - target_device
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_command
+
+
+
+      - step: 2
+
+        action:
+
+          translate_provider_command
+
+
+
+      - step: 3
+
+        action:
+
+          execute_provider_api_call
+
+
+
+      - step: 4
+
+        action:
+
+          validate_response
+
+
+
+      - step: 5
+
+        action:
+
+          update_device_state
+
+
+
+    outputs:
+
+
+      - command_result
+
+
+
+    state_machine:
+
+
+      - SM-053 Command Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-053 command_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-053 Device Command Execution
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - command_authorization
+
+        - device_permission_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_failed_command
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revert_device_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - command_success_rate
+
+        - execution_latency
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-054 Shelly Energy Monitoring
+  # ==========================================================
+
+
+  - id: WF-054
+
+    name: shelly_energy_monitoring
+
+    title: Shelly Energy Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - energy_management
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: energy_optimization
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Collects and analyzes energy measurements from
+        Shelly devices to optimize Airbnb energy usage.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - power_measurement
+
+        - consumption_tracking
+
+        - energy_reporting
+
+        - anomaly_detection
+
+
+
+      excludes:
+
+
+        - billing_calculation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-051 device_state_updated
+
+
+
+    preconditions:
+
+
+      - shelly_device_registered
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - energy_telemetry
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_energy_data
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_consumption
+
+
+
+      - step: 3
+
+        action:
+
+          detect_abnormal_usage
+
+
+
+      - step: 4
+
+        action:
+
+          update_energy_dashboard
+
+
+
+    outputs:
+
+
+      - energy_report
+
+      - energy_alert
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - telemetry_protection
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - energy_data_accuracy
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-055 Smart Climate Control
+  # ==========================================================
+
+
+  - id: WF-055
+
+    name: smart_climate_control
+
+    title: Smart Climate Control
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - climate_automation
+
+
+
+      owner:
+
+
+        module: 016_automation_engine
+
+
+
+      classification:
+
+
+        business_process: energy_saving
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Controls climate behavior using occupancy,
+        temperature and energy information.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - temperature_monitoring
+
+        - airco_control
+
+        - energy_saving_rules
+
+        - occupancy_based_control
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-052 normalized_provider_event
+
+
+
+    preconditions:
+
+
+      - climate_devices_available
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - temperature_data
+
+      - occupancy_data
+
+      - energy_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          evaluate_climate_rules
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_required_action
+
+
+
+      - step: 3
+
+        action:
+
+          execute_climate_command
+
+
+
+      - step: 4
+
+        action:
+
+          validate_result
+
+
+
+    outputs:
+
+
+      - climate_state
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 005_integration_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_authorization
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - energy_savings
+
+        - climate_rule_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-056 Guest Access Automation
+  # ==========================================================
+
+
+  - id: WF-056
+
+    name: guest_access_automation
+
+    title: Guest Access Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - guest_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+      classification:
+
+        business_process: guest_access
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Automatically manages guest access lifecycle
+        from booking confirmation until checkout.
+
+
+
+    scope:
+
+      includes:
+
+        - booking_validation
+
+        - access_permission_creation
+
+        - lock_assignment
+
+        - access_expiration
+
+
+      excludes:
+
+        - physical_lock_installation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - booking_confirmed
+
+
+
+    preconditions:
+
+
+      - property_active
+
+      - smart_lock_available
+
+      - guest_information_available
+
+
+
+    actors:
+
+
+      - guest
+
+      - property_owner
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_information
+
+      - guest_information
+
+      - property_lock_configuration
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_booking
+
+
+
+      - step: 2
+
+        action:
+
+          identify_property_lock
+
+
+
+      - step: 3
+
+        action:
+
+          request_access_creation
+
+
+
+      - step: 4
+
+        action:
+
+          schedule_access_period
+
+
+
+      - step: 5
+
+        action:
+
+          monitor_access_status
+
+
+
+    outputs:
+
+
+      - guest_access_permission
+
+
+
+    state_machine:
+
+
+      - SM-056 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-056 guest_access_requested
+
+
+
+    orchestration:
+
+
+      - ORCH-056 Guest Access Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - TTLock
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - access_permission_validation
+
+        - guest_identity_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        manual_access_review
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_pending_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - access_creation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-057 Automatic Door Code Generation
+  # ==========================================================
+
+
+  - id: WF-057
+
+    name: automatic_door_code_generation
+
+    title: Automatic Door Code Generation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - smart_lock
+
+
+
+      owner:
+
+
+        module: 004_booking_lock_engine
+
+
+
+      classification:
+
+
+        business_process: access_security
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Generates secure temporary guest door codes
+        based on booking dates and property rules.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - code_generation
+
+        - expiration_rules
+
+        - lock_assignment
+
+        - security_validation
+
+
+
+      excludes:
+
+
+        - guest_notification
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-056 guest_access_requested
+
+
+
+    preconditions:
+
+
+      - valid_booking
+
+      - ttlock_connected
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking_period
+
+      - guest_identifier
+
+      - lock_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          generate_secure_code
+
+
+
+      - step: 2
+
+        action:
+
+          validate_code_rules
+
+
+
+      - step: 3
+
+        action:
+
+          send_code_to_ttlock
+
+
+
+      - step: 4
+
+        action:
+
+          confirm_lock_activation
+
+
+
+    outputs:
+
+
+      - guest_access_code
+
+
+
+    state_machine:
+
+
+      - SM-057 Access Code Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-057 access_code_created
+
+
+
+    orchestration:
+
+
+      - ORCH-057 Door Code Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - TTLock
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - encrypted_access_codes
+
+        - audit_access_changes
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        regenerate_code
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_generated_code
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - code_generation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-058 Guest Notification
+  # ==========================================================
+
+
+  - id: WF-058
+
+    name: guest_notification
+
+    title: Guest Notification
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - communication
+
+
+
+      owner:
+
+
+        module: 015_crm_engine
+
+
+
+      classification:
+
+
+        business_process: guest_communication
+
+        criticality: operational_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Sends automated guest communication including
+        access instructions and door codes.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - message_generation
+
+        - delivery
+
+        - reminder_notifications
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-057 access_code_created
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          generate_guest_message
+
+
+
+      - step: 2
+
+        action:
+
+          insert_access_information
+
+
+
+      - step: 3
+
+        action:
+
+          send_notification
+
+
+
+      - step: 4
+
+        action:
+
+          track_delivery
+
+
+
+    outputs:
+
+
+      - notification_status
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 015_crm_engine
+
+        - 004_booking_lock_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Email Provider
+
+        - Messaging Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - prevent_code_exposure
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-059 Advanced Automation Orchestration
+  # ==========================================================
+
+
+  - id: WF-059
+
+    name: advanced_automation_orchestration
+
+    title: Advanced Automation Orchestration
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - automation_orchestration
+
+
+
+      owner:
+
+
+        module: 016_automation_engine
+
+
+
+      classification:
+
+
+        business_process: smart_property_management
+
+        criticality: business_critical
+
+        ssot: true

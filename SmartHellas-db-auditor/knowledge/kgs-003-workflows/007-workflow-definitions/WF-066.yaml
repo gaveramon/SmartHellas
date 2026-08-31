@@ -1,0 +1,272 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-066 AI Energy Optimization Recommendations
+  # ==========================================================
+
+
+  - id: WF-066
+
+    name: ai_energy_optimization_recommendations
+
+    title: AI Energy Optimization Recommendations
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - artificial_intelligence
+
+        - energy_optimization
+
+
+      owner:
+
+        module: 016_automation_engine
+
+
+      classification:
+
+        business_process: energy_intelligence
+
+        criticality: business_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+      description: >
+        Analyzes energy consumption patterns and generates
+        optimization recommendations for Airbnb properties.
+
+
+
+    scope:
+
+      includes:
+
+        - energy_pattern_analysis
+
+        - anomaly_detection
+
+        - optimization_recommendations
+
+        - automation_suggestions
+
+
+      excludes:
+
+        - automatic billing_adjustment
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - energy_data_available
+
+        - scheduled_ai_analysis
+
+
+
+    preconditions:
+
+
+      - energy_data_available
+
+      - property_active
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - energy_measurements
+
+      - occupancy_data
+
+      - climate_data
+
+      - automation_history
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_energy_history
+
+
+
+      - step: 2
+
+        action:
+
+          analyze_consumption_patterns
+
+
+
+      - step: 3
+
+        action:
+
+          detect_optimization_opportunities
+
+
+
+      - step: 4
+
+        action:
+
+          generate_recommendations
+
+
+
+      - step: 5
+
+        action:
+
+          present_recommendations
+
+
+
+    outputs:
+
+
+      - energy_recommendation
+
+      - optimization_report
+
+
+
+    state_machine:
+
+
+      - SM-066 AI Analysis Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-068 recommendation_generated
+
+
+
+    orchestration:
+
+
+      - ORCH-066 AI Energy Analysis
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Shelly Integration
+
+      - Aqara Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - anonymized_usage_analysis
+
+        - customer_data_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        fallback_to_rule_based_analysis
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - discard_invalid_prediction
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - recommendation_accuracy
+
+        - estimated_energy_savings
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

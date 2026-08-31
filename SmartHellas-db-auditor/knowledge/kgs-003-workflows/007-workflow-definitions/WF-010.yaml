@@ -1,0 +1,257 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-010 Device Preparation
+  # ==========================================================
+
+
+  - id: WF-010
+
+    name: device_preparation
+
+    title: Device Preparation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - device_management
+
+
+      owner:
+
+        module: 007_preconfig_engine
+
+
+
+    purpose:
+
+      description:
+
+        Prepares purchased devices before shipment
+        including labeling, configuration and documentation.
+
+
+
+    scope:
+
+      includes:
+
+        - device_inventory_check
+
+        - device_label_generation
+
+        - qr_generation
+
+        - preparation_status_tracking
+
+
+
+      excludes:
+
+        - customer_installation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-031 order_confirmed
+
+
+
+    preconditions:
+
+
+      - payment_completed
+
+      - inventory_available
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_employee
+
+
+
+    inputs:
+
+
+      - order
+
+      - device_list
+
+      - property_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_required_devices
+
+
+
+      - step: 2
+
+        action:
+
+          assign_devices_to_property
+
+
+
+      - step: 3
+
+        action:
+
+          generate_room_labels
+
+
+
+      - step: 4
+
+        action:
+
+          generate_device_qr_codes
+
+
+
+      - step: 5
+
+        action:
+
+          create_installation_package
+
+
+
+    outputs:
+
+
+      - prepared_device_package
+
+
+
+    state_machine:
+
+
+      - SM-010 Device Preparation Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-031 order_confirmed
+
+
+
+      produces:
+
+
+        - EVT-032 device_preparation_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-010 Device Preparation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 007_preconfig_engine
+
+        - 008_logistics_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations:
+
+
+      - Label Provider
+
+      - QR Generator
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - device_assignment_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        quarantine_invalid_device
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - release_device_assignment
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - preparation_completion_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

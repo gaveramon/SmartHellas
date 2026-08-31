@@ -1,0 +1,255 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-067 AI Property Insights Generation
+  # ==========================================================
+
+
+  - id: WF-067
+
+    name: ai_property_insights_generation
+
+    title: AI Property Insights Generation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - property_intelligence
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: property_analytics
+
+        criticality: business_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Generates operational insights about property
+        performance, device reliability and guest usage.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - property_analysis
+
+        - device_health_insights
+
+        - usage_patterns
+
+        - improvement_suggestions
+
+
+
+      excludes:
+
+
+        - autonomous property changes
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_insight_generation
+
+
+
+    preconditions:
+
+
+      - operational_data_available
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - property_metrics
+
+      - device_history
+
+      - guest_activity_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          aggregate_property_data
+
+
+
+      - step: 2
+
+        action:
+
+          analyze_patterns
+
+
+
+      - step: 3
+
+        action:
+
+          generate_property_score
+
+
+
+      - step: 4
+
+        action:
+
+          create_insight_report
+
+
+
+    outputs:
+
+
+      - property_insight_report
+
+
+
+    state_machine:
+
+
+      - SM-067 Insight Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-069 insight_generated
+
+
+
+    orchestration:
+
+
+      - ORCH-067 Property Intelligence
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations: []
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_data_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_analysis
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - invalidate_report
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - insight_generation_time
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

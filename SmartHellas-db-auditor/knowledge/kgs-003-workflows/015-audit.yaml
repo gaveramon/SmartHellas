@@ -1,0 +1,481 @@
+# ============================================================
+# KGS-003 — Workflow Catalog
+# Section 15 — Audit Catalog
+#
+# Version: 1.0
+#
+# Purpose:
+# Defines audit governance for workflows, events,
+# orchestrations and integrations.
+#
+# Source of Truth:
+# Canonical workflow audit model.
+# ============================================================
+
+
+audit:
+
+
+  # ==========================================================
+  # Metadata
+  # ==========================================================
+
+  metadata:
+
+    title: "Enterprise Workflow Audit Catalog"
+
+    short_name: "KGS-003-AUDIT"
+
+    description: >
+      Defines audit requirements, logging, traceability
+      and governance controls for workflow execution.
+
+    version: "1.0"
+
+    status: active
+
+    canonical: true
+
+    source_of_truth: true
+
+    owner: enterprise_architecture
+
+    tags:
+
+      - audit
+
+      - governance
+
+      - compliance
+
+      - traceability
+
+
+
+  # ==========================================================
+  # Validation
+  # ==========================================================
+
+  validation:
+
+    unique_audit_ids: true
+
+    object_reference_required: true
+
+    audit_event_required: true
+
+    retention_policy_required: true
+
+    access_control_required: true
+
+    compliance_mapping_required: true
+
+
+
+  # ==========================================================
+  # Audit Registry
+  # ==========================================================
+
+  audit_registry:
+
+
+    # ========================================================
+    # AUD-001 Workflow Execution Audit
+    # ========================================================
+
+    - id: AUD-001
+
+      name: workflow_execution_audit
+
+      title: Workflow Execution Audit
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Records every workflow execution and outcome.
+
+
+      object_type:
+
+        - workflow
+
+        - orchestration
+
+
+      audit_events:
+
+
+        - workflow_started
+
+        - workflow_step_completed
+
+        - workflow_failed
+
+        - workflow_completed
+
+
+
+      retention:
+
+        period:
+
+          years: 7
+
+
+        immutable: true
+
+
+
+      access_control:
+
+        roles:
+
+          - system_admin
+
+          - auditor
+
+          - support
+
+
+
+      compliance:
+
+        requirements:
+
+          - traceability
+
+          - accountability
+
+
+
+      reporting:
+
+        reports:
+
+          - workflow_execution_report
+
+          - workflow_failure_report
+
+
+
+      rules:
+
+        execution_id_required: true
+
+        correlation_id_required: true
+
+        timestamp_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # AUD-002 Event Audit
+    # ========================================================
+
+    - id: AUD-002
+
+      name: event_audit
+
+      title: Event Audit Trail
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Tracks creation, publishing and consumption of
+        domain events.
+
+
+      object_type:
+
+        - event
+
+
+
+      audit_events:
+
+
+        - event_created
+
+        - event_published
+
+        - event_consumed
+
+        - event_failed
+
+
+
+      retention:
+
+        period:
+
+          years: 7
+
+
+        immutable: true
+
+
+
+      access_control:
+
+        roles:
+
+          - auditor
+
+          - system_admin
+
+
+
+      compliance:
+
+        requirements:
+
+          - event_traceability
+
+          - data_integrity
+
+
+
+      reporting:
+
+        reports:
+
+          - event_flow_report
+
+          - failed_event_report
+
+
+
+      rules:
+
+        event_id_required: true
+
+        correlation_id_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # AUD-003 Integration Audit
+    # ========================================================
+
+    - id: AUD-003
+
+      name: integration_audit
+
+      title: Integration Audit Trail
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Records external integration communication,
+        failures and responses.
+
+
+      object_type:
+
+        - integration
+
+
+
+      audit_events:
+
+
+        - integration_called
+
+        - integration_success
+
+        - integration_failed
+
+        - authentication_failed
+
+
+
+      retention:
+
+        period:
+
+          years: 7
+
+
+        immutable: true
+
+
+
+      access_control:
+
+        roles:
+
+          - system_admin
+
+          - security_admin
+
+          - auditor
+
+
+
+      compliance:
+
+        requirements:
+
+          - security_logging
+
+          - external_access_tracking
+
+
+
+      reporting:
+
+        reports:
+
+          - integration_health_report
+
+          - security_audit_report
+
+
+
+      rules:
+
+        credentials_must_not_be_logged: true
+
+        request_response_tracking_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # AUD-004 Change Audit
+    # ========================================================
+
+    - id: AUD-004
+
+      name: architecture_change_audit
+
+      title: Architecture Change Audit
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Tracks changes to workflows, events,
+        orchestrations and integrations.
+
+
+      object_type:
+
+        - workflow
+
+        - event
+
+        - orchestration
+
+        - integration
+
+
+
+      audit_events:
+
+
+        - object_created
+
+        - object_updated
+
+        - object_deprecated
+
+        - object_retired
+
+
+
+      retention:
+
+        period:
+
+          years: 10
+
+
+        immutable: true
+
+
+
+      access_control:
+
+        roles:
+
+          - enterprise_architect
+
+          - auditor
+
+
+
+      compliance:
+
+        requirements:
+
+          - change_management
+
+          - approval_tracking
+
+
+
+      reporting:
+
+        reports:
+
+          - architecture_change_report
+
+          - version_history_report
+
+
+
+      rules:
+
+        approval_required_for_production_change: true
+
+        previous_version_required: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null

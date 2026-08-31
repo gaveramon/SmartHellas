@@ -1,0 +1,505 @@
+# ============================================================
+# KGS-003 — Workflow Catalog
+# Section 13 — Validation Catalog
+#
+# Version: 1.0
+#
+# Purpose:
+# Defines validation rules for workflow architecture
+# integrity and consistency.
+#
+# Source of Truth:
+# Canonical workflow validation model.
+# ============================================================
+
+
+validation:
+
+
+  # ==========================================================
+  # Metadata
+  # ==========================================================
+
+  metadata:
+
+    title: "Enterprise Workflow Validation Catalog"
+
+    short_name: "KGS-003-VAL"
+
+    description: >
+      Defines validation rules used to verify workflow,
+      event, orchestration and integration consistency.
+
+    version: "1.0"
+
+    status: active
+
+    canonical: true
+
+    source_of_truth: true
+
+    owner: enterprise_architecture
+
+    tags:
+
+      - validation
+
+      - workflow
+
+      - quality
+
+      - auditor
+
+
+
+  # ==========================================================
+  # Validation Rules
+  # ==========================================================
+
+  validation_rules:
+
+
+    unique_ids:
+
+      enabled: true
+
+      description: >
+        Every workflow object must have a unique identifier.
+
+
+
+    reference_integrity:
+
+      enabled: true
+
+      description: >
+        All references between workflows, events,
+        states and integrations must exist.
+
+
+
+    event_contract_validation:
+
+      enabled: true
+
+      description: >
+        Events must have valid producers and consumers.
+
+
+
+    dependency_validation:
+
+      enabled: true
+
+      description: >
+        Dependencies must comply with architecture rules.
+
+
+
+    state_transition_validation:
+
+      enabled: true
+
+      description: >
+        Workflow transitions must match registered
+        state machines.
+
+
+
+    integration_contract_validation:
+
+      enabled: true
+
+      description: >
+        Integration operations must match defined contracts.
+
+
+
+  # ==========================================================
+  # Validation Registry
+  # ==========================================================
+
+  validation_registry:
+
+
+    # ========================================================
+    # VAL-001 Missing Event Consumer
+    # ========================================================
+
+    - id: VAL-001
+
+      name: missing_event_consumer
+
+      title: Event must have consumer
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Ensures every produced event has at least one
+        registered consumer.
+
+
+      category:
+
+        - event_contract
+
+
+      scope:
+
+        object:
+
+          - event
+
+
+      target:
+
+        type: event_registry
+
+
+      condition:
+
+        rule:
+
+          consumer_count:
+
+            minimum: 1
+
+
+      severity:
+
+        high
+
+
+      remediation:
+
+        action:
+
+          add_event_consumer
+
+
+
+      rules:
+
+        blocking: true
+
+        automated_fix: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # VAL-002 Invalid Workflow Reference
+    # ========================================================
+
+    - id: VAL-002
+
+      name: invalid_workflow_reference
+
+      title: Workflow Reference Must Exist
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Ensures orchestration definitions only reference
+        existing workflows.
+
+
+      category:
+
+        - structural
+
+        - workflow
+
+
+      scope:
+
+        object:
+
+          - orchestration
+
+
+      target:
+
+        type: workflow_registry
+
+
+      condition:
+
+        rule:
+
+          referenced_workflow_exists: true
+
+
+      severity:
+
+        critical
+
+
+      remediation:
+
+        action:
+
+          update_reference
+
+
+
+      rules:
+
+        blocking: true
+
+        automated_fix: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # VAL-003 Circular Dependency Detection
+    # ========================================================
+
+    - id: VAL-003
+
+      name: circular_dependency_detection
+
+      title: Circular Dependencies Forbidden
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Prevents circular dependencies between workflow
+        components.
+
+
+      category:
+
+        - dependency
+
+
+      scope:
+
+        object:
+
+          - dependency
+
+
+      target:
+
+        type: dependency_graph
+
+
+      condition:
+
+        rule:
+
+          cycle_detected: false
+
+
+      severity:
+
+        critical
+
+
+      remediation:
+
+        action:
+
+          redesign_dependency_chain
+
+
+
+      rules:
+
+        blocking: true
+
+        automated_fix: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # VAL-004 State Machine Alignment
+    # ========================================================
+
+    - id: VAL-004
+
+      name: state_machine_alignment
+
+      title: Workflow Must Match State Machine
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Ensures workflows execute only valid state
+        transitions.
+
+
+      category:
+
+        - state_machine
+
+        - workflow
+
+
+      scope:
+
+        object:
+
+          - workflow
+
+
+      target:
+
+        type: state_machine_registry
+
+
+      condition:
+
+        rule:
+
+          transition_exists: true
+
+
+      severity:
+
+        high
+
+
+      remediation:
+
+        action:
+
+          correct_transition_mapping
+
+
+
+      rules:
+
+        blocking: true
+
+        automated_fix: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # VAL-005 Integration Security Validation
+    # ========================================================
+
+    - id: VAL-005
+
+      name: integration_security_validation
+
+      title: Integration Must Define Security Controls
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Ensures external integrations define required
+        security controls.
+
+
+      category:
+
+        - security
+
+        - integration
+
+
+      scope:
+
+        object:
+
+          - integration
+
+
+      target:
+
+        type: integration_registry
+
+
+      condition:
+
+        rule:
+
+          authentication_defined: true
+
+          encryption_required: true
+
+
+      severity:
+
+        critical
+
+
+      remediation:
+
+        action:
+
+          complete_security_definition
+
+
+
+      rules:
+
+        blocking: true
+
+        automated_fix: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null

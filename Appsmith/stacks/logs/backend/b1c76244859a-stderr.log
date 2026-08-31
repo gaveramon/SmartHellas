@@ -6,3 +6,11 @@ APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
 /opt/appsmith/run-java.sh: line 17: cd: /opt/appsmith/server/pg: No such file or directory
 APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
 /opt/appsmith/run-java.sh: line 17: cd: /opt/appsmith/server/pg: No such file or directory
+APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
+/opt/appsmith/run-java.sh: line 17: cd: /opt/appsmith/server/pg: No such file or directory
+APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
+/opt/appsmith/run-java.sh: line 17: cd: /opt/appsmith/server/pg: No such file or directory
+APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
+/opt/appsmith/run-java.sh: line 17: cd: /opt/appsmith/server/pg: No such file or directory
+APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
+/opt/appsmith/run-java.sh: line 17: cd: /opt/appsmith/server/pg: No such file or directory

@@ -1,0 +1,227 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-006 User Invitation
+  # ==========================================================
+
+
+  - id: WF-006
+
+    name: user_invitation
+
+    title: User Invitation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - user_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Invites additional users within a customer organization.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - invitation_creation
+
+        - invitation_tracking
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - customer_invites_user
+
+
+
+    preconditions:
+
+
+      - inviter_has_permission
+
+      - organization_exists
+
+
+
+    actors:
+
+
+      - organization_admin
+
+      - invited_user
+
+
+
+    inputs:
+
+
+      - email
+
+      - role
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_invitation_permission
+
+
+
+      - step: 2
+
+        action:
+
+          create_invitation
+
+
+
+      - step: 3
+
+        action:
+
+          send_invitation
+
+
+
+      - step: 4
+
+        action:
+
+          activate_user_after_acceptance
+
+
+
+    outputs:
+
+
+      - invited_user
+
+
+
+    state_machine:
+
+
+      - SM-006 Invitation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-012 user_invited
+
+
+
+    orchestration:
+
+
+      - ORCH-006 User Invitation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      - Notification Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - role_based_access
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_notification
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_invitation
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - invitation_acceptance_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

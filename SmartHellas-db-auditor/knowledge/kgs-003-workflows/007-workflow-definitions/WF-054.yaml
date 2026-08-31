@@ -1,0 +1,211 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-054 Shelly Energy Monitoring
+  # ==========================================================
+
+
+  - id: WF-054
+
+    name: shelly_energy_monitoring
+
+    title: Shelly Energy Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - energy_management
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: energy_optimization
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Collects and analyzes energy measurements from
+        Shelly devices to optimize Airbnb energy usage.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - power_measurement
+
+        - consumption_tracking
+
+        - energy_reporting
+
+        - anomaly_detection
+
+
+
+      excludes:
+
+
+        - billing_calculation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-051 device_state_updated
+
+
+
+    preconditions:
+
+
+      - shelly_device_registered
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - energy_telemetry
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_energy_data
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_consumption
+
+
+
+      - step: 3
+
+        action:
+
+          detect_abnormal_usage
+
+
+
+      - step: 4
+
+        action:
+
+          update_energy_dashboard
+
+
+
+    outputs:
+
+
+      - energy_report
+
+      - energy_alert
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - telemetry_protection
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - energy_data_accuracy
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

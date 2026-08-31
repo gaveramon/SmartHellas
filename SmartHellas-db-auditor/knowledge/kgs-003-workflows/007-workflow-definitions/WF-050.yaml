@@ -1,0 +1,261 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-050 Integration Registration
+  # ==========================================================
+
+
+  - id: WF-050
+
+    name: integration_registration
+
+    title: Integration Registration
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - integration_management
+
+
+      owner:
+
+        module: 005_integration_engine
+
+
+      classification:
+
+        business_process: platform_connectivity
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Registers and validates external smart home
+        integrations such as Aqara, TTLock and Shelly
+        within the SmartHellas platform.
+
+
+
+    scope:
+
+      includes:
+
+        - provider_registration
+
+        - credential_management
+
+        - api_validation
+
+        - capability_discovery
+
+
+      excludes:
+
+        - device_configuration
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - integration_setup_requested
+
+
+
+    preconditions:
+
+
+      - customer_authorized
+
+      - provider_supported
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - provider_information
+
+      - authentication_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_provider
+
+
+
+      - step: 2
+
+        action:
+
+          store_credentials_securely
+
+
+
+      - step: 3
+
+        action:
+
+          authenticate_provider_connection
+
+
+
+      - step: 4
+
+        action:
+
+          discover_provider_capabilities
+
+
+
+      - step: 5
+
+        action:
+
+          activate_integration
+
+
+
+    outputs:
+
+
+      - active_integration
+
+
+
+    state_machine:
+
+
+      - SM-050 Integration Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-050 integration_registered
+
+
+
+    orchestration:
+
+
+      - ORCH-050 Integration Setup
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 005_integration_engine
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - encrypted_credentials
+
+        - api_permission_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        disable_failed_integration
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - revoke_provider_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - integration_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

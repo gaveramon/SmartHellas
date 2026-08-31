@@ -1,0 +1,268 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-060 Subscription Lifecycle Management
+  # ==========================================================
+
+
+  - id: WF-060
+
+    name: subscription_lifecycle_management
+
+    title: Subscription Lifecycle Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - saas_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+      classification:
+
+        business_process: subscription_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Manages the complete lifecycle of SmartHellas
+        subscriptions from activation through renewal,
+        suspension and termination.
+
+
+
+    scope:
+
+      includes:
+
+        - subscription_creation
+
+        - subscription_activation
+
+        - subscription_renewal
+
+        - subscription_suspension
+
+        - subscription_termination
+
+
+      excludes:
+
+        - payment_processing
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-040 subscription_activated
+
+        - payment_completed
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+      - selected_subscription_plan_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - subscription_plan
+
+      - payment_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_subscription_request
+
+
+
+      - step: 2
+
+        action:
+
+          create_subscription_instance
+
+
+
+      - step: 3
+
+        action:
+
+          assign_subscription_features
+
+
+
+      - step: 4
+
+        action:
+
+          activate_subscription
+
+
+
+      - step: 5
+
+        action:
+
+          monitor_subscription_state
+
+
+
+    outputs:
+
+
+      - active_subscription
+
+      - subscription_status
+
+
+
+    state_machine:
+
+
+      - SM-060 Subscription Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-060 subscription_created
+
+        - EVT-061 subscription_status_changed
+
+
+
+    orchestration:
+
+
+      - ORCH-060 Subscription Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Payment Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_isolation
+
+        - subscription_permission_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_subscription_activation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - rollback_subscription_creation
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - active_subscription_count
+
+        - churn_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

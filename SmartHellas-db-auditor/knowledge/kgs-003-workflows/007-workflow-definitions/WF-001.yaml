@@ -1,0 +1,238 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-001 Customer Registration
+  # ==========================================================
+
+
+  - id: WF-001
+
+    name: customer_registration
+
+    title: Customer Registration
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - customer_lifecycle
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+      description:
+        Creates a new SmartHellas customer account.
+
+
+
+    scope:
+
+      includes:
+
+        - customer_creation
+
+        - organization_creation
+
+        - initial_account_setup
+
+
+
+      excludes:
+
+        - subscription_billing
+
+        - device_configuration
+
+
+
+    trigger:
+
+      type:
+
+        event
+
+
+      events:
+
+        - EVT-001 customer_registered
+
+
+
+    preconditions:
+
+      - customer_data_valid
+
+      - email_verified
+
+
+
+    actors:
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+      - customer_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_customer_data
+
+
+
+      - step: 2
+
+        action:
+
+          create_customer_account
+
+
+
+      - step: 3
+
+        action:
+
+          create_organization
+
+
+
+      - step: 4
+
+        action:
+
+          assign_default_permissions
+
+
+
+    outputs:
+
+
+      - customer_account
+
+      - organization
+
+
+
+    state_machine:
+
+      - SM-001 Customer Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+        - EVT-001
+
+
+
+      produces:
+
+        - EVT-003 customer_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-003 Customer Activation
+
+
+
+    dependencies:
+
+
+      modules:
+
+        - 002_core_saas
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+        - authentication_required
+
+        - authorization_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+        rollback_transaction
+
+
+
+    compensation:
+
+
+      actions:
+
+        - remove_partial_account
+
+
+
+    observability:
+
+
+      metrics:
+
+        - registration_success_rate
+
+        - registration_failure_rate
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+      events:
+
+        - customer_created
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

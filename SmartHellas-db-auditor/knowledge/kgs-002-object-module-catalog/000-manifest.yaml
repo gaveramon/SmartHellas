@@ -1,0 +1,69 @@
+# ============================================================
+# KGS-002 Manifest
+# Enterprise Object & Module Catalog
+# ============================================================
+
+metadata:
+
+  id: KGS-002
+
+  title: Enterprise Object & Module Catalog
+
+  version: "2.1"
+
+  status: frozen
+
+  authority:
+    level: knowledge_catalog
+
+  description: >
+    Composition manifest for the KGS-002 Enterprise Object &
+    Module Catalog. Defines the authoritative knowledge domains
+    that together form KGS-002.
+
+domains:
+
+  specification:
+    source: kgs_specification.yaml
+
+  module_registry:
+    source: module_registry.yaml
+
+  object_registry:
+    source: object_registry.yaml
+
+  data_model:
+    source: data_model.yaml
+
+  dependencies:
+    source: dependencies.yaml
+
+  contracts:
+    source: contracts.yaml
+
+  interfaces:
+    source: interfaces.yaml
+
+  integrations:
+    source: integrations.yaml
+
+  security:
+    source: security.yaml
+
+  performance:
+    source: performance.yaml
+
+  observability:
+    source: observability.yaml
+
+  deployment:
+    source: deployment.yaml
+
+  testing:
+    source: testing.yaml
+
+  ssot:
+    source: ssot.yaml
+
+  ai:
+    source: ai.yaml

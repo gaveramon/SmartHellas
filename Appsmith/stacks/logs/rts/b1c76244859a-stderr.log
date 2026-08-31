@@ -102,3 +102,106 @@ Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
 Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
 Exceeded maximum retry attempts. Backend server is not running.
 Either Backend or Temporal server is not running. Workers will not be started.
+APPSMITH_GIT_ROOT: /appsmith-stacks/git-storage
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  the database system is starting up
+(node:1808) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Failed to initialize chat service database. Chat functionality will not be available. Error: The server does not support SSL connections
+    at Socket.<anonymous> (/node_modules/pg/lib/connection.js:77:37)
+    at Object.onceWrapper (node:events:631:26)
+    at Socket.emit (node:events:509:28)
+    at Socket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
+Failed to mount chat routes: Error: The server does not support SSL connections
+    at Socket.<anonymous> (/node_modules/pg/lib/connection.js:77:37)
+    at Object.onceWrapper (node:events:631:26)
+    at Socket.emit (node:events:509:28)
+    at Socket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
+2026-08-22T18:41:44.836 server error: scimgateway[server] Async function with unhandledRejection: Error: The server does not support SSL connections
+    at Socket.<anonymous> (/node_modules/pg/lib/connection.js:77:37)
+    at Object.onceWrapper (node:events:631:26)
+    at Socket.emit (node:events:509:28)
+    at Socket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
+Failed to initialize chat service database. Chat functionality will not be available. Error: The server does not support SSL connections
+    at Socket.<anonymous> (/node_modules/pg/lib/connection.js:77:37)
+    at Object.onceWrapper (node:events:631:26)
+    at Socket.emit (node:events:509:28)
+    at Socket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
+2026-08-22T18:41:44.837 server error: scimgateway[server] Async function with unhandledRejection: Error: The server does not support SSL connections
+    at Socket.<anonymous> (/node_modules/pg/lib/connection.js:77:37)
+    at Object.onceWrapper (node:events:631:26)
+    at Socket.emit (node:events:509:28)
+    at Socket.emit (node:domain:489:12)
+    at addChunk (node:internal/streams/readable:563:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+    at Readable.push (node:internal/streams/readable:394:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
+(node:1808) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Not able to connect to Backend server: connect ECONNREFUSED 127.0.0.1:8080
+Exceeded maximum retry attempts. Backend server is not running.
+Either Backend or Temporal server is not running. Workers will not be started.

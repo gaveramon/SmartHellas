@@ -1,0 +1,91 @@
+workflow_categories:
+
+  - id: CAT-001
+    name: customer
+    title: Customer Management
+    description: Customer account and organization lifecycle workflows.
+
+  - id: CAT-002
+    name: onboarding
+    title: Customer Onboarding
+    description: Customer onboarding and installation workflows.
+
+  - id: CAT-003
+    name: property
+    title: Property Management
+    description: Property, room and accommodation workflows.
+
+  - id: CAT-004
+    name: device
+    title: Device Management
+    description: Device provisioning, configuration and lifecycle workflows.
+
+  - id: CAT-005
+    name: booking
+    title: Booking Management
+    description: Reservation synchronization and booking workflows.
+
+  - id: CAT-006
+    name: lock
+    title: Smart Lock Management
+    description: Smart lock provisioning, access and door code workflows.
+
+  - id: CAT-007
+    name: integration
+    title: External Integrations
+    description: Third-party platform integration workflows.
+
+  - id: CAT-008
+    name: automation
+    title: Automation
+    description: Automation execution and orchestration workflows.
+
+  - id: CAT-009
+    name: commerce
+    title: Commerce
+    description: Product configuration, ordering and payment workflows.
+
+  - id: CAT-010
+    name: logistics
+    title: Logistics
+    description: Fulfilment, shipment and inventory workflows.
+
+  - id: CAT-011
+    name: service
+    title: Service Operations
+    description: Service delivery and operational workflows.
+
+  - id: CAT-012
+    name: crm
+    title: CRM
+    description: Lead management, sales and customer success workflows.
+
+  - id: CAT-013
+    name: monitoring
+    title: Monitoring & Observability
+    description: Monitoring, health checks, alerts and diagnostics.
+
+  - id: CAT-014
+    name: maintenance
+    title: Maintenance
+    description: Scheduled maintenance, updates and recovery workflows.
+
+  - id: CAT-015
+    name: notification
+    title: Notifications
+    description: Customer, guest and system notification workflows.
+
+  - id: CAT-016
+    name: security
+    title: Security
+    description: Authentication, authorization and security workflows.
+
+  - id: CAT-017
+    name: billing
+    title: Billing & Subscription
+    description: Subscription, invoicing and payment lifecycle workflows.
+
+  - id: CAT-018
+    name: support
+    title: Support
+    description: Support requests, incidents and case management workflows.

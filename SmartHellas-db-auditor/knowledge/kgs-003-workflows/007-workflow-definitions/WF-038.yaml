@@ -1,0 +1,74 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-038 Return & RMA Processing
+  # ==========================================================
+
+  - id: WF-038
+
+    name: return_rma_processing
+
+    title: Return & RMA Processing
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - logistics
+
+      owner:
+        module: 008_logistics_engine
+
+    purpose:
+
+      description: >
+        Handles returns, warranty claims and
+        replacement logistics.
+
+    trigger:
+
+      event:
+        - EVT-038 return_requested
+
+    workflow_steps:
+
+      - step: 1
+        action: validate_rma
+
+      - step: 2
+        action: receive_return
+
+      - step: 3
+        action: inspect_devices
+
+      - step: 4
+        action: replace_or_restock
+
+    outputs:
+      - rma_result
+
+    state_machine:
+      - SM-037 Return Lifecycle
+
+    events:
+
+      produces:
+        - EVT-039 return_completed
+
+    orchestration:
+      - ORCH-038 Return Handling
+
+    dependencies:
+
+      modules:
+        - 008_logistics_engine
+        - 009_commerce_engine
+
+    audit:
+      enabled: true
+
+    lifecycle:
+      policy: LIFE-001

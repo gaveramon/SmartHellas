@@ -1,0 +1,264 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-044 Portal Provisioning
+  # ==========================================================
+
+
+  - id: WF-044
+
+    name: portal_provisioning
+
+    title: Portal Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - portal_management
+
+
+      owner:
+
+        module: 010_service_portal_engine
+
+
+      classification:
+
+
+        business_process: customer_enablement
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Creates and configures customer portal access
+        based on subscription level and enabled services.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - tenant_creation
+
+        - user_permission_assignment
+
+        - portal_feature_activation
+
+        - dashboard_configuration
+
+
+
+      excludes:
+
+
+        - device_configuration
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-044 property_activated
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+      - active_subscription_exists
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - subscription_plan
+
+      - property_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_portal_workspace
+
+
+
+      - step: 2
+
+        action:
+
+          assign_customer_permissions
+
+
+
+      - step: 3
+
+        action:
+
+          enable_subscription_features
+
+
+
+      - step: 4
+
+        action:
+
+          configure_dashboard
+
+
+
+      - step: 5
+
+        action:
+
+          send_portal_invitation
+
+
+
+    outputs:
+
+
+      - portal_account
+
+      - portal_permissions
+
+
+
+    state_machine:
+
+
+      - SM-044 Portal Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-045 portal_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-044 Portal Provisioning
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 010_service_portal_engine
+
+        - 002_core_saas
+
+        - 015_crm_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - role_based_access_control
+
+        - tenant_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_portal_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - remove_portal_workspace
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - portal_activation_time
+
+        - active_customer_count
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

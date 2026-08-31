@@ -1,0 +1,140 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: module_registry
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# MODULE REGISTRY
+# ============================================================
+
+
+module_registry:
+
+
+  architecture:
+
+    style:
+
+
+      - modular_monolith
+
+      - domain_driven_design
+
+      - event_ready_architecture
+
+
+  modules:
+
+
+    "000":
+      name:
+        "Supabase Platform Foundation"
+
+
+    "001":
+      name:
+        "Core Types"
+
+
+    "002":
+      name:
+        "Core SaaS"
+
+
+    "003":
+      name:
+        "Property & Device Engine"
+
+
+    "004":
+      name:
+        "Booking & Lock Engine"
+
+
+    "005":
+      name:
+        "Integration Engine"
+
+
+    "006":
+      name:
+        "Operations Engine"
+
+
+    "007":
+      name:
+        "Preconfig Engine"
+
+
+    "008":
+      name:
+        "Logistics Engine"
+
+
+    "009":
+      name:
+        "Commerce Engine"
+
+
+    "010":
+      name:
+        "Service & Portal Engine"
+
+
+    "011":
+      name:
+        "Onboarding Engine"
+
+
+    "012":
+      name:
+        "Optimization Engine"
+
+
+    "013":
+      name:
+        "Monitoring & Audit Engine"
+
+
+    "014":
+      name:
+        "Platform Bootstrap"
+
+
+    "015":
+      name:
+        "CRM Engine"
+
+
+    "016":
+      name:
+        "Automation Engine"
+
+
+    "017":
+      name:
+        "Edge RPC Foundations"
+
+
+    "018":
+      name:
+        "Security Hardening"
+
+
+    "019":
+      name:
+        "Grant Matrix"
+
+
+    "020":
+      name:
+        "Production Finalization"

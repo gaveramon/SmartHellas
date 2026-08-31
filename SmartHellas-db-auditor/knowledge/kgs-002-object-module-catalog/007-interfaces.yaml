@@ -1,0 +1,236 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: interface_registry
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# INTERFACE REGISTRY
+# ============================================================
+
+
+interfaces:
+
+
+  description: >
+
+    Technical communication surfaces between modules.
+
+
+
+  interface_types:
+
+
+    api:
+
+      "Synchronous application communication."
+
+
+    rpc:
+
+      "Remote procedure execution."
+
+
+    event:
+
+      "Asynchronous communication."
+
+
+
+  module_interfaces:
+
+
+
+    "003":
+
+
+      provides:
+
+
+        api:
+
+
+          - DEVICE_SERVICE
+
+
+
+        events:
+
+
+          - device.created
+
+          - device.updated
+
+          - device.offline
+
+
+
+
+    "004":
+
+
+      provides:
+
+
+        api:
+
+
+          - ACCESS_CONTROL_API
+
+
+
+        events:
+
+
+          - access_code.created
+
+          - access_code.revoked
+
+
+
+
+    "005":
+
+
+      provides:
+
+
+        api:
+
+
+          - PROVIDER_API
+
+
+
+
+    "009":
+
+
+      provides:
+
+
+        api:
+
+
+          - COMMERCE_API
+
+
+
+        events:
+
+
+          - order.created
+
+
+
+
+    "010":
+
+
+      provides:
+
+
+        api:
+
+
+          - CUSTOMER_PORTAL_API
+
+
+
+
+    "011":
+
+
+      provides:
+
+
+        api:
+
+
+          - ONBOARDING_API
+
+
+
+        events:
+
+
+          - onboarding.completed
+
+
+
+
+    "015":
+
+
+      provides:
+
+
+        api:
+
+
+          - CRM_API
+
+
+
+        events:
+
+
+          - customer.created
+
+          - customer.updated
+
+
+
+
+    "016":
+
+
+      provides:
+
+
+        events:
+
+
+          - automation.executed
+
+
+
+
+    "017":
+
+
+      provides:
+
+
+        rpc:
+
+
+          - EDGE_RPC_INTERFACE
+
+
+
+
+  validation_rules:
+
+
+    - id:
+        INT-001
+
+      rule:
+        "Every interface requires an owner."
+
+
+
+    - id:
+        INT-002
+
+      rule:
+        "Modules may only consume registered interfaces."

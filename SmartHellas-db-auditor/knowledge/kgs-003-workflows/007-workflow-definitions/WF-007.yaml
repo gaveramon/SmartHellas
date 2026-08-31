@@ -1,0 +1,242 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-007 Organization Management
+  # ==========================================================
+
+
+  - id: WF-007
+
+    name: organization_management
+
+    title: Organization Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - tenant_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+      description:
+
+        Manages Airbnb organizations, properties ownership
+        and organizational structure.
+
+
+
+    scope:
+
+      includes:
+
+        - organization_creation
+
+        - organization_update
+
+        - organization_membership
+
+        - ownership_management
+
+
+      excludes:
+
+        - property_device_configuration
+
+
+
+    trigger:
+
+
+      actions:
+
+        - organization_created
+
+        - organization_updated
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+      - authorization_valid
+
+
+
+    actors:
+
+
+      - organization_owner
+
+      - organization_admin
+
+      - system
+
+
+
+    inputs:
+
+
+      - organization_data
+
+      - user_assignments
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_organization_request
+
+
+
+      - step: 2
+
+        action:
+
+          create_or_update_organization
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_members
+
+
+
+      - step: 4
+
+        action:
+
+          update_permissions
+
+
+
+    outputs:
+
+
+      - organization_record
+
+      - membership_records
+
+
+
+    state_machine:
+
+
+      - SM-007 Organization Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-013 organization_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-007 Organization Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_isolation
+
+        - role_based_access_control
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_organization_change
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_state
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - organization_change_success
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+
+        - organization_changed
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

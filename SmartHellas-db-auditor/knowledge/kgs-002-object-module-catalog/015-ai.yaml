@@ -1,0 +1,148 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: ai_governance
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# AI AUDIT METADATA
+# ============================================================
+
+
+ai:
+
+
+  description: >
+
+    Metadata used by AI analysis engines for architecture
+    reasoning, impact analysis and automated auditing.
+
+
+
+# ============================================================
+# MODULE UNDERSTANDING
+# ============================================================
+
+
+  summary:
+
+
+    purpose:
+
+
+      "Provides machine-readable architectural context."
+
+
+
+  module_role:
+
+
+    classification:
+
+
+      - domain_module
+
+      - infrastructure_module
+
+      - control_module
+
+
+
+
+# ============================================================
+# IMPACT ANALYSIS
+# ============================================================
+
+
+  upstream_impact:
+
+
+    describes:
+
+
+      - dependencies
+
+      - consumed_contracts
+
+      - required_services
+
+
+
+  downstream_impact:
+
+
+    describes:
+
+
+      - consumers
+
+      - affected_workflows
+
+      - dependent_modules
+
+
+
+  change_impact:
+
+
+    evaluated_by:
+
+
+      - dependency_engine
+
+      - ssot_engine
+
+      - workflow_engine
+
+
+
+# ============================================================
+# RISK ANALYSIS
+# ============================================================
+
+
+  dependency_risk:
+
+
+    factors:
+
+
+      - dependency_count
+
+      - criticality
+
+      - external_integrations
+
+      - security_scope
+
+
+
+  migration_notes:
+
+
+    required_for:
+
+
+      - breaking_changes
+
+      - schema_changes
+
+      - contract_changes
+
+
+
+  audit_notes:
+
+
+    generated_by:
+
+
+      enterprise_auditor

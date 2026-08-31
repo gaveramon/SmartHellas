@@ -1,0 +1,232 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-004 Subscription Change
+  # ==========================================================
+
+
+  - id: WF-004
+
+    name: subscription_change
+
+    title: Subscription Upgrade / Downgrade
+
+
+    version: 1.0
+
+    status: active
+
+
+
+    identity:
+
+
+      domain:
+
+        - subscription_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Changes customer subscription level.
+
+
+
+    scope:
+
+
+      includes:
+
+        - upgrade
+
+        - downgrade
+
+        - feature_change
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-005 subscription_change_requested
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - current_plan
+
+      - new_plan
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_plan_change
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_entitlement_difference
+
+
+
+      - step: 3
+
+        action:
+
+          update_subscription
+
+
+
+      - step: 4
+
+        action:
+
+          synchronize_features
+
+
+
+    outputs:
+
+
+      - updated_subscription
+
+
+
+    state_machine:
+
+
+      - SM-002
+
+
+
+    events:
+
+
+      consumes:
+
+
+        - EVT-005
+
+
+
+      produces:
+
+
+        - EVT-006 subscription_updated
+
+
+
+    orchestration:
+
+
+      - ORCH-004
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - subscription_permission_check
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        revert_to_previous_plan
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_entitlements
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - subscription_change_success
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

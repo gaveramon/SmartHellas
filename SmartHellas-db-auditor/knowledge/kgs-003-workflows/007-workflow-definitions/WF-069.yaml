@@ -1,0 +1,219 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-069 Platform Health & Governance Monitoring
+  # ==========================================================
+
+
+  - id: WF-069
+
+    name: platform_health_governance_monitoring
+
+    title: Platform Health & Governance Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - platform_governance
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: platform_operations
+
+        criticality: platform_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Continuously monitors technical health,
+        compliance status and operational reliability
+        of the SmartHellas platform.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - system_health_monitoring
+
+        - dependency_monitoring
+
+        - governance_checks
+
+        - alert_generation
+
+
+
+      excludes:
+
+
+        - infrastructure_provisioning
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_health_check
+
+
+
+    preconditions:
+
+
+      - monitoring_enabled
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_team
+
+
+
+    inputs:
+
+
+      - application_metrics
+
+      - database_metrics
+
+      - audit_results
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_platform_metrics
+
+
+
+      - step: 2
+
+        action:
+
+          evaluate_health_rules
+
+
+
+      - step: 3
+
+        action:
+
+          detect_platform_risk
+
+
+
+      - step: 4
+
+        action:
+
+          create_operational_alert
+
+
+
+    outputs:
+
+
+      - platform_health_status
+
+      - governance_report
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - enterprise_auditor
+
+
+
+    integrations:
+
+
+      - Monitoring Platform
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - operational_security
+
+        - audit_protection
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - platform_availability
+
+        - incident_rate
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

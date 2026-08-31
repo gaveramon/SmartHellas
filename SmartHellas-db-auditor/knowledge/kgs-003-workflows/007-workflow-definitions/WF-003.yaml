@@ -1,0 +1,229 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-003 Subscription Activation
+  # ==========================================================
+
+
+  - id: WF-003
+
+    name: subscription_activation
+
+    title: Subscription Activation
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - subscription_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+      description:
+        Enables purchased SmartHellas subscription features.
+
+
+
+    scope:
+
+      includes:
+
+        - plan_activation
+
+        - feature_assignment
+
+        - entitlement_creation
+
+
+
+      excludes:
+
+        - payment_processing
+
+
+
+    trigger:
+
+      events:
+
+        - EVT-004 subscription_created
+
+
+
+    preconditions:
+
+      - customer_exists
+
+      - payment_confirmed
+
+
+
+    actors:
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+      - subscription_plan
+
+      - customer_account
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_subscription
+
+
+
+      - step: 2
+
+        action:
+
+          create_subscription_record
+
+
+
+      - step: 3
+
+        action:
+
+          assign_features
+
+
+
+      - step: 4
+
+        action:
+
+          activate_entitlements
+
+
+
+    outputs:
+
+
+      - active_subscription
+
+      - customer_entitlements
+
+
+
+    state_machine:
+
+
+      - SM-002 Subscription Lifecycle
+
+
+
+    events:
+
+
+      consumes:
+
+        - EVT-004
+
+
+
+      produces:
+
+        - EVT-005 subscription_activated
+
+
+
+    orchestration:
+
+
+      - ORCH-004 Subscription Activation
+
+
+
+    dependencies:
+
+
+      modules:
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+        - entitlement_validation_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+        rollback_subscription_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+        - remove_entitlements
+
+
+
+    observability:
+
+
+      metrics:
+
+        - activation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+        - subscription_activated
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,576 @@
+# ============================================================
+# KGS-003 — Workflow Catalog
+# Section 14 — Lifecycle Catalog
+#
+# Version: 1.0
+#
+# Purpose:
+# Defines lifecycle management for workflow objects,
+# events, orchestrations and integrations.
+#
+# Source of Truth:
+# Canonical lifecycle governance model.
+# ============================================================
+
+
+lifecycle:
+
+
+  # ==========================================================
+  # Metadata
+  # ==========================================================
+
+  metadata:
+
+    title: "Enterprise Workflow Lifecycle Catalog"
+
+    short_name: "KGS-003-LIFE"
+
+    description: >
+      Defines lifecycle governance, versioning and
+      migration rules for workflow components.
+
+    version: "1.0"
+
+    status: active
+
+    canonical: true
+
+    source_of_truth: true
+
+    owner: enterprise_architecture
+
+    tags:
+
+      - lifecycle
+
+      - versioning
+
+      - migration
+
+      - governance
+
+
+
+  # ==========================================================
+  # Validation
+  # ==========================================================
+
+  validation:
+
+    unique_lifecycle_ids: true
+
+    version_required: true
+
+    migration_required_for_breaking_changes: true
+
+    deprecated_objects_cannot_be_referenced: true
+
+    audit_history_required: true
+
+
+
+  # ==========================================================
+  # Lifecycle Registry
+  # ==========================================================
+
+  lifecycle_registry:
+
+
+    # ========================================================
+    # LIFE-001 Workflow Lifecycle
+    # ========================================================
+
+    - id: LIFE-001
+
+      name: workflow_lifecycle
+
+      title: Workflow Lifecycle Management
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines lifecycle states for SmartHellas workflows.
+
+
+      object_type:
+
+        - workflow
+
+
+      lifecycle_states:
+
+        - draft
+
+        - reviewed
+
+        - approved
+
+        - active
+
+        - deprecated
+
+        - retired
+
+
+
+      transitions:
+
+
+        - from: draft
+
+          to: reviewed
+
+
+        - from: reviewed
+
+          to: approved
+
+
+        - from: approved
+
+          to: active
+
+
+        - from: active
+
+          to: deprecated
+
+
+        - from: deprecated
+
+          to: retired
+
+
+
+      migration:
+
+        required_for:
+
+          - breaking_change
+
+          - schema_change
+
+
+        strategy:
+
+          controlled_migration
+
+
+
+      compatibility:
+
+        backward_compatible_required: true
+
+
+
+      deprecation:
+
+        notice_period_days: 90
+
+        replacement_reference_required: true
+
+
+
+      retention:
+
+        audit_history_required: true
+
+
+
+      rules:
+
+        active_workflow_requires_owner: true
+
+        retired_workflow_cannot_execute: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # LIFE-002 Event Lifecycle
+    # ========================================================
+
+    - id: LIFE-002
+
+      name: event_lifecycle
+
+      title: Event Lifecycle Management
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines lifecycle governance for domain events.
+
+
+      object_type:
+
+        - event
+
+
+
+      lifecycle_states:
+
+        - proposed
+
+        - registered
+
+        - active
+
+        - versioned
+
+        - deprecated
+
+        - retired
+
+
+
+      transitions:
+
+
+        - from: proposed
+
+          to: registered
+
+
+        - from: registered
+
+          to: active
+
+
+        - from: active
+
+          to: versioned
+
+
+        - from: versioned
+
+          to: deprecated
+
+
+        - from: deprecated
+
+          to: retired
+
+
+
+      migration:
+
+        required_for:
+
+          - payload_change
+
+          - contract_change
+
+
+
+        strategy:
+
+          event_versioning
+
+
+
+      compatibility:
+
+        consumer_compatibility_required: true
+
+
+
+      deprecation:
+
+        notice_period_days: 180
+
+        replacement_event_required: true
+
+
+
+      retention:
+
+        event_history_required: true
+
+
+
+      rules:
+
+        breaking_event_changes_require_new_version: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # LIFE-003 Integration Lifecycle
+    # ========================================================
+
+    - id: LIFE-003
+
+      name: integration_lifecycle
+
+      title: Integration Lifecycle Management
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines lifecycle governance for external and
+        internal integrations.
+
+
+      object_type:
+
+        - integration
+
+
+
+      lifecycle_states:
+
+        - planned
+
+        - development
+
+        - testing
+
+        - active
+
+        - degraded
+
+        - deprecated
+
+        - retired
+
+
+
+      transitions:
+
+
+        - from: planned
+
+          to: development
+
+
+        - from: development
+
+          to: testing
+
+
+        - from: testing
+
+          to: active
+
+
+        - from: active
+
+          to: degraded
+
+
+        - from: degraded
+
+          to: deprecated
+
+
+        - from: deprecated
+
+          to: retired
+
+
+
+      migration:
+
+        required_for:
+
+          - provider_change
+
+          - api_change
+
+
+
+        strategy:
+
+          adapter_migration
+
+
+
+      compatibility:
+
+        interface_contract_required: true
+
+
+
+      deprecation:
+
+        notice_period_days: 180
+
+        migration_plan_required: true
+
+
+
+      retention:
+
+        integration_logs_required: true
+
+
+
+      rules:
+
+        inactive_integrations_cannot_receive_events: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # LIFE-004 Orchestration Lifecycle
+    # ========================================================
+
+    - id: LIFE-004
+
+      name: orchestration_lifecycle
+
+      title: Orchestration Lifecycle Management
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines lifecycle governance for orchestration flows.
+
+
+      object_type:
+
+        - orchestration
+
+
+
+      lifecycle_states:
+
+        - design
+
+        - tested
+
+        - approved
+
+        - active
+
+        - suspended
+
+        - deprecated
+
+        - retired
+
+
+
+      transitions:
+
+
+        - from: design
+
+          to: tested
+
+
+        - from: tested
+
+          to: approved
+
+
+        - from: approved
+
+          to: active
+
+
+        - from: active
+
+          to: suspended
+
+
+        - from: suspended
+
+          to: deprecated
+
+
+        - from: deprecated
+
+          to: retired
+
+
+
+      migration:
+
+        required_for:
+
+          - workflow_replacement
+
+          - architecture_change
+
+
+
+        strategy:
+
+          controlled_transition
+
+
+
+      compatibility:
+
+        workflow_contract_required: true
+
+
+
+      deprecation:
+
+        replacement_orchestration_required: true
+
+
+
+      retention:
+
+        execution_history_required: true
+
+
+
+      rules:
+
+        active_orchestration_requires_validation: true
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null

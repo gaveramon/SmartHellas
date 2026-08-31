@@ -1,0 +1,234 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-018 Property Device Synchronization
+  # ==========================================================
+
+
+  - id: WF-018
+
+    name: property_device_synchronization
+
+    title: Property Device Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - synchronization
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+      description:
+
+        Synchronizes property configuration,
+        rooms and assigned devices.
+
+
+
+    scope:
+
+      includes:
+
+        - property_configuration_sync
+
+        - room_mapping_sync
+
+        - device_assignment_sync
+
+
+
+      excludes:
+
+        - external_booking_sync
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-048 property_configuration_changed
+
+
+
+    preconditions:
+
+
+      - property_exists
+
+      - devices_registered
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - property_configuration
+
+      - device_inventory
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          load_property_configuration
+
+
+
+      - step: 2
+
+        action:
+
+          compare_device_state
+
+
+
+      - step: 3
+
+        action:
+
+          synchronize_changes
+
+
+
+      - step: 4
+
+        action:
+
+          validate_consistency
+
+
+
+    outputs:
+
+
+      - synchronized_property_state
+
+
+
+    state_machine:
+
+
+      - SM-018 Synchronization Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-049 synchronization_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-018 Property Synchronization
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - property_access_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_sync_retry_task
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_configuration
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - synchronization_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

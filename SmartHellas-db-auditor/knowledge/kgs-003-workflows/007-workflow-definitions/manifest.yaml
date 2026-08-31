@@ -1,0 +1,266 @@
+# ==========================================================
+# KGS-003 Workflow Manifest
+# Section: 007 Workflow Definitions
+# Version: 2.0
+# ==========================================================
+
+identity:
+
+  id: KGS-003.007-MANIFEST
+
+  name: workflow_definition_manifest
+
+  version: "2.0"
+
+metadata:
+
+  owner: enterprise_auditor
+
+  section: 007
+
+  description: >
+    Manifest containing the complete registry of workflow
+    definition files used by KGS-003.
+
+workflows:
+
+  # ======================================================
+  # Customer & SaaS
+  # ======================================================
+
+  - id: WF-001
+    file: customer/WF-001.yaml
+
+  - id: WF-002
+    file: customer/WF-002.yaml
+
+  - id: WF-003
+    file: customer/WF-003.yaml
+
+  - id: WF-004
+    file: customer/WF-004.yaml
+
+  - id: WF-005
+    file: customer/WF-005.yaml
+
+  - id: WF-006
+    file: customer/WF-006.yaml
+
+  - id: WF-007
+    file: customer/WF-007.yaml
+
+  - id: WF-008
+    file: customer/WF-008.yaml
+
+  - id: WF-009
+    file: customer/WF-009.yaml
+
+
+  # ======================================================
+  # Property & Device
+  # ======================================================
+
+  - id: WF-010
+    file: property/WF-010.yaml
+
+  - id: WF-011
+    file: property/WF-011.yaml
+
+  - id: WF-012
+    file: property/WF-012.yaml
+
+  - id: WF-013
+    file: property/WF-013.yaml
+
+  - id: WF-014
+    file: property/WF-014.yaml
+
+  - id: WF-015
+    file: property/WF-015.yaml
+
+  - id: WF-016
+    file: property/WF-016.yaml
+
+  - id: WF-017
+    file: property/WF-017.yaml
+
+  - id: WF-018
+    file: property/WF-018.yaml
+
+  - id: WF-019
+    file: property/WF-019.yaml
+
+
+  # ======================================================
+  # Booking & Lock
+  # ======================================================
+
+  - id: WF-020
+    file: booking/WF-020.yaml
+
+  - id: WF-021
+    file: booking/WF-021.yaml
+
+  - id: WF-022
+    file: booking/WF-022.yaml
+
+  - id: WF-023
+    file: booking/WF-023.yaml
+
+  - id: WF-024
+    file: booking/WF-024.yaml
+
+  - id: WF-025
+    file: booking/WF-025.yaml
+
+  - id: WF-026
+    file: booking/WF-026.yaml
+
+  - id: WF-027
+    file: booking/WF-027.yaml
+
+  - id: WF-028
+    file: booking/WF-028.yaml
+
+  - id: WF-029
+    file: booking/WF-029.yaml
+
+
+  # ======================================================
+  # Commerce & Logistics
+  # ======================================================
+
+  - id: WF-030
+    file: commerce/WF-030.yaml
+
+  - id: WF-031
+    file: commerce/WF-031.yaml
+
+  - id: WF-032
+    file: commerce/WF-032.yaml
+
+  - id: WF-033
+    file: commerce/WF-033.yaml
+
+  - id: WF-034
+    file: commerce/WF-034.yaml
+
+  - id: WF-035
+    file: commerce/WF-035.yaml
+
+  - id: WF-036
+    file: commerce/WF-036.yaml
+
+  - id: WF-037
+    file: commerce/WF-037.yaml
+
+  - id: WF-038
+    file: commerce/WF-038.yaml
+
+  - id: WF-039
+    file: commerce/WF-039.yaml
+
+
+  # ======================================================
+  # Onboarding & Operations
+  # ======================================================
+
+  - id: WF-040
+    file: onboarding/WF-040.yaml
+
+  - id: WF-041
+    file: onboarding/WF-041.yaml
+
+  - id: WF-042
+    file: onboarding/WF-042.yaml
+
+  - id: WF-043
+    file: onboarding/WF-043.yaml
+
+  - id: WF-044
+    file: onboarding/WF-044.yaml
+
+  - id: WF-045
+    file: onboarding/WF-045.yaml
+
+  - id: WF-046
+    file: onboarding/WF-046.yaml
+
+  - id: WF-047
+    file: onboarding/WF-047.yaml
+
+  - id: WF-048
+    file: onboarding/WF-048.yaml
+
+  - id: WF-049
+    file: onboarding/WF-049.yaml
+
+
+  # ======================================================
+  # Integration & Automation
+  # ======================================================
+
+  - id: WF-050
+    file: integration/WF-050.yaml
+
+  - id: WF-051
+    file: integration/WF-051.yaml
+
+  - id: WF-052
+    file: integration/WF-052.yaml
+
+  - id: WF-053
+    file: integration/WF-053.yaml
+
+  - id: WF-054
+    file: integration/WF-054.yaml
+
+  - id: WF-055
+    file: integration/WF-055.yaml
+
+  - id: WF-056
+    file: integration/WF-056.yaml
+
+  - id: WF-057
+    file: integration/WF-057.yaml
+
+  - id: WF-058
+    file: integration/WF-058.yaml
+
+  - id: WF-059
+    file: integration/WF-059.yaml
+
+
+  # ======================================================
+  # Enterprise Management
+  # ======================================================
+
+  - id: WF-060
+    file: enterprise/WF-060.yaml
+
+  - id: WF-061
+    file: enterprise/WF-061.yaml
+
+  - id: WF-062
+    file: enterprise/WF-062.yaml
+
+  - id: WF-063
+    file: enterprise/WF-063.yaml
+
+  - id: WF-064
+    file: enterprise/WF-064.yaml
+
+  - id: WF-065
+    file: enterprise/WF-065.yaml
+
+  - id: WF-066
+    file: enterprise/WF-066.yaml
+
+  - id: WF-067
+    file: enterprise/WF-067.yaml
+
+  - id: WF-068
+    file: enterprise/WF-068.yaml
+
+  - id: WF-069
+    file: enterprise/WF-069.yaml

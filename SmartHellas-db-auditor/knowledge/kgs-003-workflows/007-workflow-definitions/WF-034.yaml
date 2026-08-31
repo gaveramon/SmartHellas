@@ -1,0 +1,115 @@
+definition_registry:
+
+ # ==========================================================
+  # WF-034 Inventory Allocation
+  # ==========================================================
+
+  - id: WF-034
+
+    name: inventory_allocation
+
+    title: Inventory Allocation
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - logistics
+
+      owner:
+        module: 008_logistics_engine
+
+    purpose:
+
+      description: >
+        Reserves the required SmartHellas hardware
+        for an approved customer order.
+
+    scope:
+
+      includes:
+        - stock_validation
+        - inventory_reservation
+        - shortage_detection
+
+    trigger:
+
+      event:
+        - EVT-033 payment_completed
+
+    preconditions:
+      - payment_confirmed
+
+    actors:
+      - system
+
+    inputs:
+      - order
+
+    workflow_steps:
+
+      - step: 1
+        action: validate_inventory
+
+      - step: 2
+        action: reserve_devices
+
+      - step: 3
+        action: detect_missing_items
+
+      - step: 4
+        action: notify_preconfiguration
+
+    outputs:
+      - reserved_inventory
+
+    state_machine:
+      - SM-033 Inventory Lifecycle
+
+    events:
+
+      produces:
+        - EVT-034 inventory_reserved
+
+    orchestration:
+      - ORCH-032 Order Processing
+
+    dependencies:
+
+      modules:
+        - 008_logistics_engine
+        - 007_preconfig_engine
+
+    integrations: []
+
+    security:
+
+      requirements:
+        - inventory_consistency
+
+    error_handling:
+
+      strategy:
+        backorder_processing
+
+    compensation:
+
+      actions:
+        - release_inventory
+
+    observability:
+
+      metrics:
+        - reservation_success_rate
+
+    audit:
+
+      enabled: true
+
+    lifecycle:
+
+      policy:
+        LIFE-001

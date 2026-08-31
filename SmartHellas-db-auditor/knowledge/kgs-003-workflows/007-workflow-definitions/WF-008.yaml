@@ -1,0 +1,245 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-008 Customer Deactivation
+  # ==========================================================
+
+
+  - id: WF-008
+
+    name: customer_deactivation
+
+    title: Customer Deactivation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - customer_lifecycle
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+
+    purpose:
+
+
+      description:
+
+        Deactivates customer services while preserving
+        required audit information.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - account_disable
+
+        - service_suspend
+
+        - permission_revocation
+
+
+
+      excludes:
+
+
+        - physical_device_removal
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-080 customer_deactivation_requested
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+      - authorization_verified
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+      - administrator
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - deactivation_reason
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_deactivation_request
+
+
+
+      - step: 2
+
+        action:
+
+          suspend_subscription_features
+
+
+
+      - step: 3
+
+        action:
+
+          revoke_portal_access
+
+
+
+      - step: 4
+
+        action:
+
+          archive_customer_status
+
+
+
+    outputs:
+
+
+      - deactivated_customer
+
+
+
+    state_machine:
+
+
+      - SM-001 Customer Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-081 customer_deactivated
+
+
+
+    orchestration:
+
+
+      - ORCH-008 Customer Deactivation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - authorization_required
+
+        - audit_logging_required
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        controlled_deactivation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_customer_access
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - deactivation_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+      events:
+
+
+        - customer_deactivated
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

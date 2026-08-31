@@ -1,0 +1,96 @@
+metadata:
+
+  kgs: KGS-002
+
+  section: specification
+
+  version: "2.1"
+
+kgs_specification:
+
+  identity:
+
+    id: KGS-002
+
+    title: Enterprise Object & Module Catalog
+
+    description: >
+      Defines the authoritative enterprise architecture
+      catalog for modules, objects and their relationships.
+
+  purpose:
+
+    - Define enterprise modules
+    - Define enterprise objects
+    - Define ownership boundaries
+    - Define architectural dependencies
+    - Define contracts
+    - Define interfaces
+    - Define SSOT ownership
+
+  scope:
+
+    includes:
+
+      - module architecture
+      - object definitions
+      - dependency graph
+      - contracts
+      - interfaces
+      - integrations
+      - security architecture
+      - observability
+      - deployment metadata
+
+    excludes:
+
+      - workflow execution
+      - business rules
+      - runtime state
+      - operational data
+
+  authority:
+
+    level: canonical
+
+    owner: Enterprise Architecture
+
+  consumers:
+
+    - parser-engine
+    - dependency-engine
+    - ssot-engine
+    - report-engine
+
+  dependencies:
+
+    requires:
+
+      - KGS-001
+
+    provides:
+
+      - architecture knowledge
+
+  conventions:
+
+    naming_standard: KGS Naming Rules
+
+    dependency_standard: Dependency Rules
+
+    security_standard: Security Rules
+
+  validation:
+
+    mandatory_domains:
+
+      - module_registry
+      - object_registry
+      - dependencies
+      - ssot
+
+    unique_ids: true
+
+    explicit_ownership: true
+
+    explicit_dependencies: true

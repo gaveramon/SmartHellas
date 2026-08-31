@@ -1,0 +1,3519 @@
+# ============================================================
+# KGS-002 — Enterprise Object & Module Catalog
+# Version: 2.0
+# Status: canonical
+#
+# Purpose:
+# Canonical machine-readable architecture catalog
+# for SmartHellas Enterprise Auditor.
+#
+# ============================================================
+
+
+metadata:
+
+  kgs_id:
+    "KGS-002"
+
+  title:
+    "Enterprise Object & Module Catalog"
+
+  short_name:
+    "Object Catalog"
+
+  version:
+    "2.0"
+
+  status:
+    "canonical"
+
+  layer:
+    "knowledge"
+
+  category:
+    "architecture_catalog"
+
+  description: >
+
+    Canonical machine-readable catalog describing SmartHellas
+    enterprise modules, objects, data models, dependencies,
+    contracts, interfaces, integrations, security,
+    operational characteristics and AI audit metadata.
+
+  purpose: >
+
+    Provides the architectural SSOT for object discovery,
+    dependency reasoning, impact analysis, validation
+    and AI-assisted auditing.
+
+  tags:
+
+    - enterprise_architecture
+    - object_catalog
+    - module_catalog
+    - ssot
+    - dependency_analysis
+    - ai_audit
+
+
+
+# ============================================================
+# KGS SPECIFICATION
+# ============================================================
+
+
+kgs_specification:
+
+
+  version:
+    "2.0"
+
+
+  name:
+
+    "SmartHellas Knowledge Graph Specification"
+
+
+  purpose: >
+
+    Canonical specification defining how enterprise objects,
+    modules and technical relationships are modeled.
+
+
+  principles:
+
+
+    - Single Source of Truth
+
+    - No duplicated ownership
+
+    - Explicit dependencies
+
+    - Explicit contracts
+
+    - Deterministic compile order
+
+    - Auditability
+
+    - Backward compatibility awareness
+
+    - Automated impact analysis
+
+
+
+# ============================================================
+# MODULE REGISTRY
+# ============================================================
+
+
+module_registry:
+
+
+  architecture:
+
+    style:
+
+
+      - modular_monolith
+
+      - domain_driven_design
+
+      - event_ready_architecture
+
+
+  modules:
+
+
+    "000":
+      name:
+        "Supabase Platform Foundation"
+
+
+    "001":
+      name:
+        "Core Types"
+
+
+    "002":
+      name:
+        "Core SaaS"
+
+
+    "003":
+      name:
+        "Property & Device Engine"
+
+
+    "004":
+      name:
+        "Booking & Lock Engine"
+
+
+    "005":
+      name:
+        "Integration Engine"
+
+
+    "006":
+      name:
+        "Operations Engine"
+
+
+    "007":
+      name:
+        "Preconfig Engine"
+
+
+    "008":
+      name:
+        "Logistics Engine"
+
+
+    "009":
+      name:
+        "Commerce Engine"
+
+
+    "010":
+      name:
+        "Service & Portal Engine"
+
+
+    "011":
+      name:
+        "Onboarding Engine"
+
+
+    "012":
+      name:
+        "Optimization Engine"
+
+
+    "013":
+      name:
+        "Monitoring & Audit Engine"
+
+
+    "014":
+      name:
+        "Platform Bootstrap"
+
+
+    "015":
+      name:
+        "CRM Engine"
+
+
+    "016":
+      name:
+        "Automation Engine"
+
+
+    "017":
+      name:
+        "Edge RPC Foundations"
+
+
+    "018":
+      name:
+        "Security Hardening"
+
+
+    "019":
+      name:
+        "Grant Matrix"
+
+
+    "020":
+      name:
+        "Production Finalization"
+
+
+# ============================================================
+# OBJECT REGISTRY
+# ============================================================
+
+
+object_registry:
+
+
+  description: >
+
+    Canonical registry of enterprise objects.
+    Defines objects, their module boundaries and purpose.
+
+
+
+  objects:
+
+
+
+# ============================================================
+# 000 PLATFORM FOUNDATION
+# ============================================================
+
+
+    platform:
+
+
+      objects:
+
+
+        - id:
+            platform_user
+
+          purpose:
+            "Authenticated system identity."
+
+
+
+        - id:
+            platform_file
+
+          purpose:
+            "Managed storage object."
+
+
+
+# ============================================================
+# 001 CORE TYPES
+# ============================================================
+
+
+    core_types:
+
+
+      objects:
+
+
+        - id:
+            identifier
+
+          purpose:
+            "Canonical identifier types."
+
+
+
+        - id:
+            lifecycle_state
+
+          purpose:
+            "Shared state definitions."
+
+
+
+        - id:
+            timestamp_metadata
+
+          purpose:
+            "Standard audit timestamps."
+
+
+
+# ============================================================
+# 002 CORE SAAS
+# ============================================================
+
+
+    core_saas:
+
+
+      objects:
+
+
+        - id:
+            tenant
+
+          purpose:
+            "Customer organisation boundary."
+
+
+
+        - id:
+            subscription
+
+          purpose:
+            "SaaS subscription lifecycle."
+
+
+
+        - id:
+            plan
+
+          purpose:
+            "Commercial service package."
+
+
+
+# ============================================================
+# 003 PROPERTY & DEVICE ENGINE
+# ============================================================
+
+
+    property_device:
+
+
+      objects:
+
+
+        - id:
+            property
+
+          purpose:
+            "Physical Airbnb property."
+
+
+
+        - id:
+            room
+
+          purpose:
+            "Logical area inside property."
+
+
+
+        - id:
+            device
+
+          purpose:
+            "Physical smart device."
+
+
+
+        - id:
+            device_capability
+
+          purpose:
+            "Device functional capability."
+
+
+
+        - id:
+            device_state
+
+          purpose:
+            "Current operational state."
+
+
+
+        - id:
+            automation_target
+
+          purpose:
+            "Device automation endpoint."
+
+
+
+# ============================================================
+# 004 BOOKING & LOCK ENGINE
+# ============================================================
+
+
+    booking_lock:
+
+
+      objects:
+
+
+        - id:
+            booking
+
+          purpose:
+            "Guest reservation."
+
+
+
+        - id:
+            guest
+
+          purpose:
+            "Temporary property visitor identity."
+
+
+
+        - id:
+            access_code
+
+          purpose:
+            "Digital lock access credential."
+
+
+
+        - id:
+            lock_session
+
+          purpose:
+            "Temporary access lifecycle."
+
+
+
+# ============================================================
+# 005 INTEGRATION ENGINE
+# ============================================================
+
+
+    integration:
+
+
+      objects:
+
+
+        - id:
+            provider
+
+          purpose:
+            "External integration provider."
+
+
+
+        - id:
+            provider_connection
+
+          purpose:
+            "Configured external connection."
+
+
+
+        - id:
+            external_mapping
+
+          purpose:
+            "Mapping between internal and external objects."
+
+
+
+# ============================================================
+# 006 OPERATIONS ENGINE
+# ============================================================
+
+
+    operations:
+
+
+      objects:
+
+
+        - id:
+            task
+
+          purpose:
+            "Operational work item."
+
+
+
+        - id:
+            issue
+
+          purpose:
+            "Operational problem record."
+
+
+
+# ============================================================
+# 007 PRECONFIG ENGINE
+# ============================================================
+
+
+    preconfig:
+
+
+      objects:
+
+
+        - id:
+            device_package
+
+          purpose:
+            "Prepared device configuration package."
+
+
+
+        - id:
+            configuration_template
+
+          purpose:
+            "Reusable setup definition."
+
+
+
+# ============================================================
+# 008 LOGISTICS ENGINE
+# ============================================================
+
+
+    logistics:
+
+
+      objects:
+
+
+        - id:
+            shipment
+
+          purpose:
+            "Physical delivery record."
+
+
+
+        - id:
+            package_item
+
+          purpose:
+            "Device shipment component."
+
+
+
+# ============================================================
+# 009 COMMERCE ENGINE
+# ============================================================
+
+
+    commerce:
+
+
+      objects:
+
+
+        - id:
+            product
+
+          purpose:
+            "Sellable item."
+
+
+
+        - id:
+            order
+
+          purpose:
+            "Customer purchase transaction."
+
+
+
+        - id:
+            invoice
+
+          purpose:
+            "Financial document."
+
+
+
+# ============================================================
+# 010 SERVICE & PORTAL ENGINE
+# ============================================================
+
+
+    service_portal:
+
+
+      objects:
+
+
+        - id:
+            portal_account
+
+          purpose:
+            "Customer portal access."
+
+
+
+        - id:
+            service_request
+
+          purpose:
+            "Customer support request."
+
+
+
+# ============================================================
+# 011 ONBOARDING ENGINE
+# ============================================================
+
+
+    onboarding:
+
+
+      objects:
+
+
+        - id:
+            onboarding_session
+
+          purpose:
+            "Customer installation journey."
+
+
+
+        - id:
+            onboarding_step
+
+          purpose:
+            "Individual onboarding action."
+
+
+
+        - id:
+            onboarding_progress
+
+          purpose:
+            "Completion tracking."
+
+
+
+# ============================================================
+# 012 OPTIMIZATION ENGINE
+# ============================================================
+
+
+    optimization:
+
+
+      objects:
+
+
+        - id:
+            recommendation
+
+          purpose:
+            "Optimization suggestion."
+
+
+
+# ============================================================
+# 013 MONITORING & AUDIT ENGINE
+# ============================================================
+
+
+    monitoring:
+
+
+      objects:
+
+
+        - id:
+            audit_event
+
+          purpose:
+            "Immutable system history."
+
+
+
+        - id:
+            metric
+
+          purpose:
+            "Operational measurement."
+
+
+
+        - id:
+            alert
+
+          purpose:
+            "Operational notification."
+
+
+
+# ============================================================
+# 015 CRM ENGINE
+# ============================================================
+
+
+    crm:
+
+
+      objects:
+
+
+        - id:
+            customer
+
+          purpose:
+            "Customer relationship record."
+
+
+
+        - id:
+            contact
+
+          purpose:
+            "Customer communication endpoint."
+
+
+
+        - id:
+            interaction
+
+          purpose:
+            "Customer history event."
+
+
+
+# ============================================================
+# 016 AUTOMATION ENGINE
+# ============================================================
+
+
+    automation:
+
+
+      objects:
+
+
+        - id:
+            automation_rule
+
+          purpose:
+            "Automation definition."
+
+
+
+        - id:
+            automation_execution
+
+          purpose:
+            "Executed automation instance."
+
+
+
+        - id:
+            automation_event
+
+          purpose:
+            "Triggering event."
+
+
+
+# ============================================================
+# 017 EDGE RPC FOUNDATIONS
+# ============================================================
+
+
+    edge_rpc:
+
+
+      objects:
+
+
+        - id:
+            rpc_endpoint
+
+          purpose:
+            "Remote callable function."
+
+
+
+# ============================================================
+# 018 SECURITY HARDENING
+# ============================================================
+
+
+    security:
+
+
+      objects:
+
+
+        - id:
+            security_policy
+
+          purpose:
+            "Security enforcement definition."
+
+
+
+# ============================================================
+# 019 GRANT MATRIX
+# ============================================================
+
+
+    grants:
+
+
+      objects:
+
+
+        - id:
+            role
+
+          purpose:
+            "Access role."
+
+
+
+        - id:
+            permission
+
+          purpose:
+            "Atomic access capability."
+
+
+
+        - id:
+            grant
+
+          purpose:
+            "Role permission assignment."
+
+
+
+# ============================================================
+# 020 PRODUCTION FINALIZATION
+# ============================================================
+
+
+    production:
+
+
+      objects:
+
+
+        - id:
+            release
+
+          purpose:
+            "Production deployment version."
+
+
+
+
+# ============================================================
+# DATA MODEL
+# ============================================================
+
+
+data_model:
+
+
+  description: >
+
+    Canonical representation of entities, tables,
+    relationships and database structures.
+
+
+
+  entities:
+
+
+    tenant:
+
+
+      module:
+        "002"
+
+
+
+      tables:
+
+
+        - saas.tenants
+
+
+
+    property:
+
+
+      module:
+        "003"
+
+
+
+      tables:
+
+
+        - property.properties
+
+        - property.rooms
+
+
+
+    device:
+
+
+      module:
+        "003"
+
+
+
+      tables:
+
+
+        - device.devices
+
+        - device.capabilities
+
+
+
+    booking:
+
+
+      module:
+        "004"
+
+
+
+      tables:
+
+
+        - booking.bookings
+
+
+
+    access_control:
+
+
+      module:
+        "004"
+
+
+
+      tables:
+
+
+        - lock.access_codes
+
+
+
+    customer:
+
+
+      module:
+        "015"
+
+
+
+      tables:
+
+
+        - crm.customers
+
+        - crm.interactions
+
+
+
+    order:
+
+
+      module:
+        "009"
+
+
+
+      tables:
+
+
+        - commerce.orders
+
+
+
+    audit:
+
+
+      module:
+        "013"
+
+
+
+      tables:
+
+
+        - audit.events
+
+
+
+
+  relationships:
+
+
+    tenant_property:
+
+
+      type:
+
+        one_to_many
+
+
+
+    property_room:
+
+
+      type:
+
+        one_to_many
+
+
+
+    room_device:
+
+
+      type:
+
+        one_to_many
+
+
+
+    booking_property:
+
+
+      type:
+
+        many_to_one
+
+
+
+    customer_property:
+
+
+      type:
+
+        many_to_many
+
+
+
+# ============================================================
+# SSOT
+# ============================================================
+
+
+ssot:
+
+
+  description: >
+
+    Defines canonical ownership boundaries
+    and prevents duplicated truth.
+
+
+
+  canonical_source:
+
+
+    architecture:
+
+      "KGS-002"
+
+
+
+    ownership:
+
+      "KGS-004"
+
+
+
+    workflows:
+
+      "KGS-003"
+
+
+
+    business_rules:
+
+      "KGS-005"
+
+
+
+  invariants:
+
+
+    - one_object_one_owner
+
+    - no_duplicate_tables
+
+    - no_duplicate_business_state
+
+    - explicit_module_boundary
+
+
+
+  conflict_resolution:
+
+
+    rule:
+
+      "The owning module definition is authoritative."
+
+# ============================================================
+# DEPENDENCY REGISTRY
+# ============================================================
+
+
+dependencies:
+
+
+  description: >
+
+    Canonical dependency graph between SmartHellas modules.
+    Defines compile-time, runtime and service dependencies.
+
+
+
+  dependency_types:
+
+
+    compile:
+
+      description:
+        "Required during database deployment order."
+
+
+    runtime:
+
+      description:
+        "Required during application execution."
+
+
+    service:
+
+      description:
+        "External capability dependency."
+
+
+
+  modules:
+
+
+
+# ============================================================
+# PLATFORM FOUNDATION
+# ============================================================
+
+
+    "000":
+
+
+      depends_on:
+
+
+        compile: []
+
+
+        runtime: []
+
+
+        services:
+
+
+          - Supabase platform services
+
+
+
+# ============================================================
+# CORE TYPES
+# ============================================================
+
+
+    "001":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "000"
+
+
+
+      used_by:
+
+
+        - "002"
+
+        - "003"
+
+        - "004"
+
+        - "005"
+
+        - "009"
+
+        - "015"
+
+        - "016"
+
+
+
+# ============================================================
+# CORE SAAS
+# ============================================================
+
+
+    "002":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "001"
+
+
+
+        runtime:
+
+
+          - "000"
+
+
+
+      used_by:
+
+
+        - "003"
+
+        - "004"
+
+        - "009"
+
+        - "010"
+
+        - "015"
+
+
+
+
+# ============================================================
+# PROPERTY & DEVICE ENGINE
+# ============================================================
+
+
+    "003":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "001"
+
+          - "002"
+
+
+
+        runtime:
+
+
+          - "005"
+
+
+
+      used_by:
+
+
+        - "004"
+
+        - "007"
+
+        - "010"
+
+        - "016"
+
+
+
+
+# ============================================================
+# BOOKING & LOCK ENGINE
+# ============================================================
+
+
+    "004":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "001"
+
+          - "002"
+
+          - "003"
+
+
+
+        runtime:
+
+
+          - "005"
+
+
+
+      used_by:
+
+
+        - "010"
+
+        - "016"
+
+
+
+
+# ============================================================
+# INTEGRATION ENGINE
+# ============================================================
+
+
+    "005":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "001"
+
+
+
+        runtime:
+
+
+          - "000"
+
+
+
+      provides:
+
+
+        - external_provider_access
+
+
+
+# ============================================================
+# OPERATIONS ENGINE
+# ============================================================
+
+
+    "006":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "002"
+
+          - "003"
+
+
+
+
+# ============================================================
+# PRECONFIG ENGINE
+# ============================================================
+
+
+    "007":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "003"
+
+          - "005"
+
+
+
+
+# ============================================================
+# LOGISTICS ENGINE
+# ============================================================
+
+
+    "008":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "009"
+
+
+
+# ============================================================
+# COMMERCE ENGINE
+# ============================================================
+
+
+    "009":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "001"
+
+          - "002"
+
+
+
+
+# ============================================================
+# SERVICE PORTAL
+# ============================================================
+
+
+    "010":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "002"
+
+          - "003"
+
+          - "011"
+
+          - "015"
+
+
+
+# ============================================================
+# ONBOARDING ENGINE
+# ============================================================
+
+
+    "011":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "003"
+
+          - "007"
+
+
+
+
+# ============================================================
+# OPTIMIZATION ENGINE
+# ============================================================
+
+
+    "012":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "003"
+
+          - "013"
+
+
+
+# ============================================================
+# MONITORING ENGINE
+# ============================================================
+
+
+    "013":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "000"
+
+          - "001"
+
+
+
+
+# ============================================================
+# PLATFORM BOOTSTRAP
+# ============================================================
+
+
+    "014":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "000"
+
+
+
+
+# ============================================================
+# CRM ENGINE
+# ============================================================
+
+
+    "015":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "002"
+
+          - "001"
+
+
+
+
+# ============================================================
+# AUTOMATION ENGINE
+# ============================================================
+
+
+    "016":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "003"
+
+          - "004"
+
+
+
+        runtime:
+
+
+          - "013"
+
+
+
+
+# ============================================================
+# EDGE RPC
+# ============================================================
+
+
+    "017":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "000"
+
+
+
+
+# ============================================================
+# SECURITY
+# ============================================================
+
+
+    "018":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "000"
+
+          - "019"
+
+
+
+
+# ============================================================
+# GRANT MATRIX
+# ============================================================
+
+
+    "019":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "001"
+
+
+
+
+# ============================================================
+# PRODUCTION FINALIZATION
+# ============================================================
+
+
+    "020":
+
+
+      depends_on:
+
+
+        compile:
+
+
+          - "000"
+
+          - "014"
+
+
+
+
+
+# ============================================================
+# CONTRACT REGISTRY
+# ============================================================
+
+
+contracts:
+
+
+  description: >
+
+    Formal agreements between modules.
+
+
+
+  module_contracts:
+
+
+
+    "002":
+
+
+      outbound:
+
+
+        - TENANT_CONTEXT
+
+
+
+      guarantees:
+
+
+        - "Tenant isolation available."
+
+
+
+    "003":
+
+
+      outbound:
+
+
+        - PROPERTY_MODEL
+
+        - DEVICE_MODEL
+
+
+
+      guarantees:
+
+
+        - "Device identity remains stable."
+
+
+
+    "004":
+
+
+      outbound:
+
+
+        - ACCESS_CONTROL
+
+
+
+      guarantees:
+
+
+        - "Access lifecycle is auditable."
+
+
+
+    "005":
+
+
+      outbound:
+
+
+        - PROVIDER_ADAPTER
+
+
+
+      guarantees:
+
+
+        - "External systems are isolated."
+
+
+
+    "010":
+
+
+      outbound:
+
+
+        - CUSTOMER_PORTAL
+
+
+
+      guarantees:
+
+
+        - "Customer interaction is traceable."
+
+
+
+    "011":
+
+
+      outbound:
+
+
+        - ONBOARDING_STATE
+
+
+
+      guarantees:
+
+
+        - "Progress is persistent."
+
+
+
+    "015":
+
+
+      outbound:
+
+
+        - CUSTOMER_CONTEXT
+
+
+
+      guarantees:
+
+
+        - "Customer history is preserved."
+
+
+
+    "016":
+
+
+      outbound:
+
+
+        - AUTOMATION_EXECUTION
+
+
+
+      guarantees:
+
+
+        - "Automation is idempotent."
+
+
+
+
+  validation_rules:
+
+
+    - id:
+        CON-001
+
+      rule:
+        "Every consumed contract must exist."
+
+
+
+    - id:
+        CON-002
+
+      rule:
+        "Breaking contract changes require impact analysis."
+
+
+
+
+
+# ============================================================
+# INTERFACE REGISTRY
+# ============================================================
+
+
+interfaces:
+
+
+  description: >
+
+    Technical communication surfaces between modules.
+
+
+
+  interface_types:
+
+
+    api:
+
+      "Synchronous application communication."
+
+
+    rpc:
+
+      "Remote procedure execution."
+
+
+    event:
+
+      "Asynchronous communication."
+
+
+
+  module_interfaces:
+
+
+
+    "003":
+
+
+      provides:
+
+
+        api:
+
+
+          - DEVICE_SERVICE
+
+
+
+        events:
+
+
+          - device.created
+
+          - device.updated
+
+          - device.offline
+
+
+
+
+    "004":
+
+
+      provides:
+
+
+        api:
+
+
+          - ACCESS_CONTROL_API
+
+
+
+        events:
+
+
+          - access_code.created
+
+          - access_code.revoked
+
+
+
+
+    "005":
+
+
+      provides:
+
+
+        api:
+
+
+          - PROVIDER_API
+
+
+
+
+    "009":
+
+
+      provides:
+
+
+        api:
+
+
+          - COMMERCE_API
+
+
+
+        events:
+
+
+          - order.created
+
+
+
+
+    "010":
+
+
+      provides:
+
+
+        api:
+
+
+          - CUSTOMER_PORTAL_API
+
+
+
+
+    "011":
+
+
+      provides:
+
+
+        api:
+
+
+          - ONBOARDING_API
+
+
+
+        events:
+
+
+          - onboarding.completed
+
+
+
+
+    "015":
+
+
+      provides:
+
+
+        api:
+
+
+          - CRM_API
+
+
+
+        events:
+
+
+          - customer.created
+
+          - customer.updated
+
+
+
+
+    "016":
+
+
+      provides:
+
+
+        events:
+
+
+          - automation.executed
+
+
+
+
+    "017":
+
+
+      provides:
+
+
+        rpc:
+
+
+          - EDGE_RPC_INTERFACE
+
+
+
+
+  validation_rules:
+
+
+    - id:
+        INT-001
+
+      rule:
+        "Every interface requires an owner."
+
+
+
+    - id:
+        INT-002
+
+      rule:
+        "Modules may only consume registered interfaces."
+
+# ============================================================
+# INTEGRATION REGISTRY
+# ============================================================
+
+
+integrations:
+
+
+  description: >
+
+    Canonical registry of external systems,
+    providers and communication boundaries.
+
+
+
+  principles:
+
+
+    - provider_isolation
+
+    - secret_separation
+
+    - explicit_adapter_contracts
+
+    - failure_resilience
+
+    - observable_integrations
+
+
+
+  ownership:
+
+
+    primary_module:
+
+      "005_integration_engine"
+
+
+
+  providers:
+
+
+
+# ============================================================
+# SMART HOME PROVIDERS
+# ============================================================
+
+
+    aqara:
+
+
+      category:
+
+        smart_home
+
+
+
+      purpose:
+
+        "Management of Aqara smart devices."
+
+
+
+      connected_objects:
+
+
+        - device
+
+        - automation_rule
+
+        - device_state
+
+
+
+      communication:
+
+
+        type:
+
+          api
+
+
+
+      security:
+
+
+        secrets:
+
+          vault_managed: true
+
+
+
+    ttlock:
+
+
+      category:
+
+        smart_lock
+
+
+
+      purpose:
+
+        "Digital lock management and access codes."
+
+
+
+      connected_objects:
+
+
+        - lock
+
+        - access_code
+
+        - guest_access
+
+
+
+      communication:
+
+
+        type:
+
+          api
+
+
+
+      security:
+
+
+        secrets:
+
+          vault_managed: true
+
+
+
+# ============================================================
+# AIRBNB ECOSYSTEM
+# ============================================================
+
+
+    airbnb:
+
+
+      category:
+
+        booking_provider
+
+
+
+      purpose:
+
+        "Reservation and guest lifecycle integration."
+
+
+
+      connected_objects:
+
+
+        - booking
+
+        - guest
+
+
+
+      communication:
+
+
+        type:
+
+          api
+
+
+
+# ============================================================
+# COMMUNICATION PROVIDERS
+# ============================================================
+
+
+    notification_provider:
+
+
+      category:
+
+        messaging
+
+
+
+      purpose:
+
+        "Guest and customer notifications."
+
+
+
+      communication:
+
+
+        types:
+
+
+          - email
+
+          - sms
+
+          - push
+
+
+
+# ============================================================
+# SECURITY REGISTRY
+# ============================================================
+
+
+security:
+
+
+  description: >
+
+    Canonical security model defining authentication,
+    authorization, protection and audit requirements.
+
+
+
+  principles:
+
+
+    - least_privilege
+
+    - deny_by_default
+
+    - tenant_isolation
+
+    - encrypted_secrets
+
+    - auditable_actions
+
+
+
+# ============================================================
+# AUTHENTICATION
+# ============================================================
+
+
+  authentication:
+
+
+    owner:
+
+      "000"
+
+
+
+    provider:
+
+      Supabase Auth
+
+
+
+    methods:
+
+
+      - email
+
+      - oauth
+
+      - service_token
+
+
+
+# ============================================================
+# AUTHORIZATION
+# ============================================================
+
+
+  authorization:
+
+
+    owner:
+
+      "018"
+
+
+
+    managed_by:
+
+      "019"
+
+
+
+    model:
+
+
+      role_based_access_control
+
+
+
+    roles:
+
+
+      - platform_admin
+
+      - organization_owner
+
+      - property_manager
+
+      - service_operator
+
+      - support_agent
+
+      - guest
+
+
+
+    permissions:
+
+
+      naming:
+
+
+        format:
+
+          domain.resource.action
+
+
+
+      examples:
+
+
+        - property.device.read
+
+        - property.device.manage
+
+        - booking.access.generate
+
+        - customer.read
+
+        - automation.execute
+
+
+
+# ============================================================
+# ROW LEVEL SECURITY
+# ============================================================
+
+
+  rls:
+
+
+    enabled:
+
+      true
+
+
+
+    rules:
+
+
+      - tenant_boundary_required
+
+      - authenticated_access_required
+
+      - explicit_permission_required
+
+
+
+    protected_domains:
+
+
+      - tenant
+
+      - property
+
+      - device
+
+      - booking
+
+      - customer
+
+      - audit
+
+
+
+# ============================================================
+# DATA PROTECTION
+# ============================================================
+
+
+  encryption:
+
+
+    required:
+
+
+      at_rest:
+
+        true
+
+
+      in_transit:
+
+        true
+
+
+
+    protected_data:
+
+
+      - api_credentials
+
+      - access_codes
+
+      - personal_information
+
+      - integration_tokens
+
+
+
+# ============================================================
+# PII CLASSIFICATION
+# ============================================================
+
+
+  pii:
+
+
+    restricted:
+
+
+      - guest_identity
+
+      - door_access_data
+
+      - customer_identity
+
+
+
+    confidential:
+
+
+      - property_information
+
+      - operational_data
+
+
+
+# ============================================================
+# SECURITY AUDIT
+# ============================================================
+
+
+  audit:
+
+
+    owner:
+
+      "013"
+
+
+
+    mandatory_events:
+
+
+      - login
+
+      - permission_change
+
+      - access_code_generation
+
+      - configuration_change
+
+      - administrative_action
+
+
+
+# ============================================================
+# PERFORMANCE REGISTRY
+# ============================================================
+
+
+performance:
+
+
+  description: >
+
+    Canonical performance requirements defining scalability,
+    optimization and operational expectations.
+
+
+
+  principles:
+
+
+    - scalable_by_design
+
+    - indexed_access
+
+    - asynchronous_processing
+
+    - observable_latency
+
+
+
+# ============================================================
+# SCALE MODEL
+# ============================================================
+
+
+  expected_scale:
+
+
+    tenants:
+
+
+      model:
+
+        multi_tenant
+
+
+
+    properties:
+
+
+      model:
+
+        customer_growth
+
+
+
+    devices:
+
+
+      model:
+
+        property_based_scaling
+
+
+
+    bookings:
+
+
+      model:
+
+        time_series_growth
+
+
+
+# ============================================================
+# QUERY PATTERNS
+# ============================================================
+
+
+  query_patterns:
+
+
+    required_filters:
+
+
+      - tenant_id
+
+
+
+    common_queries:
+
+
+      property:
+
+
+        - property_dashboard
+
+        - device_overview
+
+
+
+      booking:
+
+
+        - active_booking_lookup
+
+        - guest_access_validation
+
+
+
+      portal:
+
+
+        - customer_dashboard
+
+        - onboarding_progress
+
+
+
+# ============================================================
+# INDEX STRATEGY
+# ============================================================
+
+
+  indexing:
+
+
+    required:
+
+
+      - foreign_keys
+
+      - tenant_columns
+
+      - timestamps
+
+      - status_fields
+
+
+
+# ============================================================
+# ASYNCHRONOUS PROCESSING
+# ============================================================
+
+
+  async_required_for:
+
+
+    - external_api_calls
+
+    - device_events
+
+    - notifications
+
+    - automation_execution
+
+    - reporting
+
+
+
+# ============================================================
+# CACHING
+# ============================================================
+
+
+  caching:
+
+
+    allowed:
+
+
+      - dashboard_data
+
+      - provider_metadata
+
+      - read_models
+
+
+
+    forbidden:
+
+
+      - permissions
+
+      - financial_truth
+
+      - security_state
+
+
+
+# ============================================================
+# PERFORMANCE VALIDATION
+# ============================================================
+
+
+validation:
+
+
+  rules:
+
+
+    - id:
+
+        PERF-001
+
+      rule:
+
+        "High volume objects require indexes."
+
+
+
+    - id:
+
+        PERF-002
+
+      rule:
+
+        "External providers may not block critical flows."
+
+
+
+    - id:
+
+        PERF-003
+
+      rule:
+
+        "Performance degradation must be observable."
+
+# ============================================================
+# OBSERVABILITY REGISTRY
+# ============================================================
+
+
+observability:
+
+
+  description: >
+
+    Canonical operational visibility model defining logging,
+    metrics, tracing, monitoring and alerting.
+
+
+
+  ownership:
+
+
+    primary:
+
+      module:
+
+        "013_monitoring_audit_engine"
+
+
+
+  principles:
+
+
+    - structured_logging
+
+    - immutable_audit_history
+
+    - correlation_tracking
+
+    - proactive_monitoring
+
+    - privacy_aware_logging
+
+
+
+# ============================================================
+# LOGGING
+# ============================================================
+
+
+  logging:
+
+
+    format:
+
+
+      structured:
+
+        true
+
+
+
+    required_fields:
+
+
+      - timestamp
+
+      - event_id
+
+      - correlation_id
+
+      - tenant_id
+
+      - module_id
+
+      - action
+
+      - status
+
+
+
+    levels:
+
+
+      - debug
+
+      - info
+
+      - warning
+
+      - error
+
+      - critical
+
+
+
+# ============================================================
+# AUDIT EVENTS
+# ============================================================
+
+
+  audit_logging:
+
+
+    immutable:
+
+      true
+
+
+
+    required_events:
+
+
+      authentication:
+
+
+        - login
+
+        - logout
+
+        - failed_login
+
+
+
+      security:
+
+
+        - permission_change
+
+        - role_change
+
+
+
+      business:
+
+
+        - order_created
+
+        - booking_created
+
+        - access_code_generated
+
+        - device_configuration_changed
+
+
+
+# ============================================================
+# METRICS
+# ============================================================
+
+
+  metrics:
+
+
+    technical:
+
+
+      - api_latency
+
+      - database_latency
+
+      - error_rate
+
+      - queue_depth
+
+
+
+    business:
+
+
+      - active_properties
+
+      - active_devices
+
+      - subscriptions
+
+      - onboarding_completion
+
+
+
+    operational:
+
+
+      - failed_integrations
+
+      - automation_failures
+
+      - support_cases
+
+
+
+# ============================================================
+# TRACING
+# ============================================================
+
+
+  tracing:
+
+
+    enabled:
+
+      true
+
+
+
+    targets:
+
+
+      - api_requests
+
+      - workflows
+
+      - integrations
+
+      - automation_execution
+
+      - background_jobs
+
+
+
+# ============================================================
+# MONITORING & ALERTS
+# ============================================================
+
+
+  alerts:
+
+
+    conditions:
+
+
+      - integration_failure
+
+      - device_offline
+
+      - automation_failure
+
+      - security_violation
+
+      - queue_backlog
+
+
+
+    severity:
+
+
+      - info
+
+      - warning
+
+      - error
+
+      - critical
+
+
+
+
+# ============================================================
+# DEPLOYMENT REGISTRY
+# ============================================================
+
+
+deployment:
+
+
+  description: >
+
+    Canonical production lifecycle definition including
+    migration order, rollback and release validation.
+
+
+
+  principles:
+
+
+    - deterministic_order
+
+    - reversible_changes
+
+    - migration_safety
+
+    - production_traceability
+
+
+
+# ============================================================
+# MIGRATION ORDER
+# ============================================================
+
+
+  migration_order:
+
+
+    strategy:
+
+      dependency_based
+
+
+
+    sequence:
+
+
+      - 000
+
+      - 001
+
+      - 002
+
+      - 003
+
+      - 004
+
+      - 005
+
+      - 006
+
+      - 007
+
+      - 008
+
+      - 009
+
+      - 010
+
+      - 011
+
+      - 012
+
+      - 013
+
+      - 014
+
+      - 015
+
+      - 016
+
+      - 017
+
+      - 018
+
+      - 019
+
+      - 020
+
+
+
+# ============================================================
+# PREREQUISITES
+# ============================================================
+
+
+  prerequisites:
+
+
+    - database_ready
+
+    - extensions_available
+
+    - secrets_configured
+
+    - migrations_validated
+
+    - permissions_checked
+
+
+
+# ============================================================
+# ROLLBACK
+# ============================================================
+
+
+  rollback:
+
+
+    requirements:
+
+
+      - backup_available
+
+      - migration_reversal_plan
+
+      - dependency_check
+
+
+
+    strategies:
+
+
+      - migration_down
+
+      - restore_backup
+
+      - disable_feature
+
+
+
+
+# ============================================================
+# FEATURE FLAGS
+# ============================================================
+
+
+  feature_flags:
+
+
+    purpose:
+
+
+      - controlled_release
+
+      - beta_features
+
+      - emergency_disable
+
+
+
+    managed_by:
+
+
+      "020"
+
+
+
+
+# ============================================================
+# TESTING REGISTRY
+# ============================================================
+
+
+testing:
+
+
+  description: >
+
+    Canonical validation model defining required testing
+    before merge, release and production deployment.
+
+
+
+  principles:
+
+
+    - automated_validation
+
+    - regression_prevention
+
+    - security_validation
+
+    - migration_safety
+
+
+
+# ============================================================
+# TEST TYPES
+# ============================================================
+
+
+  test_types:
+
+
+    unit_tests:
+
+
+      validates:
+
+
+        - functions
+
+        - triggers
+
+        - calculations
+
+
+
+    integration_tests:
+
+
+      validates:
+
+
+        - api_contracts
+
+        - rpc
+
+        - events
+
+        - providers
+
+
+
+    migration_tests:
+
+
+      validates:
+
+
+        - schema_changes
+
+        - rollback
+
+        - data_conversion
+
+
+
+    security_tests:
+
+
+      validates:
+
+
+        - authentication
+
+        - authorization
+
+        - rls
+
+        - permissions
+
+
+
+    regression_tests:
+
+
+      validates:
+
+
+        - existing_workflows
+
+        - public_contracts
+
+
+
+
+# ============================================================
+# QUALITY GATES
+# ============================================================
+
+
+  quality_gates:
+
+
+    before_merge:
+
+
+      - lint
+
+      - dependency_validation
+
+      - unit_tests
+
+
+
+    before_release:
+
+
+      - integration_tests
+
+      - security_tests
+
+      - migration_tests
+
+
+
+    before_production:
+
+
+      - all_tests_passed
+
+      - monitoring_enabled
+
+      - rollback_verified
+
+
+
+
+# ============================================================
+# AI AUDIT METADATA
+# ============================================================
+
+
+ai:
+
+
+  description: >
+
+    Metadata used by AI analysis engines for architecture
+    reasoning, impact analysis and automated auditing.
+
+
+
+# ============================================================
+# MODULE UNDERSTANDING
+# ============================================================
+
+
+  summary:
+
+
+    purpose:
+
+
+      "Provides machine-readable architectural context."
+
+
+
+  module_role:
+
+
+    classification:
+
+
+      - domain_module
+
+      - infrastructure_module
+
+      - control_module
+
+
+
+
+# ============================================================
+# IMPACT ANALYSIS
+# ============================================================
+
+
+  upstream_impact:
+
+
+    describes:
+
+
+      - dependencies
+
+      - consumed_contracts
+
+      - required_services
+
+
+
+  downstream_impact:
+
+
+    describes:
+
+
+      - consumers
+
+      - affected_workflows
+
+      - dependent_modules
+
+
+
+  change_impact:
+
+
+    evaluated_by:
+
+
+      - dependency_engine
+
+      - ssot_engine
+
+      - workflow_engine
+
+
+
+# ============================================================
+# RISK ANALYSIS
+# ============================================================
+
+
+  dependency_risk:
+
+
+    factors:
+
+
+      - dependency_count
+
+      - criticality
+
+      - external_integrations
+
+      - security_scope
+
+
+
+  migration_notes:
+
+
+    required_for:
+
+
+      - breaking_changes
+
+      - schema_changes
+
+      - contract_changes
+
+
+
+  audit_notes:
+
+
+    generated_by:
+
+
+      enterprise_auditor
+
+
+
+
+# ============================================================
+# END KGS-002 v2.0
+# ============================================================

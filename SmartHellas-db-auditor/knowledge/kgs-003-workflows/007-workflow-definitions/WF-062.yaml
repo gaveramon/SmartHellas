@@ -1,0 +1,420 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-062 Billing & Invoice Processing
+  # ==========================================================
+
+
+  - id: WF-062
+
+    name: billing_invoice_processing
+
+    title: Billing & Invoice Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - commerce_billing
+
+
+
+      owner:
+
+
+        module: 009_commerce_engine
+
+
+
+      classification:
+
+
+        business_process: financial_processing
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Generates invoices and manages recurring
+        subscription billing.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - invoice_generation
+
+        - recurring_billing
+
+        - payment_status_tracking
+
+        - billing_history
+
+
+
+      excludes:
+
+
+        - subscription_definition
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - billing_cycle_started
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+      - billing_information_available
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - subscription
+
+      - billing_information
+
+      - usage_records
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          calculate_billing_amount
+
+
+
+      - step: 2
+
+        action:
+
+          generate_invoice
+
+
+
+      - step: 3
+
+        action:
+
+          request_payment
+
+
+
+      - step: 4
+
+        action:
+
+          update_payment_status
+
+
+
+      - step: 5
+
+        action:
+
+          store_invoice_history
+
+
+
+    outputs:
+
+
+      - invoice
+
+      - payment_status
+
+
+
+    state_machine:
+
+
+      - SM-062 Billing Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-063 invoice_created
+
+        - EVT-064 payment_received
+
+
+
+    orchestration:
+
+
+      - ORCH-062 Billing Process
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 009_commerce_engine
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      - Payment Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - financial_data_protection
+
+        - audit_logging
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_payment_collection
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - cancel_invoice
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - recurring_revenue
+
+        - failed_payment_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+    purpose:
+
+
+      description: >
+        Coordinates complex automation scenarios
+        across devices, sensors, energy systems
+        and guest events.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - event_based_rules
+
+        - multi_device_actions
+
+        - energy_optimization
+
+        - guest_scenarios
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-052 normalized_provider_event
+
+        - booking_events
+
+        - energy_events
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          evaluate_rules
+
+
+
+      - step: 2
+
+        action:
+
+          resolve_dependencies
+
+
+
+      - step: 3
+
+        action:
+
+          execute_actions
+
+
+
+      - step: 4
+
+        action:
+
+          validate_results
+
+
+
+    outputs:
+
+
+      - automation_execution_result
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 005_integration_engine
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_permission_control
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - automation_execution_success
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

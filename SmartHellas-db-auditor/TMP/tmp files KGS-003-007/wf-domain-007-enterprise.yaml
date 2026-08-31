@@ -1,0 +1,2755 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-060 Subscription Lifecycle Management
+  # ==========================================================
+
+
+  - id: WF-060
+
+    name: subscription_lifecycle_management
+
+    title: Subscription Lifecycle Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - saas_management
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+      classification:
+
+        business_process: subscription_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Manages the complete lifecycle of SmartHellas
+        subscriptions from activation through renewal,
+        suspension and termination.
+
+
+
+    scope:
+
+      includes:
+
+        - subscription_creation
+
+        - subscription_activation
+
+        - subscription_renewal
+
+        - subscription_suspension
+
+        - subscription_termination
+
+
+      excludes:
+
+        - payment_processing
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-040 subscription_activated
+
+        - payment_completed
+
+
+
+    preconditions:
+
+
+      - customer_exists
+
+      - selected_subscription_plan_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - customer_account
+
+      - subscription_plan
+
+      - payment_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_subscription_request
+
+
+
+      - step: 2
+
+        action:
+
+          create_subscription_instance
+
+
+
+      - step: 3
+
+        action:
+
+          assign_subscription_features
+
+
+
+      - step: 4
+
+        action:
+
+          activate_subscription
+
+
+
+      - step: 5
+
+        action:
+
+          monitor_subscription_state
+
+
+
+    outputs:
+
+
+      - active_subscription
+
+      - subscription_status
+
+
+
+    state_machine:
+
+
+      - SM-060 Subscription Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-060 subscription_created
+
+        - EVT-061 subscription_status_changed
+
+
+
+    orchestration:
+
+
+      - ORCH-060 Subscription Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Payment Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_isolation
+
+        - subscription_permission_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_subscription_activation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - rollback_subscription_creation
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - active_subscription_count
+
+        - churn_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-061 Usage Metering & Entitlement Tracking
+  # ==========================================================
+
+
+  - id: WF-061
+
+    name: usage_metering_entitlement_tracking
+
+    title: Usage Metering & Entitlement Tracking
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - saas_usage
+
+
+
+      owner:
+
+
+        module: 002_core_saas
+
+
+
+      classification:
+
+
+        business_process: feature_control
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Measures customer usage and validates which
+        SmartHellas features are available based on
+        subscription entitlements.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - usage_collection
+
+        - feature_validation
+
+        - entitlement_checking
+
+        - usage_reporting
+
+
+
+      excludes:
+
+
+        - billing_generation
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - portal_action
+
+        - automation_execution
+
+        - api_request
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - subscription_plan
+
+      - usage_events
+
+      - feature_requests
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_usage_event
+
+
+
+      - step: 2
+
+        action:
+
+          validate_entitlement
+
+
+
+      - step: 3
+
+        action:
+
+          update_usage_counter
+
+
+
+      - step: 4
+
+        action:
+
+          generate_usage_report
+
+
+
+    outputs:
+
+
+      - usage_record
+
+      - entitlement_status
+
+
+
+    state_machine:
+
+
+      - SM-061 Usage Tracking Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-062 usage_record_created
+
+
+
+    orchestration:
+
+
+      - ORCH-061 Usage Metering
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+        - 016_automation_engine
+
+
+
+    integrations: []
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - usage_data_protection
+
+        - tenant_data_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        queue_failed_usage_events
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - recalculate_usage
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - feature_usage
+
+        - entitlement_failures
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-062 Billing & Invoice Processing
+  # ==========================================================
+
+
+  - id: WF-062
+
+    name: billing_invoice_processing
+
+    title: Billing & Invoice Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - commerce_billing
+
+
+
+      owner:
+
+
+        module: 009_commerce_engine
+
+
+
+      classification:
+
+
+        business_process: financial_processing
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Generates invoices and manages recurring
+        subscription billing.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - invoice_generation
+
+        - recurring_billing
+
+        - payment_status_tracking
+
+        - billing_history
+
+
+
+      excludes:
+
+
+        - subscription_definition
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - billing_cycle_started
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+      - billing_information_available
+
+
+
+    actors:
+
+
+      - system
+
+      - customer
+
+
+
+    inputs:
+
+
+      - subscription
+
+      - billing_information
+
+      - usage_records
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          calculate_billing_amount
+
+
+
+      - step: 2
+
+        action:
+
+          generate_invoice
+
+
+
+      - step: 3
+
+        action:
+
+          request_payment
+
+
+
+      - step: 4
+
+        action:
+
+          update_payment_status
+
+
+
+      - step: 5
+
+        action:
+
+          store_invoice_history
+
+
+
+    outputs:
+
+
+      - invoice
+
+      - payment_status
+
+
+
+    state_machine:
+
+
+      - SM-062 Billing Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-063 invoice_created
+
+        - EVT-064 payment_received
+
+
+
+    orchestration:
+
+
+      - ORCH-062 Billing Process
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 009_commerce_engine
+
+        - 002_core_saas
+
+
+
+    integrations:
+
+
+      - Payment Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - financial_data_protection
+
+        - audit_logging
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_payment_collection
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - cancel_invoice
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - recurring_revenue
+
+        - failed_payment_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+    purpose:
+
+
+      description: >
+        Coordinates complex automation scenarios
+        across devices, sensors, energy systems
+        and guest events.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - event_based_rules
+
+        - multi_device_actions
+
+        - energy_optimization
+
+        - guest_scenarios
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - EVT-052 normalized_provider_event
+
+        - booking_events
+
+        - energy_events
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          evaluate_rules
+
+
+
+      - step: 2
+
+        action:
+
+          resolve_dependencies
+
+
+
+      - step: 3
+
+        action:
+
+          execute_actions
+
+
+
+      - step: 4
+
+        action:
+
+          validate_results
+
+
+
+    outputs:
+
+
+      - automation_execution_result
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 005_integration_engine
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      providers:
+
+
+        - Aqara
+
+        - TTLock
+
+        - Shelly
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - automation_permission_control
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - automation_execution_success
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-063 Plan Upgrade & Downgrade Management
+  # ==========================================================
+
+
+  - id: WF-063
+
+    name: plan_upgrade_downgrade_management
+
+    title: Plan Upgrade & Downgrade Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - saas_subscription
+
+
+      owner:
+
+        module: 002_core_saas
+
+
+      classification:
+
+        business_process: subscription_change
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+      description: >
+        Manages subscription plan changes while preserving
+        customer data, permissions and service continuity.
+
+
+
+    scope:
+
+      includes:
+
+        - plan_upgrade
+
+        - plan_downgrade
+
+        - feature_activation
+
+        - feature_deactivation
+
+
+      excludes:
+
+        - payment_collection
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - customer_plan_change_requested
+
+        - subscription_renewal
+
+
+
+    preconditions:
+
+
+      - active_subscription_exists
+
+      - valid_target_plan_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - current_subscription
+
+      - requested_plan
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_plan_change
+
+
+
+      - step: 2
+
+        action:
+
+          compare_entitlements
+
+
+
+      - step: 3
+
+        action:
+
+          update_subscription_plan
+
+
+
+      - step: 4
+
+        action:
+
+          activate_or_disable_features
+
+
+
+      - step: 5
+
+        action:
+
+          notify_customer
+
+
+
+    outputs:
+
+
+      - updated_subscription
+
+      - updated_entitlements
+
+
+
+    state_machine:
+
+
+      - SM-063 Subscription Change Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-065 subscription_plan_changed
+
+
+
+    orchestration:
+
+
+      - ORCH-063 Subscription Change
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+        - 009_commerce_engine
+
+
+
+    integrations:
+
+
+      - Payment Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - subscription_authorization
+
+        - permission_recalculation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_plan_change
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_plan
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - upgrade_rate
+
+        - downgrade_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-064 Customer Tenant Management
+  # ==========================================================
+
+
+  - id: WF-064
+
+    name: customer_tenant_management
+
+    title: Customer Tenant Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - multi_tenant_management
+
+
+
+      owner:
+
+
+        module: 002_core_saas
+
+
+
+      classification:
+
+
+        business_process: tenant_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Manages customer tenants, properties,
+        users and isolation boundaries within
+        the SmartHellas SaaS platform.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - tenant_creation
+
+        - property_assignment
+
+        - user_access_management
+
+        - tenant_configuration
+
+
+
+      excludes:
+
+
+        - device_configuration
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - customer_registered
+
+        - property_added
+
+
+
+    preconditions:
+
+
+      - customer_account_exists
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+      - administrator
+
+
+
+    inputs:
+
+
+      - customer_identity
+
+      - property_information
+
+      - user_roles
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          create_tenant
+
+
+
+      - step: 2
+
+        action:
+
+          assign_customer_owner
+
+
+
+      - step: 3
+
+        action:
+
+          add_properties
+
+
+
+      - step: 4
+
+        action:
+
+          configure_roles
+
+
+
+      - step: 5
+
+        action:
+
+          validate_isolation
+
+
+
+    outputs:
+
+
+      - tenant
+
+      - tenant_configuration
+
+
+
+    state_machine:
+
+
+      - SM-064 Tenant Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-066 tenant_created
+
+
+
+    orchestration:
+
+
+      - ORCH-064 Tenant Management
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 002_core_saas
+
+        - 003_property_device_engine
+
+        - 015_crm_engine
+
+
+
+    integrations: []
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - row_level_security
+
+        - tenant_isolation
+
+        - role_based_access_control
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_tenant_creation
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - deactivate_tenant
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - active_tenant_count
+
+        - property_count_per_tenant
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-065 SLA & Service Level Monitoring
+  # ==========================================================
+
+
+  - id: WF-065
+
+    name: sla_service_level_monitoring
+
+    title: SLA & Service Level Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - operations_management
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: service_quality
+
+        criticality: operational_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Monitors SmartHellas service availability,
+        response times and operational commitments.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - uptime_monitoring
+
+        - response_tracking
+
+        - incident_measurement
+
+        - service_reporting
+
+
+
+      excludes:
+
+
+        - customer_case_resolution
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_monitoring_cycle
+
+
+
+    preconditions:
+
+
+      - active_service
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_team
+
+
+
+    inputs:
+
+
+      - system_metrics
+
+      - incident_data
+
+      - support_metrics
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_service_metrics
+
+
+
+      - step: 2
+
+        action:
+
+          calculate_sla_values
+
+
+
+      - step: 3
+
+        action:
+
+          detect_sla_breach
+
+
+
+      - step: 4
+
+        action:
+
+          create_service_report
+
+
+
+      - step: 5
+
+        action:
+
+          notify_operations_team
+
+
+
+    outputs:
+
+
+      - sla_report
+
+      - service_health_status
+
+
+
+    state_machine:
+
+
+      - SM-065 SLA Monitoring Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-067 sla_breach_detected
+
+
+
+    orchestration:
+
+
+      - ORCH-065 SLA Monitoring
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+
+      - Monitoring Provider
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - operational_data_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_incident
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - recalculate_sla_metrics
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - uptime_percentage
+
+        - response_time
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+definition_registry:
+
+
+  # ==========================================================
+  # WF-066 AI Energy Optimization Recommendations
+  # ==========================================================
+
+
+  - id: WF-066
+
+    name: ai_energy_optimization_recommendations
+
+    title: AI Energy Optimization Recommendations
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - artificial_intelligence
+
+        - energy_optimization
+
+
+      owner:
+
+        module: 016_automation_engine
+
+
+      classification:
+
+        business_process: energy_intelligence
+
+        criticality: business_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+      description: >
+        Analyzes energy consumption patterns and generates
+        optimization recommendations for Airbnb properties.
+
+
+
+    scope:
+
+      includes:
+
+        - energy_pattern_analysis
+
+        - anomaly_detection
+
+        - optimization_recommendations
+
+        - automation_suggestions
+
+
+      excludes:
+
+        - automatic billing_adjustment
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - energy_data_available
+
+        - scheduled_ai_analysis
+
+
+
+    preconditions:
+
+
+      - energy_data_available
+
+      - property_active
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - energy_measurements
+
+      - occupancy_data
+
+      - climate_data
+
+      - automation_history
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_energy_history
+
+
+
+      - step: 2
+
+        action:
+
+          analyze_consumption_patterns
+
+
+
+      - step: 3
+
+        action:
+
+          detect_optimization_opportunities
+
+
+
+      - step: 4
+
+        action:
+
+          generate_recommendations
+
+
+
+      - step: 5
+
+        action:
+
+          present_recommendations
+
+
+
+    outputs:
+
+
+      - energy_recommendation
+
+      - optimization_report
+
+
+
+    state_machine:
+
+
+      - SM-066 AI Analysis Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-068 recommendation_generated
+
+
+
+    orchestration:
+
+
+      - ORCH-066 AI Energy Analysis
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 016_automation_engine
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - Shelly Integration
+
+      - Aqara Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - anonymized_usage_analysis
+
+        - customer_data_protection
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        fallback_to_rule_based_analysis
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - discard_invalid_prediction
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - recommendation_accuracy
+
+        - estimated_energy_savings
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-067 AI Property Insights Generation
+  # ==========================================================
+
+
+  - id: WF-067
+
+    name: ai_property_insights_generation
+
+    title: AI Property Insights Generation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - property_intelligence
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: property_analytics
+
+        criticality: business_critical
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Generates operational insights about property
+        performance, device reliability and guest usage.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - property_analysis
+
+        - device_health_insights
+
+        - usage_patterns
+
+        - improvement_suggestions
+
+
+
+      excludes:
+
+
+        - autonomous property changes
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_insight_generation
+
+
+
+    preconditions:
+
+
+      - operational_data_available
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - property_metrics
+
+      - device_history
+
+      - guest_activity_data
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          aggregate_property_data
+
+
+
+      - step: 2
+
+        action:
+
+          analyze_patterns
+
+
+
+      - step: 3
+
+        action:
+
+          generate_property_score
+
+
+
+      - step: 4
+
+        action:
+
+          create_insight_report
+
+
+
+    outputs:
+
+
+      - property_insight_report
+
+
+
+    state_machine:
+
+
+      - SM-067 Insight Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-069 insight_generated
+
+
+
+    orchestration:
+
+
+      - ORCH-067 Property Intelligence
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations: []
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_data_isolation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_analysis
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - invalidate_report
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - insight_generation_time
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-068 Enterprise Auditor Execution
+  # ==========================================================
+
+
+  - id: WF-068
+
+    name: enterprise_auditor_execution
+
+    title: Enterprise Auditor Execution
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - architecture_governance
+
+
+
+      owner:
+
+
+        module:
+
+          enterprise_auditor
+
+
+
+      classification:
+
+
+        business_process: governance
+
+        criticality: platform_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Executes automated architecture audits using
+        KGS knowledge, rules and analysis engines.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - dependency_analysis
+
+        - ssot_validation
+
+        - rule_validation
+
+        - architecture_reporting
+
+
+
+      excludes:
+
+
+        - automatic_schema_modification
+
+
+
+    trigger:
+
+
+      events:
+
+
+        - scheduled_audit_execution
+
+        - architecture_change_detected
+
+
+
+    preconditions:
+
+
+      - auditor_configuration_available
+
+
+
+    actors:
+
+
+      - system
+
+      - architect
+
+
+
+    inputs:
+
+
+      - kgs_knowledge_layer
+
+      - sql_schema
+
+      - yaml_configuration
+
+      - ruleset
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          parse_system_definition
+
+
+
+      - step: 2
+
+        action:
+
+          build_dependency_graph
+
+
+
+      - step: 3
+
+        action:
+
+          execute_ssot_audit
+
+
+
+      - step: 4
+
+        action:
+
+          generate_violation_report
+
+
+
+      - step: 5
+
+        action:
+
+          publish_architecture_report
+
+
+
+    outputs:
+
+
+      - dependency_report
+
+      - violations_report
+
+      - architecture_report
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - enterprise_auditor
+
+
+
+    integrations:
+
+
+      - Git Repository
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - audit_integrity
+
+        - immutable_audit_logs
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - audit_duration
+
+        - violation_count
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
+
+
+
+
+
+  # ==========================================================
+  # WF-069 Platform Health & Governance Monitoring
+  # ==========================================================
+
+
+  - id: WF-069
+
+    name: platform_health_governance_monitoring
+
+    title: Platform Health & Governance Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+
+        - platform_governance
+
+
+
+      owner:
+
+
+        module: 006_operations_engine
+
+
+
+      classification:
+
+
+        business_process: platform_operations
+
+        criticality: platform_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Continuously monitors technical health,
+        compliance status and operational reliability
+        of the SmartHellas platform.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - system_health_monitoring
+
+        - dependency_monitoring
+
+        - governance_checks
+
+        - alert_generation
+
+
+
+      excludes:
+
+
+        - infrastructure_provisioning
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_health_check
+
+
+
+    preconditions:
+
+
+      - monitoring_enabled
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_team
+
+
+
+    inputs:
+
+
+      - application_metrics
+
+      - database_metrics
+
+      - audit_results
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_platform_metrics
+
+
+
+      - step: 2
+
+        action:
+
+          evaluate_health_rules
+
+
+
+      - step: 3
+
+        action:
+
+          detect_platform_risk
+
+
+
+      - step: 4
+
+        action:
+
+          create_operational_alert
+
+
+
+    outputs:
+
+
+      - platform_health_status
+
+      - governance_report
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - enterprise_auditor
+
+
+
+    integrations:
+
+
+      - Monitoring Platform
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - operational_security
+
+        - audit_protection
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - platform_availability
+
+        - incident_rate
+
+
+
+    audit:
+
+
+      enabled:
+
+        true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

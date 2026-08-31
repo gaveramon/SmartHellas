@@ -1,0 +1,4946 @@
+state_machine_registry:
+
+  # ==========================================================
+  # SM-001 Customer Lifecycle
+  # ==========================================================
+
+  - id: SM-001
+
+    name: customer_lifecycle
+
+    title: Customer Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of a customer account from creation
+      through active usage and eventual termination.
+
+    initial_state: pending
+
+    states:
+
+      - pending
+
+      - registered
+
+      - verified
+
+      - active
+
+      - suspended
+
+      - deactivated
+
+      - archived
+
+    terminal_states:
+
+      - archived
+
+    transitions:
+
+      - id: TR-001-01
+        from: pending
+        to: registered
+
+      - id: TR-001-02
+        from: registered
+        to: verified
+
+      - id: TR-001-03
+        from: verified
+        to: active
+
+      - id: TR-001-04
+        from: active
+        to: suspended
+
+      - id: TR-001-05
+        from: suspended
+        to: active
+
+      - id: TR-001-06
+        from: active
+        to: deactivated
+
+      - id: TR-001-07
+        from: deactivated
+        to: archived
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+  # ==========================================================
+  # SM-002 Organization Lifecycle
+  # ==========================================================
+
+  - id: SM-002
+
+    name: organization_lifecycle
+
+    title: Organization Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of a customer organization or tenant
+      within the SaaS platform.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - configured
+
+      - active
+
+      - suspended
+
+      - closing
+
+      - closed
+
+    terminal_states:
+
+      - closed
+
+    transitions:
+
+      - id: TR-002-01
+        from: created
+        to: configured
+
+      - id: TR-002-02
+        from: configured
+        to: active
+
+      - id: TR-002-03
+        from: active
+        to: suspended
+
+      - id: TR-002-04
+        from: suspended
+        to: active
+
+      - id: TR-002-05
+        from: active
+        to: closing
+
+      - id: TR-002-06
+        from: closing
+        to: closed
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+  # ==========================================================
+  # SM-003 Subscription Lifecycle
+  # ==========================================================
+
+  - id: SM-003
+
+    name: subscription_lifecycle
+
+    title: Subscription Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines subscription states from creation through renewal,
+      suspension and termination.
+
+    initial_state: trial
+
+    states:
+
+      - trial
+
+      - active
+
+      - past_due
+
+      - suspended
+
+      - cancelled
+
+      - expired
+
+    terminal_states:
+
+      - cancelled
+
+      - expired
+
+    transitions:
+
+      - id: TR-003-01
+        from: trial
+        to: active
+
+      - id: TR-003-02
+        from: active
+        to: past_due
+
+      - id: TR-003-03
+        from: past_due
+        to: active
+
+      - id: TR-003-04
+        from: past_due
+        to: suspended
+
+      - id: TR-003-05
+        from: suspended
+        to: active
+
+      - id: TR-003-06
+        from: active
+        to: cancelled
+
+      - id: TR-003-07
+        from: active
+        to: expired
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+state_machine_registry:
+
+  # ==========================================================
+  # SM-004 Property Lifecycle
+  # ==========================================================
+
+  - id: SM-004
+
+    name: property_lifecycle
+
+    title: Property Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of an Airbnb property from creation,
+      configuration and activation through decommissioning.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - configured
+
+      - onboarding
+
+      - active
+
+      - suspended
+
+      - maintenance
+
+      - decommissioned
+
+    terminal_states:
+
+      - decommissioned
+
+    transitions:
+
+      - id: TR-004-01
+        from: created
+        to: configured
+
+      - id: TR-004-02
+        from: configured
+        to: onboarding
+
+      - id: TR-004-03
+        from: onboarding
+        to: active
+
+      - id: TR-004-04
+        from: active
+        to: suspended
+
+      - id: TR-004-05
+        from: suspended
+        to: active
+
+      - id: TR-004-06
+        from: active
+        to: maintenance
+
+      - id: TR-004-07
+        from: maintenance
+        to: active
+
+      - id: TR-004-08
+        from: active
+        to: decommissioned
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-005 Room Lifecycle
+  # ==========================================================
+
+  - id: SM-005
+
+    name: room_lifecycle
+
+    title: Room Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of rooms within an Airbnb property.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - configured
+
+      - active
+
+      - unavailable
+
+      - archived
+
+    terminal_states:
+
+      - archived
+
+    transitions:
+
+      - id: TR-005-01
+        from: created
+        to: configured
+
+      - id: TR-005-02
+        from: configured
+        to: active
+
+      - id: TR-005-03
+        from: active
+        to: unavailable
+
+      - id: TR-005-04
+        from: unavailable
+        to: active
+
+      - id: TR-005-05
+        from: active
+        to: archived
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-006 Device Lifecycle
+  # ==========================================================
+
+  - id: SM-006
+
+    name: device_lifecycle
+
+    title: Device Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the complete lifecycle of a SmartHellas device
+      from procurement through retirement.
+
+    initial_state: ordered
+
+    states:
+
+      - ordered
+
+      - received
+
+      - preconfigured
+
+      - shipped
+
+      - installed
+
+      - active
+
+      - offline
+
+      - maintenance
+
+      - replaced
+
+      - retired
+
+    terminal_states:
+
+      - retired
+
+    transitions:
+
+      - id: TR-006-01
+        from: ordered
+        to: received
+
+      - id: TR-006-02
+        from: received
+        to: preconfigured
+
+      - id: TR-006-03
+        from: preconfigured
+        to: shipped
+
+      - id: TR-006-04
+        from: shipped
+        to: installed
+
+      - id: TR-006-05
+        from: installed
+        to: active
+
+      - id: TR-006-06
+        from: active
+        to: offline
+
+      - id: TR-006-07
+        from: offline
+        to: active
+
+      - id: TR-006-08
+        from: active
+        to: maintenance
+
+      - id: TR-006-09
+        from: maintenance
+        to: active
+
+      - id: TR-006-10
+        from: maintenance
+        to: replaced
+
+      - id: TR-006-11
+        from: replaced
+        to: retired
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-007 Device Provisioning Lifecycle
+  # ==========================================================
+
+  - id: SM-007
+
+    name: device_provisioning
+
+    title: Device Provisioning Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the technical provisioning process before a device
+      becomes available for customer installation.
+
+    initial_state: detected
+
+    states:
+
+      - detected
+
+      - registered
+
+      - configured
+
+      - tested
+
+      - approved
+
+      - failed
+
+      - reset
+
+    terminal_states:
+
+      - approved
+
+    transitions:
+
+      - id: TR-007-01
+        from: detected
+        to: registered
+
+      - id: TR-007-02
+        from: registered
+        to: configured
+
+      - id: TR-007-03
+        from: configured
+        to: tested
+
+      - id: TR-007-04
+        from: tested
+        to: approved
+
+      - id: TR-007-05
+        from: tested
+        to: failed
+
+      - id: TR-007-06
+        from: failed
+        to: reset
+
+      - id: TR-007-07
+        from: reset
+        to: configured
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-008 Device Health Lifecycle
+  # ==========================================================
+
+  - id: SM-008
+
+    name: device_health
+
+    title: Device Health Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines operational health states of connected devices.
+
+    initial_state: unknown
+
+    states:
+
+      - unknown
+
+      - healthy
+
+      - degraded
+
+      - offline
+
+      - critical
+
+      - recovered
+
+    terminal_states:
+
+      - critical
+
+    transitions:
+
+      - id: TR-008-01
+        from: unknown
+        to: healthy
+
+      - id: TR-008-02
+        from: healthy
+        to: degraded
+
+      - id: TR-008-03
+        from: degraded
+        to: offline
+
+      - id: TR-008-04
+        from: offline
+        to: critical
+
+      - id: TR-008-05
+        from: offline
+        to: recovered
+
+      - id: TR-008-06
+        from: recovered
+        to: healthy
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: false
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+state_machine_registry:
+
+  # ==========================================================
+  # SM-010 Booking Lifecycle
+  # ==========================================================
+
+  - id: SM-010
+
+    name: booking_lifecycle
+
+    title: Booking Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of an Airbnb booking from creation
+      through guest stay completion.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - confirmed
+
+      - upcoming
+
+      - checked_in
+
+      - completed
+
+      - cancelled
+
+      - no_show
+
+    terminal_states:
+
+      - completed
+
+      - cancelled
+
+      - no_show
+
+    transitions:
+
+      - id: TR-010-01
+        from: created
+        to: confirmed
+
+      - id: TR-010-02
+        from: confirmed
+        to: upcoming
+
+      - id: TR-010-03
+        from: upcoming
+        to: checked_in
+
+      - id: TR-010-04
+        from: checked_in
+        to: completed
+
+      - id: TR-010-05
+        from: confirmed
+        to: cancelled
+
+      - id: TR-010-06
+        from: upcoming
+        to: no_show
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-011 Smart Lock Lifecycle
+  # ==========================================================
+
+  - id: SM-011
+
+    name: smart_lock_lifecycle
+
+    title: Smart Lock Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of smart lock devices from
+      registration through retirement.
+
+    initial_state: registered
+
+    states:
+
+      - registered
+
+      - connected
+
+      - configured
+
+      - active
+
+      - locked
+
+      - unlocked
+
+      - offline
+
+      - maintenance
+
+      - replaced
+
+      - retired
+
+    terminal_states:
+
+      - retired
+
+    transitions:
+
+      - id: TR-011-01
+        from: registered
+        to: connected
+
+      - id: TR-011-02
+        from: connected
+        to: configured
+
+      - id: TR-011-03
+        from: configured
+        to: active
+
+      - id: TR-011-04
+        from: active
+        to: locked
+
+      - id: TR-011-05
+        from: locked
+        to: unlocked
+
+      - id: TR-011-06
+        from: unlocked
+        to: locked
+
+      - id: TR-011-07
+        from: active
+        to: offline
+
+      - id: TR-011-08
+        from: offline
+        to: maintenance
+
+      - id: TR-011-09
+        from: maintenance
+        to: active
+
+      - id: TR-011-10
+        from: maintenance
+        to: replaced
+
+      - id: TR-011-11
+        from: replaced
+        to: retired
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-012 Door Code Lifecycle
+  # ==========================================================
+
+  - id: SM-012
+
+    name: door_code_lifecycle
+
+    title: Door Code Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of automatically generated guest
+      access codes for smart locks.
+
+    initial_state: requested
+
+    states:
+
+      - requested
+
+      - generated
+
+      - validated
+
+      - assigned
+
+      - active
+
+      - expired
+
+      - revoked
+
+      - failed
+
+    terminal_states:
+
+      - expired
+
+      - revoked
+
+      - failed
+
+    transitions:
+
+      - id: TR-012-01
+        from: requested
+        to: generated
+
+      - id: TR-012-02
+        from: generated
+        to: validated
+
+      - id: TR-012-03
+        from: validated
+        to: assigned
+
+      - id: TR-012-04
+        from: assigned
+        to: active
+
+      - id: TR-012-05
+        from: active
+        to: expired
+
+      - id: TR-012-06
+        from: active
+        to: revoked
+
+      - id: TR-012-07
+        from: requested
+        to: failed
+
+      - id: TR-012-08
+        from: generated
+        to: failed
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-013 Guest Access Lifecycle
+  # ==========================================================
+
+  - id: SM-013
+
+    name: guest_access_lifecycle
+
+    title: Guest Access Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of guest access from preparation
+      through expiration.
+
+    initial_state: prepared
+
+    states:
+
+      - prepared
+
+      - notified
+
+      - available
+
+      - activated
+
+      - used
+
+      - expired
+
+      - revoked
+
+    terminal_states:
+
+      - expired
+
+      - revoked
+
+    transitions:
+
+      - id: TR-013-01
+        from: prepared
+        to: notified
+
+      - id: TR-013-02
+        from: notified
+        to: available
+
+      - id: TR-013-03
+        from: available
+        to: activated
+
+      - id: TR-013-04
+        from: activated
+        to: used
+
+      - id: TR-013-05
+        from: used
+        to: expired
+
+      - id: TR-013-06
+        from: available
+        to: revoked
+
+      - id: TR-013-07
+        from: activated
+        to: revoked
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+state_machine_registry:
+
+  # ==========================================================
+  # SM-014 Order Lifecycle
+  # ==========================================================
+
+  - id: SM-014
+
+    name: order_lifecycle
+
+    title: Order Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of customer orders from creation
+      through fulfilment and completion.
+
+    initial_state: draft
+
+    states:
+
+      - draft
+
+      - configured
+
+      - submitted
+
+      - approved
+
+      - processing
+
+      - fulfilled
+
+      - completed
+
+      - cancelled
+
+      - returned
+
+    terminal_states:
+
+      - completed
+
+      - cancelled
+
+      - returned
+
+    transitions:
+
+      - id: TR-014-01
+        from: draft
+        to: configured
+
+      - id: TR-014-02
+        from: configured
+        to: submitted
+
+      - id: TR-014-03
+        from: submitted
+        to: approved
+
+      - id: TR-014-04
+        from: approved
+        to: processing
+
+      - id: TR-014-05
+        from: processing
+        to: fulfilled
+
+      - id: TR-014-06
+        from: fulfilled
+        to: completed
+
+      - id: TR-014-07
+        from: submitted
+        to: cancelled
+
+      - id: TR-014-08
+        from: completed
+        to: returned
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-015 Payment Lifecycle
+  # ==========================================================
+
+  - id: SM-015
+
+    name: payment_lifecycle
+
+    title: Payment Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines payment processing states from initiation
+      through settlement or failure.
+
+    initial_state: initiated
+
+    states:
+
+      - initiated
+
+      - authorized
+
+      - pending
+
+      - paid
+
+      - failed
+
+      - refunded
+
+      - disputed
+
+      - cancelled
+
+    terminal_states:
+
+      - paid
+
+      - refunded
+
+      - cancelled
+
+    transitions:
+
+      - id: TR-015-01
+        from: initiated
+        to: authorized
+
+      - id: TR-015-02
+        from: authorized
+        to: pending
+
+      - id: TR-015-03
+        from: pending
+        to: paid
+
+      - id: TR-015-04
+        from: pending
+        to: failed
+
+      - id: TR-015-05
+        from: paid
+        to: refunded
+
+      - id: TR-015-06
+        from: paid
+        to: disputed
+
+      - id: TR-015-07
+        from: disputed
+        to: refunded
+
+      - id: TR-015-08
+        from: initiated
+        to: cancelled
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-016 Shipment Lifecycle
+  # ==========================================================
+
+  - id: SM-016
+
+    name: shipment_lifecycle
+
+    title: Shipment Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of customer shipments from
+      preparation through delivery.
+
+    initial_state: preparing
+
+    states:
+
+      - preparing
+
+      - packed
+
+      - labeled
+
+      - shipped
+
+      - in_transit
+
+      - delivered
+
+      - delayed
+
+      - returned
+
+      - lost
+
+    terminal_states:
+
+      - delivered
+
+      - returned
+
+      - lost
+
+    transitions:
+
+      - id: TR-016-01
+        from: preparing
+        to: packed
+
+      - id: TR-016-02
+        from: packed
+        to: labeled
+
+      - id: TR-016-03
+        from: labeled
+        to: shipped
+
+      - id: TR-016-04
+        from: shipped
+        to: in_transit
+
+      - id: TR-016-05
+        from: in_transit
+        to: delivered
+
+      - id: TR-016-06
+        from: in_transit
+        to: delayed
+
+      - id: TR-016-07
+        from: delayed
+        to: in_transit
+
+      - id: TR-016-08
+        from: delivered
+        to: returned
+
+      - id: TR-016-09
+        from: in_transit
+        to: lost
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+state_machine_registry:
+
+  # ==========================================================
+  # SM-017 Customer Onboarding Lifecycle
+  # ==========================================================
+
+  - id: SM-017
+
+    name: customer_onboarding_lifecycle
+
+    title: Customer Onboarding Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of customer onboarding from
+      purchase completion through successful activation
+      of the SmartHellas solution.
+
+    initial_state: initiated
+
+    states:
+
+      - initiated
+
+      - pre_onboarding
+
+      - information_received
+
+      - configuration_prepared
+
+      - devices_prepared
+
+      - shipped
+
+      - installation_pending
+
+      - validation
+
+      - completed
+
+      - abandoned
+
+    terminal_states:
+
+      - completed
+
+      - abandoned
+
+    transitions:
+
+      - id: TR-017-01
+        from: initiated
+        to: pre_onboarding
+
+      - id: TR-017-02
+        from: pre_onboarding
+        to: information_received
+
+      - id: TR-017-03
+        from: information_received
+        to: configuration_prepared
+
+      - id: TR-017-04
+        from: configuration_prepared
+        to: devices_prepared
+
+      - id: TR-017-05
+        from: devices_prepared
+        to: shipped
+
+      - id: TR-017-06
+        from: shipped
+        to: installation_pending
+
+      - id: TR-017-07
+        from: installation_pending
+        to: validation
+
+      - id: TR-017-08
+        from: validation
+        to: completed
+
+      - id: TR-017-09
+        from: pre_onboarding
+        to: abandoned
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-018 Installation Lifecycle
+  # ==========================================================
+
+  - id: SM-018
+
+    name: installation_lifecycle
+
+    title: Installation Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines installation progress from preparation
+      through successful validation.
+
+    initial_state: scheduled
+
+    states:
+
+      - scheduled
+
+      - preparation
+
+      - installation_started
+
+      - installed
+
+      - testing
+
+      - validated
+
+      - failed
+
+      - requires_action
+
+      - completed
+
+    terminal_states:
+
+      - completed
+
+    transitions:
+
+      - id: TR-018-01
+        from: scheduled
+        to: preparation
+
+      - id: TR-018-02
+        from: preparation
+        to: installation_started
+
+      - id: TR-018-03
+        from: installation_started
+        to: installed
+
+      - id: TR-018-04
+        from: installed
+        to: testing
+
+      - id: TR-018-05
+        from: testing
+        to: validated
+
+      - id: TR-018-06
+        from: testing
+        to: failed
+
+      - id: TR-018-07
+        from: failed
+        to: requires_action
+
+      - id: TR-018-08
+        from: requires_action
+        to: testing
+
+      - id: TR-018-09
+        from: validated
+        to: completed
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-019 Automation Lifecycle
+  # ==========================================================
+
+  - id: SM-019
+
+    name: automation_lifecycle
+
+    title: Automation Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of customer automations such as
+      energy saving, security and comfort scenarios.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - configured
+
+      - tested
+
+      - enabled
+
+      - running
+
+      - paused
+
+      - disabled
+
+      - archived
+
+    terminal_states:
+
+      - archived
+
+    transitions:
+
+      - id: TR-019-01
+        from: created
+        to: configured
+
+      - id: TR-019-02
+        from: configured
+        to: tested
+
+      - id: TR-019-03
+        from: tested
+        to: enabled
+
+      - id: TR-019-04
+        from: enabled
+        to: running
+
+      - id: TR-019-05
+        from: running
+        to: paused
+
+      - id: TR-019-06
+        from: paused
+        to: running
+
+      - id: TR-019-07
+        from: running
+        to: disabled
+
+      - id: TR-019-08
+        from: disabled
+        to: archived
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-020 Alert Lifecycle
+  # ==========================================================
+
+  - id: SM-020
+
+    name: alert_lifecycle
+
+    title: Alert Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of operational alerts generated
+      by monitoring systems.
+
+    initial_state: detected
+
+    states:
+
+      - detected
+
+      - evaluated
+
+      - notified
+
+      - acknowledged
+
+      - investigating
+
+      - resolved
+
+      - ignored
+
+    terminal_states:
+
+      - resolved
+
+      - ignored
+
+    transitions:
+
+      - id: TR-020-01
+        from: detected
+        to: evaluated
+
+      - id: TR-020-02
+        from: evaluated
+        to: notified
+
+      - id: TR-020-03
+        from: notified
+        to: acknowledged
+
+      - id: TR-020-04
+        from: acknowledged
+        to: investigating
+
+      - id: TR-020-05
+        from: investigating
+        to: resolved
+
+      - id: TR-020-06
+        from: evaluated
+        to: ignored
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-021 Firmware Update Lifecycle
+  # ==========================================================
+
+  - id: SM-021
+
+    name: firmware_update_lifecycle
+
+    title: Firmware Update Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines firmware update processes for connected devices.
+
+    initial_state: scheduled
+
+    states:
+
+      - scheduled
+
+      - downloading
+
+      - installing
+
+      - validating
+
+      - completed
+
+      - failed
+
+      - rolled_back
+
+    terminal_states:
+
+      - completed
+
+      - rolled_back
+
+    transitions:
+
+      - id: TR-021-01
+        from: scheduled
+        to: downloading
+
+      - id: TR-021-02
+        from: downloading
+        to: installing
+
+      - id: TR-021-03
+        from: installing
+        to: validating
+
+      - id: TR-021-04
+        from: validating
+        to: completed
+
+      - id: TR-021-05
+        from: installing
+        to: failed
+
+      - id: TR-021-06
+        from: failed
+        to: rolled_back
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-022 Support Ticket Lifecycle
+  # ==========================================================
+
+  - id: SM-022
+
+    name: support_ticket_lifecycle
+
+    title: Support Ticket Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of customer support cases.
+
+    initial_state: opened
+
+    states:
+
+      - opened
+
+      - classified
+
+      - assigned
+
+      - investigating
+
+      - waiting_customer
+
+      - resolved
+
+      - closed
+
+      - reopened
+
+    terminal_states:
+
+      - closed
+
+    transitions:
+
+      - id: TR-022-01
+        from: opened
+        to: classified
+
+      - id: TR-022-02
+        from: classified
+        to: assigned
+
+      - id: TR-022-03
+        from: assigned
+        to: investigating
+
+      - id: TR-022-04
+        from: investigating
+        to: waiting_customer
+
+      - id: TR-022-05
+        from: investigating
+        to: resolved
+
+      - id: TR-022-06
+        from: waiting_customer
+        to: investigating
+
+      - id: TR-022-07
+        from: resolved
+        to: closed
+
+      - id: TR-022-08
+        from: closed
+        to: reopened
+
+    rules:
+
+      allow_reentry: true
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+state_machine_registry:
+
+  # ==========================================================
+  # SM-023 CRM Lead Lifecycle
+  # ==========================================================
+
+  - id: SM-023
+
+    name: crm_lead_lifecycle
+
+    title: CRM Lead Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of sales leads from creation
+      through qualification and conversion.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - contacted
+
+      - qualified
+
+      - nurturing
+
+      - converted
+
+      - rejected
+
+      - archived
+
+    terminal_states:
+
+      - converted
+
+      - rejected
+
+      - archived
+
+    transitions:
+
+      - id: TR-023-01
+        from: created
+        to: contacted
+
+      - id: TR-023-02
+        from: contacted
+        to: qualified
+
+      - id: TR-023-03
+        from: qualified
+        to: nurturing
+
+      - id: TR-023-04
+        from: nurturing
+        to: converted
+
+      - id: TR-023-05
+        from: contacted
+        to: rejected
+
+      - id: TR-023-06
+        from: nurturing
+        to: archived
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-024 CRM Opportunity Lifecycle
+  # ==========================================================
+
+  - id: SM-024
+
+    name: crm_opportunity_lifecycle
+
+    title: CRM Opportunity Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of commercial opportunities
+      from identification through closing.
+
+    initial_state: identified
+
+    states:
+
+      - identified
+
+      - discovery
+
+      - proposal
+
+      - negotiation
+
+      - won
+
+      - lost
+
+      - closed
+
+    terminal_states:
+
+      - won
+
+      - lost
+
+      - closed
+
+    transitions:
+
+      - id: TR-024-01
+        from: identified
+        to: discovery
+
+      - id: TR-024-02
+        from: discovery
+        to: proposal
+
+      - id: TR-024-03
+        from: proposal
+        to: negotiation
+
+      - id: TR-024-04
+        from: negotiation
+        to: won
+
+      - id: TR-024-05
+        from: negotiation
+        to: lost
+
+      - id: TR-024-06
+        from: won
+        to: closed
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # SM-025 Notification Lifecycle
+  # ==========================================================
+
+  - id: SM-025
+
+    name: notification_lifecycle
+
+    title: Notification Lifecycle
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Defines the lifecycle of customer, guest and system
+      notifications.
+
+    initial_state: created
+
+    states:
+
+      - created
+
+      - queued
+
+      - processing
+
+      - sent
+
+      - delivered
+
+      - failed
+
+      - cancelled
+
+      - expired
+
+    terminal_states:
+
+      - delivered
+
+      - failed
+
+      - cancelled
+
+      - expired
+
+    transitions:
+
+      - id: TR-025-01
+        from: created
+        to: queued
+
+      - id: TR-025-02
+        from: queued
+        to: processing
+
+      - id: TR-025-03
+        from: processing
+        to: sent
+
+      - id: TR-025-04
+        from: sent
+        to: delivered
+
+      - id: TR-025-05
+        from: processing
+        to: failed
+
+      - id: TR-025-06
+        from: queued
+        to: cancelled
+
+      - id: TR-025-07
+        from: queued
+        to: expired
+
+    rules:
+
+      allow_reentry: false
+
+      allow_skip_states: false
+
+      require_terminal_state: true
+
+      immutable_history: true
+
+
+    audit:
+
+      reusable: true
+
+      canonical: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-001 Customer Registered
+  # ==========================================================
+
+  - id: EVT-001
+
+    name: customer_registered
+
+    title: Customer Registered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new customer account has been created.
+
+    category: customer
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-ONBOARDING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-001
+
+      transition:
+
+        from: pending
+
+        to: registered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-002 Customer Verified
+  # ==========================================================
+
+  - id: EVT-002
+
+    name: customer_verified
+
+    title: Customer Verified
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when customer identity verification
+      has been completed successfully.
+
+    category: customer
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-ACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-001
+
+      transition:
+
+        from: registered
+
+        to: verified
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-003 Customer Activated
+  # ==========================================================
+
+  - id: EVT-003
+
+    name: customer_activated
+
+    title: Customer Activated
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a verified customer becomes active
+      within the SmartHellas platform.
+
+    category: customer
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-READY
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-001
+
+      transition:
+
+        from: verified
+
+        to: active
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-004 Organization Created
+  # ==========================================================
+
+  - id: EVT-004
+
+    name: organization_created
+
+    title: Organization Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new customer organization or tenant
+      is created.
+
+    category: organization
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - organization
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ORGANIZATION-SETUP
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-002
+
+      transition:
+
+        from: created
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-005 Subscription Started
+  # ==========================================================
+
+  - id: EVT-005
+
+    name: subscription_started
+
+    title: Subscription Started
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer subscription becomes active.
+
+    category: subscription
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - subscription
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SUBSCRIPTION-ACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-003
+
+      transition:
+
+        from: trial
+
+        to: active
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-006 Subscription Cancelled
+  # ==========================================================
+
+  - id: EVT-006
+
+    name: subscription_cancelled
+
+    title: Subscription Cancelled
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer subscription is cancelled.
+
+    category: subscription
+
+    source:
+
+      module: 002_core_saas
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - subscription
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SUBSCRIPTION-DEACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-003
+
+      transition:
+
+        from: active
+
+        to: cancelled
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-010 Property Created
+  # ==========================================================
+
+  - id: EVT-010
+
+    name: property_created
+
+    title: Property Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new Airbnb property is registered
+      within SmartHellas.
+
+    category: property
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PROPERTY-SETUP
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-004
+
+      transition:
+
+        from: created
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-011 Property Activated
+  # ==========================================================
+
+  - id: EVT-011
+
+    name: property_activated
+
+    title: Property Activated
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a property has completed onboarding
+      and becomes operational.
+
+    category: property
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PROPERTY-ACTIVATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-004
+
+      transition:
+
+        from: onboarding
+
+        to: active
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-012 Device Registered
+  # ==========================================================
+
+  - id: EVT-012
+
+    name: device_registered
+
+    title: Device Registered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new smart device is registered
+      in the SmartHellas platform.
+
+    category: device
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-PROVISIONING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-006
+
+        - SM-007
+
+      transition:
+
+        lifecycle:
+
+          from: ordered
+
+          to: received
+
+        provisioning:
+
+          from: detected
+
+          to: registered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-013 Device Configured
+  # ==========================================================
+
+  - id: EVT-013
+
+    name: device_configured
+
+    title: Device Configured
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a device has been configured with
+      required settings and integrations.
+
+    category: device
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-VALIDATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-007
+
+      transition:
+
+        from: registered
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-014 Device Installed
+  # ==========================================================
+
+  - id: EVT-014
+
+    name: device_installed
+
+    title: Device Installed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer has installed a prepared
+      device in the property.
+
+    category: device
+
+    source:
+
+      module: 003_property_device_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-INSTALLATION-VALIDATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-006
+
+      transition:
+
+        from: shipped
+
+        to: installed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-015 Device Offline
+  # ==========================================================
+
+  - id: EVT-015
+
+    name: device_offline
+
+    title: Device Offline
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when monitoring detects that a device
+      is no longer reachable.
+
+    category: device_health
+
+    source:
+
+      module: 006_operations_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: monitoring_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+        metrics:
+
+          - last_seen
+
+          - connectivity_status
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-RECOVERY
+
+        - WF-CREATE-ALERT
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-008
+
+      transition:
+
+        from: healthy
+
+        to: degraded
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-016 Device Recovered
+  # ==========================================================
+
+  - id: EVT-016
+
+    name: device_recovered
+
+    title: Device Recovered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a previously unavailable device
+      becomes reachable again.
+
+    category: device_health
+
+    source:
+
+      module: 006_operations_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: monitoring_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+
+    consumers:
+
+      workflows:
+
+        - WF-RESOLVE-DEVICE-ALERT
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-008
+
+      transition:
+
+        from: offline
+
+        to: recovered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-020 Booking Created
+  # ==========================================================
+
+  - id: EVT-020
+
+    name: booking_created
+
+    title: Booking Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a new guest booking is created
+      for a managed property.
+
+    category: booking
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-BOOKING-PROCESSING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-010
+
+      transition:
+
+        from: created
+
+        to: confirmed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-021 Booking Confirmed
+  # ==========================================================
+
+  - id: EVT-021
+
+    name: booking_confirmed
+
+    title: Booking Confirmed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a booking has been confirmed and
+      guest access preparation may begin.
+
+    category: booking
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - guest
+
+
+    consumers:
+
+      workflows:
+
+        - WF-GUEST-ACCESS-PREPARATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-010
+
+      transition:
+
+        from: created
+
+        to: confirmed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-022 Check In Started
+  # ==========================================================
+
+  - id: EVT-022
+
+    name: check_in_started
+
+    title: Check-in Started
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the guest arrival window starts.
+
+    category: booking
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - guest_access
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ACTIVATE-GUEST-ACCESS
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-010
+
+      transition:
+
+        from: upcoming
+
+        to: checked_in
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-023 Door Code Requested
+  # ==========================================================
+
+  - id: EVT-023
+
+    name: door_code_requested
+
+    title: Door Code Requested
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a valid booking requires generation
+      of a temporary guest access code.
+
+    category: access_control
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: workflow_event
+
+
+    payload:
+
+      objects:
+
+        - booking
+
+        - smart_lock
+
+
+    consumers:
+
+      workflows:
+
+        - WF-GENERATE-DOOR-CODE
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-012
+
+      transition:
+
+        from: requested
+
+        to: generated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-024 Door Code Generated
+  # ==========================================================
+
+  - id: EVT-024
+
+    name: door_code_generated
+
+    title: Door Code Generated
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a temporary access code has been
+      successfully created.
+
+    category: access_control
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - door_code
+
+        - booking
+
+
+    consumers:
+
+      workflows:
+
+        - WF-NOTIFY-GUEST-ACCESS
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-012
+
+      transition:
+
+        from: generated
+
+        to: validated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-025 Guest Access Granted
+  # ==========================================================
+
+  - id: EVT-025
+
+    name: guest_access_granted
+
+    title: Guest Access Granted
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when guest access has been activated
+      and is available for use.
+
+    category: guest_access
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - guest_access
+
+        - door_code
+
+
+    consumers:
+
+      workflows:
+
+        - WF-GUEST-NOTIFICATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-013
+
+      transition:
+
+        from: available
+
+        to: activated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-026 Guest Access Expired
+  # ==========================================================
+
+  - id: EVT-026
+
+    name: guest_access_expired
+
+    title: Guest Access Expired
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when guest access automatically expires
+      after the booking period.
+
+    category: guest_access
+
+    source:
+
+      module: 004_booking_lock_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: scheduled_event
+
+
+    payload:
+
+      objects:
+
+        - guest_access
+
+        - booking
+
+
+    consumers:
+
+      workflows:
+
+        - WF-REVOKE-GUEST-ACCESS
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-013
+
+      transition:
+
+        from: used
+
+        to: expired
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-030 Order Created
+  # ==========================================================
+
+  - id: EVT-030
+
+    name: order_created
+
+    title: Order Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer creates a new order
+      from the SmartHellas configurator.
+
+    category: commerce
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - order
+
+        - customer
+
+        - solution_configuration
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ORDER-PROCESSING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-014
+
+      transition:
+
+        from: draft
+
+        to: configured
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-031 Order Confirmed
+  # ==========================================================
+
+  - id: EVT-031
+
+    name: order_confirmed
+
+    title: Order Confirmed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when an order has been validated and
+      accepted for processing.
+
+    category: commerce
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PRECONFIGURATION-START
+
+        - WF-PAYMENT-PROCESSING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-014
+
+      transition:
+
+        from: submitted
+
+        to: approved
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-032 Payment Received
+  # ==========================================================
+
+  - id: EVT-032
+
+    name: payment_received
+
+    title: Payment Received
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when payment has been successfully completed.
+
+    category: payment
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - payment
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ORDER-FULFILMENT
+
+        - WF-CUSTOMER-ONBOARDING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-015
+
+      transition:
+
+        from: pending
+
+        to: paid
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-033 Payment Failed
+  # ==========================================================
+
+  - id: EVT-033
+
+    name: payment_failed
+
+    title: Payment Failed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when payment processing fails.
+
+    category: payment
+
+    source:
+
+      module: 009_commerce_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - payment
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-PAYMENT-RECOVERY
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-015
+
+      transition:
+
+        from: pending
+
+        to: failed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-034 Shipment Created
+  # ==========================================================
+
+  - id: EVT-034
+
+    name: shipment_created
+
+    title: Shipment Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a prepared customer package is ready
+      for shipment.
+
+    category: logistics
+
+    source:
+
+      module: 008_logistics_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - shipment
+
+        - order
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SHIPMENT-TRACKING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-016
+
+      transition:
+
+        from: preparing
+
+        to: packed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-035 Shipment Delivered
+  # ==========================================================
+
+  - id: EVT-035
+
+    name: shipment_delivered
+
+    title: Shipment Delivered
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the customer shipment has arrived
+      at the destination.
+
+    category: logistics
+
+    source:
+
+      module: 008_logistics_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: integration_event
+
+
+    payload:
+
+      objects:
+
+        - shipment
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-INSTALLATION-START
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-016
+
+      transition:
+
+        from: in_transit
+
+        to: delivered
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+event_registry:
+
+  # ==========================================================
+  # EVT-040 Onboarding Started
+  # ==========================================================
+
+  - id: EVT-040
+
+    name: onboarding_started
+
+    title: Onboarding Started
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when the customer onboarding process
+      starts after purchase confirmation.
+
+    category: onboarding
+
+    source:
+
+      module: 011_preconfig_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: workflow_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+        - order
+
+        - property
+
+
+    consumers:
+
+      workflows:
+
+        - WF-CUSTOMER-ONBOARDING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-017
+
+      transition:
+
+        from: initiated
+
+        to: pre_onboarding
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-041 Customer Data Received
+  # ==========================================================
+
+  - id: EVT-041
+
+    name: customer_data_received
+
+    title: Customer Data Received
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when required property, room and device
+      information has been provided by the customer.
+
+    category: onboarding
+
+    source:
+
+      module: 011_preconfig_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - customer
+
+        - property
+
+        - room
+
+        - device_configuration
+
+
+    consumers:
+
+      workflows:
+
+        - WF-DEVICE-PREPARATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-017
+
+      transition:
+
+        from: pre_onboarding
+
+        to: information_received
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-042 Device Configuration Completed
+  # ==========================================================
+
+  - id: EVT-042
+
+    name: device_configuration_completed
+
+    title: Device Configuration Completed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when devices have been configured,
+      updated, labelled and prepared for installation.
+
+    category: device_preparation
+
+    source:
+
+      module: 007_preconfig_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - device
+
+        - configuration_profile
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SHIPMENT-READY
+
+        - WF-INSTALLATION-PREPARATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-017
+
+      transition:
+
+        from: configuration_prepared
+
+        to: devices_prepared
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-043 Installation Completed
+  # ==========================================================
+
+  - id: EVT-043
+
+    name: installation_completed
+
+    title: Installation Completed
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when devices are installed and validated
+      at the customer property.
+
+    category: installation
+
+    source:
+
+      module: 010_service_portal_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - property
+
+        - devices
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ACTIVATE-SOLUTION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-018
+
+      transition:
+
+        from: validated
+
+        to: completed
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-044 Automation Enabled
+  # ==========================================================
+
+  - id: EVT-044
+
+    name: automation_enabled
+
+    title: Automation Enabled
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a SmartHellas automation scenario
+      becomes active.
+
+    category: automation
+
+    source:
+
+      module: 016_automation_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - automation
+
+        - devices
+
+
+    consumers:
+
+      workflows:
+
+        - WF-AUTOMATION-MONITORING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-019
+
+      transition:
+
+        from: tested
+
+        to: enabled
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-045 Alert Created
+  # ==========================================================
+
+  - id: EVT-045
+
+    name: alert_created
+
+    title: Alert Created
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when monitoring detects an operational
+      issue requiring attention.
+
+    category: operations
+
+    source:
+
+      module: 006_operations_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: monitoring_event
+
+
+    payload:
+
+      objects:
+
+        - alert
+
+        - device
+
+
+      metrics:
+
+        - severity
+
+        - timestamp
+
+
+    consumers:
+
+      workflows:
+
+        - WF-ALERT-HANDLING
+
+        - WF-CUSTOMER-NOTIFICATION
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-020
+
+      transition:
+
+        from: detected
+
+        to: evaluated
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null
+
+
+
+  # ==========================================================
+  # EVT-046 Support Ticket Opened
+  # ==========================================================
+
+  - id: EVT-046
+
+    name: support_ticket_opened
+
+    title: Support Ticket Opened
+
+    version: 1.0
+
+    status: active
+
+    description: >
+      Triggered when a customer support request is created.
+
+    category: support
+
+    source:
+
+      module: 010_service_portal_engine
+
+      system: smarthellas
+
+
+    trigger:
+
+      type: domain_event
+
+
+    payload:
+
+      objects:
+
+        - support_ticket
+
+        - customer
+
+
+    consumers:
+
+      workflows:
+
+        - WF-SUPPORT-ROUTING
+
+
+    state_transitions:
+
+      state_machine:
+
+        - SM-022
+
+      transition:
+
+        from: opened
+
+        to: classified
+
+
+    rules:
+
+      asynchronous: true
+
+      retryable: true
+
+      idempotent: true
+
+
+    audit:
+
+      canonical: true
+
+      reusable: true
+
+      last_reviewed: null

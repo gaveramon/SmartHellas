@@ -1,0 +1,657 @@
+metadata:
+
+  kgs:
+    id: KGS-002
+    version: "2.0"
+
+authority:
+
+  role: object_registry
+
+scope:
+
+  domain: enterprise_object_module_catalog
+
+# ============================================================
+# OBJECT REGISTRY
+# ============================================================
+
+
+object_registry:
+
+
+  description: >
+
+    Canonical registry of enterprise objects.
+    Defines objects, their module boundaries and purpose.
+
+
+
+  objects:
+
+
+# ============================================================
+# 000 PLATFORM FOUNDATION
+# ============================================================
+
+
+    platform:
+
+
+      objects:
+
+
+        - id:
+            platform_user
+
+          purpose:
+            "Authenticated system identity."
+
+
+
+        - id:
+            platform_file
+
+          purpose:
+            "Managed storage object."
+
+
+
+# ============================================================
+# 001 CORE TYPES
+# ============================================================
+
+
+    core_types:
+
+
+      objects:
+
+
+        - id:
+            identifier
+
+          purpose:
+            "Canonical identifier types."
+
+
+
+        - id:
+            lifecycle_state
+
+          purpose:
+            "Shared state definitions."
+
+
+
+        - id:
+            timestamp_metadata
+
+          purpose:
+            "Standard audit timestamps."
+
+
+
+# ============================================================
+# 002 CORE SAAS
+# ============================================================
+
+
+    core_saas:
+
+
+      objects:
+
+
+        - id:
+            tenant
+
+          purpose:
+            "Customer organisation boundary."
+
+
+
+        - id:
+            subscription
+
+          purpose:
+            "SaaS subscription lifecycle."
+
+
+
+        - id:
+            plan
+
+          purpose:
+            "Commercial service package."
+
+
+
+# ============================================================
+# 003 PROPERTY & DEVICE ENGINE
+# ============================================================
+
+
+    property_device:
+
+
+      objects:
+
+
+        - id:
+            property
+
+          purpose:
+            "Physical Airbnb property."
+
+
+
+        - id:
+            room
+
+          purpose:
+            "Logical area inside property."
+
+
+
+        - id:
+            device
+
+          purpose:
+            "Physical smart device."
+
+
+
+        - id:
+            device_capability
+
+          purpose:
+            "Device functional capability."
+
+
+
+        - id:
+            device_state
+
+          purpose:
+            "Current operational state."
+
+
+
+        - id:
+            automation_target
+
+          purpose:
+            "Device automation endpoint."
+
+
+
+# ============================================================
+# 004 BOOKING & LOCK ENGINE
+# ============================================================
+
+
+    booking_lock:
+
+
+      objects:
+
+
+        - id:
+            booking
+
+          purpose:
+            "Guest reservation."
+
+
+
+        - id:
+            guest
+
+          purpose:
+            "Temporary property visitor identity."
+
+
+
+        - id:
+            access_code
+
+          purpose:
+            "Digital lock access credential."
+
+
+
+        - id:
+            lock_session
+
+          purpose:
+            "Temporary access lifecycle."
+
+
+
+# ============================================================
+# 005 INTEGRATION ENGINE
+# ============================================================
+
+
+    integration:
+
+
+      objects:
+
+
+        - id:
+            provider
+
+          purpose:
+            "External integration provider."
+
+
+
+        - id:
+            provider_connection
+
+          purpose:
+            "Configured external connection."
+
+
+
+        - id:
+            external_mapping
+
+          purpose:
+            "Mapping between internal and external objects."
+
+
+
+# ============================================================
+# 006 OPERATIONS ENGINE
+# ============================================================
+
+
+    operations:
+
+
+      objects:
+
+
+        - id:
+            task
+
+          purpose:
+            "Operational work item."
+
+
+
+        - id:
+            issue
+
+          purpose:
+            "Operational problem record."
+
+
+
+# ============================================================
+# 007 PRECONFIG ENGINE
+# ============================================================
+
+
+    preconfig:
+
+
+      objects:
+
+
+        - id:
+            device_package
+
+          purpose:
+            "Prepared device configuration package."
+
+
+
+        - id:
+            configuration_template
+
+          purpose:
+            "Reusable setup definition."
+
+
+
+# ============================================================
+# 008 LOGISTICS ENGINE
+# ============================================================
+
+
+    logistics:
+
+
+      objects:
+
+
+        - id:
+            shipment
+
+          purpose:
+            "Physical delivery record."
+
+
+
+        - id:
+            package_item
+
+          purpose:
+            "Device shipment component."
+
+
+
+# ============================================================
+# 009 COMMERCE ENGINE
+# ============================================================
+
+
+    commerce:
+
+
+      objects:
+
+
+        - id:
+            product
+
+          purpose:
+            "Sellable item."
+
+
+
+        - id:
+            order
+
+          purpose:
+            "Customer purchase transaction."
+
+
+
+        - id:
+            invoice
+
+          purpose:
+            "Financial document."
+
+
+
+# ============================================================
+# 010 SERVICE & PORTAL ENGINE
+# ============================================================
+
+
+    service_portal:
+
+
+      objects:
+
+
+        - id:
+            portal_account
+
+          purpose:
+            "Customer portal access."
+
+
+
+        - id:
+            service_request
+
+          purpose:
+            "Customer support request."
+
+
+
+# ============================================================
+# 011 ONBOARDING ENGINE
+# ============================================================
+
+
+    onboarding:
+
+
+      objects:
+
+
+        - id:
+            onboarding_session
+
+          purpose:
+            "Customer installation journey."
+
+
+
+        - id:
+            onboarding_step
+
+          purpose:
+            "Individual onboarding action."
+
+
+
+        - id:
+            onboarding_progress
+
+          purpose:
+            "Completion tracking."
+
+
+
+# ============================================================
+# 012 OPTIMIZATION ENGINE
+# ============================================================
+
+
+    optimization:
+
+
+      objects:
+
+
+        - id:
+            recommendation
+
+          purpose:
+            "Optimization suggestion."
+
+
+
+# ============================================================
+# 013 MONITORING & AUDIT ENGINE
+# ============================================================
+
+
+    monitoring:
+
+
+      objects:
+
+
+        - id:
+            audit_event
+
+          purpose:
+            "Immutable system history."
+
+
+
+        - id:
+            metric
+
+          purpose:
+            "Operational measurement."
+
+
+
+        - id:
+            alert
+
+          purpose:
+            "Operational notification."
+
+
+
+# ============================================================
+# 015 CRM ENGINE
+# ============================================================
+
+
+    crm:
+
+
+      objects:
+
+
+        - id:
+            customer
+
+          purpose:
+            "Customer relationship record."
+
+
+
+        - id:
+            contact
+
+          purpose:
+            "Customer communication endpoint."
+
+
+
+        - id:
+            interaction
+
+          purpose:
+            "Customer history event."
+
+
+
+# ============================================================
+# 016 AUTOMATION ENGINE
+# ============================================================
+
+
+    automation:
+
+
+      objects:
+
+
+        - id:
+            automation_rule
+
+          purpose:
+            "Automation definition."
+
+
+
+        - id:
+            automation_execution
+
+          purpose:
+            "Executed automation instance."
+
+
+
+        - id:
+            automation_event
+
+          purpose:
+            "Triggering event."
+
+
+
+# ============================================================
+# 017 EDGE RPC FOUNDATIONS
+# ============================================================
+
+
+    edge_rpc:
+
+
+      objects:
+
+
+        - id:
+            rpc_endpoint
+
+          purpose:
+            "Remote callable function."
+
+
+
+# ============================================================
+# 018 SECURITY HARDENING
+# ============================================================
+
+
+    security:
+
+
+      objects:
+
+
+        - id:
+            security_policy
+
+          purpose:
+            "Security enforcement definition."
+
+
+
+# ============================================================
+# 019 GRANT MATRIX
+# ============================================================
+
+
+    grants:
+
+
+      objects:
+
+
+        - id:
+            role
+
+          purpose:
+            "Access role."
+
+
+
+        - id:
+            permission
+
+          purpose:
+            "Atomic access capability."
+
+
+
+        - id:
+            grant
+
+          purpose:
+            "Role permission assignment."
+
+
+
+# ============================================================
+# 020 PRODUCTION FINALIZATION
+# ============================================================
+
+
+    production:
+
+
+      objects:
+
+
+        - id:
+            release
+
+          purpose:
+            "Production deployment version."

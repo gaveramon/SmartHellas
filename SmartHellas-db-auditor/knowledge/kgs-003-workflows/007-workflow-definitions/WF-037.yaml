@@ -1,0 +1,73 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-037 Shipment Fulfillment
+  # ==========================================================
+
+  - id: WF-037
+
+    name: shipment_fulfillment
+
+    title: Shipment Fulfillment
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - logistics
+
+      owner:
+        module: 008_logistics_engine
+
+    purpose:
+
+      description: >
+        Ships prepared SmartHellas orders and
+        manages shipment tracking.
+
+    trigger:
+
+      event:
+        - EVT-036 package_ready
+
+    workflow_steps:
+
+      - step: 1
+        action: create_shipping_label
+
+      - step: 2
+        action: register_track_trace
+
+      - step: 3
+        action: handover_to_carrier
+
+      - step: 4
+        action: notify_customer
+
+    outputs:
+      - shipment
+
+    state_machine:
+      - SM-036 Shipment Lifecycle
+
+    events:
+
+      produces:
+        - EVT-037 order_shipped
+
+    orchestration:
+      - ORCH-032 Order Processing
+
+    dependencies:
+
+      modules:
+        - 008_logistics_engine
+
+    audit:
+      enabled: true
+
+    lifecycle:
+      policy: LIFE-001

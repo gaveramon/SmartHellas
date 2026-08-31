@@ -1,0 +1,77 @@
+principles:
+
+  workflow_design:
+
+    canonical_workflow: true
+
+    single_responsibility: true
+
+    deterministic_execution: true
+
+    idempotent_execution: true
+
+    reusable: true
+
+    composable: true
+
+    versioned: true
+
+    auditable: true
+
+    observable: true
+
+    traceable: true
+
+  orchestration:
+
+    event_driven: true
+
+    orchestration_over_choreography: true
+
+    explicit_dependencies: true
+
+    no_hidden_dependencies: true
+
+    no_circular_workflows: true
+
+    retry_safe: true
+
+    compensating_actions_supported: true
+
+  state_management:
+
+    explicit_state_machine: true
+
+    immutable_state_history: true
+
+    valid_state_transitions_only: true
+
+    terminal_states_required: true
+
+  events:
+
+    explicit_event_contracts: true
+
+    unique_event_names: true
+
+    events_are_immutable: true
+
+    events_are_versioned: true
+
+    event_ordering_defined: true
+
+  governance:
+
+    unique_workflow_ids: true
+
+    workflow_registry_required: true
+
+    workflow_definition_required: true
+
+    dependencies_documented: true
+
+    integrations_documented: true
+
+    lifecycle_defined: true
+
+    enterprise_auditable: true

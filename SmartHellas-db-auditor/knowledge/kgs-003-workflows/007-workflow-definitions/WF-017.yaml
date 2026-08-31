@@ -1,0 +1,222 @@
+definition_registry:
+
+# ==========================================================
+  # WF-017 Device Removal
+  # ==========================================================
+
+
+  - id: WF-017
+
+    name: device_removal
+
+    title: Device Removal
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - device_management
+
+
+      owner:
+
+        module: 003_property_device_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Removes devices from properties and platform.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - device_unassignment
+
+        - integration_disconnect
+
+        - lifecycle_closure
+
+
+
+    trigger:
+
+
+      action:
+
+
+        - device_removal_requested
+
+
+
+    preconditions:
+
+
+      - device_exists
+
+      - authorization_valid
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_identifier
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_removal_request
+
+
+
+      - step: 2
+
+        action:
+
+          disconnect_integrations
+
+
+
+      - step: 3
+
+        action:
+
+          remove_property_assignment
+
+
+
+      - step: 4
+
+        action:
+
+          archive_device_history
+
+
+
+    outputs:
+
+
+      - removed_device
+
+
+
+    state_machine:
+
+
+      - SM-011 Device Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-047 device_removed
+
+
+
+    orchestration:
+
+
+      - ORCH-017 Device Removal
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - ownership_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        retry_disconnect
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_assignment
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - removal_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,230 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-015 Device Health Monitoring
+  # ==========================================================
+
+
+  - id: WF-015
+
+    name: device_health_monitoring
+
+    title: Device Health Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - monitoring
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Continuously monitors device availability,
+        connectivity and health.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - heartbeat_monitoring
+
+        - connectivity_check
+
+        - health_status_tracking
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - device_status_changed
+
+
+
+    preconditions:
+
+
+      - device_registered
+
+
+
+    actors:
+
+
+      - system
+
+
+
+    inputs:
+
+
+      - device_telemetry
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_device_status
+
+
+
+      - step: 2
+
+        action:
+
+          evaluate_health_rules
+
+
+
+      - step: 3
+
+        action:
+
+          update_device_health
+
+
+
+      - step: 4
+
+        action:
+
+          create_alert_if_required
+
+
+
+    outputs:
+
+
+      - device_health_status
+
+
+
+    state_machine:
+
+
+      - SM-015 Device Health Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-015 device_offline
+
+        - EVT-016 device_recovered
+
+
+
+    orchestration:
+
+
+      - ORCH-015 Health Monitoring
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - telemetry_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        mark_device_unknown
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - retry_health_check
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - device_availability
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

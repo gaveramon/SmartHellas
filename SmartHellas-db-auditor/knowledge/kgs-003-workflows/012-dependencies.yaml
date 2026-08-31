@@ -1,0 +1,431 @@
+# ============================================================
+# KGS-003 — Workflow Catalog
+# Section 12 — Dependency Catalog
+#
+# Version: 1.0
+#
+# Purpose:
+# Defines dependencies between workflows, events,
+# orchestrations, modules and integrations.
+#
+# Source of Truth:
+# Canonical workflow dependency model.
+# ============================================================
+
+
+dependencies:
+
+
+  # ==========================================================
+  # Metadata
+  # ==========================================================
+
+  metadata:
+
+    title: "Enterprise Workflow Dependency Catalog"
+
+    short_name: "KGS-003-DEP"
+
+    description: >
+      Defines relationships and dependencies between
+      workflow components.
+
+    version: "1.0"
+
+    status: active
+
+    canonical: true
+
+    source_of_truth: true
+
+    owner: enterprise_architecture
+
+    tags:
+
+      - dependencies
+
+      - workflow
+
+      - architecture
+
+      - audit
+
+
+
+  # ==========================================================
+  # Validation
+  # ==========================================================
+
+  validation:
+
+    unique_dependency_ids: true
+
+    source_required: true
+
+    target_required: true
+
+    dependency_type_required: true
+
+    circular_dependency_check_required: true
+
+    forbidden_dependency_check_required: true
+
+    ownership_validation_required: true
+
+
+
+  # ==========================================================
+  # Dependency Registry
+  # ==========================================================
+
+  dependency_registry:
+
+
+    # ========================================================
+    # DEP-001 Guest Access Dependency Chain
+    # ========================================================
+
+    - id: DEP-001
+
+      name: guest_access_requires_lock_integration
+
+      title: Guest Access requires Smart Lock Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines dependency between guest access workflow
+        and smart lock provider integration.
+
+
+      dependency_type:
+
+        - workflow
+
+        - integration
+
+
+      source:
+
+        type: workflow
+
+        id: WF-GENERATE-DOOR-CODE
+
+
+      target:
+
+        type: integration
+
+        id: INT-001
+
+
+      relationship:
+
+        type: requires
+
+
+      direction:
+
+        source_to_target: true
+
+
+      constraints:
+
+        required: true
+
+        blocking: true
+
+
+
+      impact:
+
+        severity: high
+
+        affected_process:
+
+          - guest_access
+
+
+
+      validation:
+
+        runtime_check: true
+
+        contract_check: true
+
+
+
+      rules:
+
+        circular_dependency_allowed: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # DEP-002 Device Configuration Dependency
+    # ========================================================
+
+    - id: DEP-002
+
+      name: device_configuration_requires_aqara
+
+      title: Device Configuration requires Aqara Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines dependency between device provisioning
+        and Aqara integration.
+
+
+      dependency_type:
+
+        - module
+
+        - integration
+
+
+      source:
+
+        type: module
+
+        id: 007_preconfig_engine
+
+
+      target:
+
+        type: integration
+
+        id: INT-002
+
+
+      relationship:
+
+        type: requires
+
+
+      direction:
+
+        source_to_target: true
+
+
+      constraints:
+
+        required: true
+
+        blocking: false
+
+
+      impact:
+
+        severity: medium
+
+
+      validation:
+
+        runtime_check: true
+
+        contract_check: true
+
+
+      rules:
+
+        circular_dependency_allowed: false
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # DEP-003 Booking Dependency
+    # ========================================================
+
+    - id: DEP-003
+
+      name: booking_requires_airbnb_sync
+
+      title: Booking requires Airbnb Integration
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines external booking synchronization dependency.
+
+
+      dependency_type:
+
+        - integration
+
+        - event
+
+
+      source:
+
+        type: integration
+
+        id: INT-003
+
+
+      target:
+
+        type: event
+
+        id: EVT-020
+
+
+      relationship:
+
+        type: produces
+
+
+      direction:
+
+        source_to_target: true
+
+
+      constraints:
+
+        required: true
+
+        blocking: true
+
+
+      impact:
+
+        severity: high
+
+        affected_process:
+
+          - booking_management
+
+
+
+      validation:
+
+        event_contract_check: true
+
+
+
+      rules:
+
+        circular_dependency_allowed: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null
+
+
+
+
+    # ========================================================
+    # DEP-004 Notification Dependency
+    # ========================================================
+
+    - id: DEP-004
+
+      name: notification_requires_provider
+
+      title: Notification requires Communication Provider
+
+      version: 1.0
+
+      status: active
+
+      description: >
+        Defines dependency between notification workflows
+        and communication provider.
+
+
+      dependency_type:
+
+        - workflow
+
+        - integration
+
+
+      source:
+
+        type: workflow
+
+        id: WF-NOTIFICATION-DISPATCH
+
+
+      target:
+
+        type: integration
+
+        id: INT-005
+
+
+      relationship:
+
+        type: invokes
+
+
+      direction:
+
+        source_to_target: true
+
+
+      constraints:
+
+        required: true
+
+        blocking: false
+
+
+      impact:
+
+        severity: medium
+
+
+      validation:
+
+        runtime_check: true
+
+
+
+      rules:
+
+        circular_dependency_allowed: false
+
+
+
+      audit:
+
+        canonical: true
+
+        reusable: true
+
+        last_reviewed: null

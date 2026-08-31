@@ -1,0 +1,244 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-029 Lock Failure Recovery
+  # ==========================================================
+
+
+  - id: WF-029
+
+    name: lock_failure_recovery
+
+    title: Lock Failure Recovery
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - lock_operations
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+
+    purpose:
+
+
+      description:
+
+        Detects and resolves smart lock failures
+        affecting guest access.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - lock_health_detection
+
+        - connection_recovery
+
+        - support_escalation
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-070 lock_failure_detected
+
+
+
+    preconditions:
+
+
+      - lock_registered
+
+      - monitoring_enabled
+
+
+
+    actors:
+
+
+      - system
+
+      - support_agent
+
+
+
+    inputs:
+
+
+      - lock_status
+
+      - gateway_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          analyze_failure
+
+
+
+      - step: 2
+
+        action:
+
+          test_gateway_connection
+
+
+
+      - step: 3
+
+        action:
+
+          attempt_remote_recovery
+
+
+
+      - step: 4
+
+        action:
+
+          create_support_case_if_failed
+
+
+
+    outputs:
+
+
+      - recovered_lock
+
+      - support_case
+
+
+
+    state_machine:
+
+
+      - SM-029 Lock Recovery Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-071 lock_recovered
+
+        - EVT-072 recovery_failed
+
+
+
+    orchestration:
+
+
+      - ORCH-029 Lock Recovery
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+      - G2 Gateway
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - secure_remote_operation
+
+        - operation_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        escalate_after_retry_limit
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - enable_manual_access_procedure
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - lock_recovery_time
+
+        - lock_failure_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

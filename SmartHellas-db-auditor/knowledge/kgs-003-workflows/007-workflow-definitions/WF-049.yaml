@@ -1,0 +1,260 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-049 Property Operations Monitoring
+  # ==========================================================
+
+
+  - id: WF-049
+
+    name: property_operations_monitoring
+
+    title: Property Operations Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - operations_monitoring
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+      classification:
+
+
+        business_process: property_management
+
+        criticality: business_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Provides continuous monitoring of SmartHellas
+        properties, devices and operational status.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - property_health_monitoring
+
+        - device_status_monitoring
+
+        - alert_generation
+
+        - operational_dashboard
+
+
+
+      excludes:
+
+
+        - customer_support_resolution
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - scheduled_monitoring_cycle
+
+
+
+    preconditions:
+
+
+      - property_active
+
+
+
+    actors:
+
+
+      - system
+
+      - property_owner
+
+
+
+    inputs:
+
+
+      - property_status
+
+      - device_health
+
+      - automation_status
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          collect_property_metrics
+
+
+
+      - step: 2
+
+        action:
+
+          evaluate_health_rules
+
+
+
+      - step: 3
+
+        action:
+
+          generate_alerts
+
+
+
+      - step: 4
+
+        action:
+
+          update_operations_dashboard
+
+
+
+    outputs:
+
+
+      - property_health_status
+
+      - operational_alerts
+
+
+
+    state_machine:
+
+
+      - SM-049 Operations Monitoring Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-095 operational_alert_created
+
+
+
+    orchestration:
+
+
+      - ORCH-049 Property Monitoring
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+        - 016_automation_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - tenant_data_isolation
+
+        - monitoring_authorization
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_monitoring_incident
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - disable_false_positive_alert
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - property_uptime
+
+        - device_availability
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

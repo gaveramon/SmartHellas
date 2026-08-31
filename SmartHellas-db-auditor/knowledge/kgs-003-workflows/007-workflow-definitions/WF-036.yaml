@@ -1,0 +1,106 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-036 Device Packaging & Labeling
+  # ==========================================================
+
+  - id: WF-036
+
+    name: device_packaging_labeling
+
+    title: Device Packaging & Labeling
+
+    version: 1.0
+
+    status: active
+
+    identity:
+
+      domain:
+        - logistics
+
+      owner:
+        module: 008_logistics_engine
+
+    purpose:
+
+      description: >
+        Packages all configured SmartHellas devices,
+        applies room labels and QR codes, and performs
+        the final quality inspection before shipment.
+
+    scope:
+
+      includes:
+        - package_preparation
+        - room_label_attachment
+        - qr_label_attachment
+        - quality_control
+        - shipment_preparation
+
+    trigger:
+
+      event:
+        - EVT-035 preconfiguration_completed
+
+    preconditions:
+      - preconfiguration_completed
+
+    actors:
+      - warehouse_employee
+      - system
+
+    inputs:
+      - preconfiguration_package
+
+    workflow_steps:
+
+      - step: 1
+        action: collect_devices
+
+      - step: 2
+        action: verify_serial_numbers
+
+      - step: 3
+        action: attach_room_labels
+
+      - step: 4
+        action: attach_qr_labels
+
+      - step: 5
+        action: perform_quality_check
+
+      - step: 6
+        action: seal_package
+
+    outputs:
+      - shipment_package
+
+    state_machine:
+      - SM-035 Packaging Lifecycle
+
+    events:
+
+      produces:
+        - EVT-036 package_ready
+
+    orchestration:
+      - ORCH-032 Order Processing
+
+    dependencies:
+
+      modules:
+        - 008_logistics_engine
+        - 007_preconfig_engine
+
+    observability:
+
+      metrics:
+        - packaging_time
+        - packaging_accuracy
+
+    audit:
+      enabled: true
+
+    lifecycle:
+      policy: LIFE-001

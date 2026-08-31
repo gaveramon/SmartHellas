@@ -1,0 +1,233 @@
+definition_registry:
+
+
+  # ==========================================================
+  # WF-026 Guest Check-out
+  # ==========================================================
+
+
+  - id: WF-026
+
+    name: guest_check_out
+
+    title: Guest Check-out
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+      domain:
+
+        - guest_access
+
+
+      owner:
+
+        module: 004_booking_lock_engine
+
+
+
+    purpose:
+
+      description:
+
+        Handles guest departure and initiates
+        access termination process.
+
+
+
+    scope:
+
+      includes:
+
+        - departure_detection
+
+        - stay_completion
+
+        - access_shutdown_trigger
+
+
+
+      excludes:
+
+        - cleaning_management
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - booking_end_time_reached
+
+
+
+    preconditions:
+
+
+      - active_guest_session_exists
+
+
+
+    actors:
+
+
+      - guest
+
+      - system
+
+
+
+    inputs:
+
+
+      - booking
+
+      - guest_access_profile
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          validate_checkout_time
+
+
+
+      - step: 2
+
+        action:
+
+          close_guest_session
+
+
+
+      - step: 3
+
+        action:
+
+          trigger_access_revocation
+
+
+
+      - step: 4
+
+        action:
+
+          update_booking_status
+
+
+
+    outputs:
+
+
+      - completed_booking
+
+
+
+    state_machine:
+
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-027 guest_checked_out
+
+
+
+    orchestration:
+
+
+      - ORCH-026 Checkout Automation
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    integrations:
+
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - booking_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        manual_checkout_review
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_access_if_required
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - checkout_completion_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

@@ -1,0 +1,260 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-041 Guided Device Installation
+  # ==========================================================
+
+
+  - id: WF-041
+
+    name: guided_device_installation
+
+    title: Guided Device Installation
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - onboarding
+
+
+      owner:
+
+        module: 011_onboarding_engine
+
+
+      classification:
+
+
+        business_process: device_activation
+
+        ssot: false
+
+
+
+    purpose:
+
+
+      description: >
+        Provides step-by-step installation guidance
+        for customers installing SmartHellas devices
+        in their Airbnb property.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - installation_instructions
+
+        - room_device_mapping
+
+        - installation_checklist
+
+        - progress_tracking
+
+
+      excludes:
+
+
+        - physical_installation_by_employee
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-040 onboarding_started
+
+
+
+    preconditions:
+
+
+      - onboarding_active
+
+      - device_package_received
+
+
+
+    actors:
+
+
+      - customer
+
+      - system
+
+
+
+    inputs:
+
+
+      - installation_package
+
+      - room_mapping
+
+      - device_information
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          load_device_installation_plan
+
+
+
+      - step: 2
+
+        action:
+
+          display_room_specific_instructions
+
+
+
+      - step: 3
+
+        action:
+
+          guide_device_mounting
+
+
+
+      - step: 4
+
+        action:
+
+          request_customer_confirmation
+
+
+
+      - step: 5
+
+        action:
+
+          mark_installation_completed
+
+
+
+    outputs:
+
+
+      - installation_progress
+
+      - installed_device_list
+
+
+
+    state_machine:
+
+
+      - SM-041 Installation Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-041 installation_started
+
+        - EVT-042 installation_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-041 Installation Guidance
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+        - 010_service_portal_engine
+
+
+
+    integrations: []
+
+
+    security:
+
+
+      requirements:
+
+
+        - property_access_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        create_installation_support_task
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - reopen_installation_step
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - installation_completion_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001

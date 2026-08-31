@@ -1,0 +1,3699 @@
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: Customer & SaaS
+  # ==========================================================
+
+
+  - id: WF-001
+
+    name: customer_registration
+
+    title: Customer Registration
+
+    version: 1.0
+
+    status: active
+
+    description:
+      Creates a new SmartHellas customer account.
+
+
+    category:
+
+      - customer_lifecycle
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-001 customer_registered
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+
+
+    state_machine:
+
+      - SM-001
+
+
+
+    orchestration:
+
+      - ORCH-003
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+  - id: WF-002
+
+    name: customer_activation
+
+    title: Customer Activation
+
+    version: 1.0
+
+    status: active
+
+    description:
+      Activates customer services after registration.
+
+
+    category:
+
+      - customer_lifecycle
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-003 customer_activated
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+        - 010_service_portal_engine
+
+
+    state_machine:
+
+      - SM-001
+
+
+    orchestration:
+
+      - ORCH-003
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+  - id: WF-003
+
+    name: subscription_activation
+
+    title: Subscription Activation
+
+    version: 1.0
+
+    status: active
+
+    description:
+      Enables purchased subscription features.
+
+
+    category:
+
+      - subscription_management
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-004 subscription_created
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+
+    state_machine:
+
+      - SM-002
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+  - id: WF-004
+
+    name: subscription_change
+
+    title: Subscription Upgrade Downgrade
+
+
+    version: 1.0
+
+    status: active
+
+    description:
+      Changes customer subscription level.
+
+
+    category:
+
+      - subscription_management
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-005 subscription_changed
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+        - 009_commerce_engine
+
+
+    state_machine:
+
+      - SM-002
+
+
+
+  - id: WF-005
+
+    name: portal_access_provisioning
+
+    title: Portal Access Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Creates customer portal permissions.
+
+
+    category:
+
+      - access_management
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - provisioning_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-003 customer_activated
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 002_core_saas
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+  - id: WF-006
+
+    name: user_invitation
+
+    title: User Invitation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Invites additional customer users.
+
+
+    category:
+
+      - user_management
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+
+
+  - id: WF-007
+
+    name: organization_management
+
+    title: Organization Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages Airbnb organizations and owners.
+
+
+    category:
+
+      - tenant_management
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+
+
+  - id: WF-008
+
+    name: customer_deactivation
+
+    title: Customer Deactivation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Deactivates customer services.
+
+
+    category:
+
+      - customer_lifecycle
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - business_process
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+
+
+  - id: WF-009
+
+    name: customer_data_export
+
+    title: Customer Data Export
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Exports customer data according to privacy rules.
+
+
+    category:
+
+      - compliance
+
+
+    owner:
+
+      module: 002_core_saas
+
+
+    workflow_type:
+
+      - compliance_process
+
+
+    dependencies:
+
+      modules:
+
+        - 002_core_saas
+
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: Property & Device
+  # ==========================================================
+
+
+  - id: WF-010
+
+    name: device_preparation
+
+    title: Device Preparation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Prepares purchased devices before shipment.
+
+
+    category:
+
+      - device_management
+
+
+    owner:
+
+      module: 007_preconfig_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-031 order_confirmed
+
+
+    dependencies:
+
+      modules:
+
+        - 007_preconfig_engine
+
+        - 008_logistics_engine
+
+
+    state_machine:
+
+      - SM-010
+
+
+
+    orchestration:
+
+      - ORCH-002
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-011
+
+    name: device_provisioning
+
+    title: Device Provisioning
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Registers and assigns devices to a property.
+
+
+    category:
+
+      - device_management
+
+
+    owner:
+
+      module: 003_property_device_engine
+
+
+    workflow_type:
+
+      - provisioning_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-012 device_registered
+
+
+    dependencies:
+
+      modules:
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    state_machine:
+
+      - SM-011
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-012
+
+    name: device_pairing
+
+    title: Device Pairing
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Connects physical devices with SmartHellas.
+
+
+    category:
+
+      - iot_configuration
+
+
+    owner:
+
+      module: 003_property_device_engine
+
+
+    workflow_type:
+
+      - technical_process
+
+
+    dependencies:
+
+      modules:
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+      - INT-002 Aqara Integration
+
+      - INT-001 TTLock Integration
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-013
+
+    name: device_firmware_update
+
+    title: Device Firmware Update
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Ensures installed devices run supported firmware.
+
+
+    category:
+
+      - device_maintenance
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - maintenance_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-014 firmware_update_required
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-014
+
+    name: device_installation
+
+    title: Device Installation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Guides customer through physical installation.
+
+
+    category:
+
+      - onboarding
+
+
+    owner:
+
+      module: 011_onboarding_engine
+
+
+    workflow_type:
+
+      - customer_process
+
+
+    dependencies:
+
+      modules:
+
+        - 011_onboarding_engine
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-015
+
+    name: device_health_monitoring
+
+    title: Device Health Monitoring
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Monitors availability and health of devices.
+
+
+    category:
+
+      - monitoring
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-015 device_offline
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 003_property_device_engine
+
+
+
+    orchestration:
+
+      - ORCH-004
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-016
+
+    name: device_replacement
+
+    title: Device Replacement
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Handles replacement of defective devices.
+
+
+    category:
+
+      - service_management
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - support_process
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 008_logistics_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-017
+
+    name: device_removal
+
+    title: Device Removal
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Removes devices from properties and platform.
+
+
+    category:
+
+      - device_management
+
+
+    owner:
+
+      module: 003_property_device_engine
+
+
+    workflow_type:
+
+      - technical_process
+
+
+    dependencies:
+
+      modules:
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-018
+
+    name: property_device_synchronization
+
+    title: Property Device Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Synchronizes property configuration with devices.
+
+
+    category:
+
+      - synchronization
+
+
+    owner:
+
+      module: 003_property_device_engine
+
+
+    workflow_type:
+
+      - integration_process
+
+
+    dependencies:
+
+      modules:
+
+        - 003_property_device_engine
+
+        - 005_integration_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-019
+
+    name: automation_deployment
+
+    title: Automation Deployment
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Deploys smart home automations to devices.
+
+
+    category:
+
+      - automation
+
+
+    owner:
+
+      module: 016_automation_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    dependencies:
+
+      modules:
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: Booking & Lock
+  # ==========================================================
+
+
+  - id: WF-020
+
+    name: guest_access_management
+
+    title: Guest Access Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages complete guest access lifecycle
+      from booking confirmation until access removal.
+
+
+    category:
+
+      - booking_access
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-021 booking_confirmed
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+        - 010_service_portal_engine
+
+
+    state_machine:
+
+      - SM-023 Guest Access Lifecycle
+
+
+    orchestration:
+
+      - ORCH-001 Guest Access Automation
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-021
+
+    name: booking_synchronization
+
+    title: Booking Synchronization
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Synchronizes Airbnb reservations with SmartHellas.
+
+
+    category:
+
+      - booking_management
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - integration_process
+
+
+    trigger:
+
+      integration:
+
+        - INT-003 Airbnb Integration
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+    events:
+
+      produces:
+
+        - EVT-020 booking_created
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-022
+
+    name: booking_confirmation_handling
+
+    title: Booking Confirmation Handling
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Processes confirmed reservations and starts
+      guest preparation.
+
+
+    category:
+
+      - booking_management
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-021 booking_confirmed
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+
+    state_machine:
+
+      - SM-020 Booking Lifecycle
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-023
+
+    name: door_code_generation
+
+    title: Door Code Generation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Generates temporary guest access codes.
+
+
+    category:
+
+      - access_control
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-023 door_code_requested
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+      - INT-001 TTLock Integration
+
+
+    state_machine:
+
+      - SM-023 Guest Access Lifecycle
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-024
+
+    name: door_code_distribution
+
+    title: Door Code Distribution
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Sends generated access information to guests.
+
+
+    category:
+
+      - guest_communication
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - communication_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-024 door_code_generated
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 005_integration_engine
+
+
+    integrations:
+
+      - INT-005 Notification Provider
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-025
+
+    name: guest_checkin
+
+    title: Guest Check-in
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Activates guest access during check-in window.
+
+
+    category:
+
+      - access_control
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-026
+
+    name: guest_checkout
+
+    title: Guest Check-out
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Handles guest departure and access closure.
+
+
+    category:
+
+      - access_control
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-025 checkout_completed
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-027
+
+    name: access_revocation
+
+    title: Access Revocation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Removes temporary guest permissions.
+
+
+    category:
+
+      - security
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - security_process
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+
+    integrations:
+
+      - INT-001 TTLock Integration
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-028
+
+    name: emergency_access
+
+    title: Emergency Access
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Provides controlled emergency property access.
+
+
+    category:
+
+      - security
+
+
+    owner:
+
+      module: 004_booking_lock_engine
+
+
+    workflow_type:
+
+      - security_process
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-029
+
+    name: lock_failure_recovery
+
+    title: Lock Failure Recovery
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Handles smart lock failures and recovery actions.
+
+
+    category:
+
+      - incident_management
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - recovery_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-026 lock_failure
+
+
+    dependencies:
+
+      modules:
+
+        - 004_booking_lock_engine
+
+        - 006_operations_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: Commerce & Logistics
+  # ==========================================================
+
+
+  - id: WF-030
+
+    name: product_configuration
+
+    title: Product Configuration
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Calculates required SmartHellas equipment
+      based on customer requirements.
+
+
+    category:
+
+      - sales_configuration
+
+
+    owner:
+
+      module: 009_commerce_engine
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      action:
+
+        - customer_configuration_completed
+
+
+    dependencies:
+
+      modules:
+
+        - 009_commerce_engine
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-031
+
+    name: order_creation
+
+    title: Order Creation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Creates customer order after configuration approval.
+
+
+    category:
+
+      - order_management
+
+
+    owner:
+
+      module: 009_commerce_engine
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - order_requested
+
+
+    dependencies:
+
+      modules:
+
+        - 009_commerce_engine
+
+
+    events:
+
+      produces:
+
+        - EVT-031 order_confirmed
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-032
+
+    name: payment_processing
+
+    title: Payment Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Handles payment authorization and confirmation.
+
+
+    category:
+
+      - payment
+
+
+    owner:
+
+      module: 009_commerce_engine
+
+
+    workflow_type:
+
+      - financial_process
+
+
+    trigger:
+
+      event:
+
+        - payment_requested
+
+
+    dependencies:
+
+      modules:
+
+        - 009_commerce_engine
+
+
+    integrations:
+
+      - INT-004 Payment Provider
+
+
+
+    events:
+
+      produces:
+
+        - EVT-032 payment_received
+
+        - EVT-033 payment_failed
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-033
+
+    name: subscription_billing
+
+    title: Subscription Billing
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages recurring subscription payments
+      for portal services.
+
+
+    category:
+
+      - subscription_management
+
+
+    owner:
+
+      module: 009_commerce_engine
+
+
+    workflow_type:
+
+      - financial_process
+
+
+    dependencies:
+
+      modules:
+
+        - 009_commerce_engine
+
+        - 002_core_saas
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-034
+
+    name: inventory_allocation
+
+    title: Inventory Allocation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Allocates required devices from inventory.
+
+
+    category:
+
+      - inventory_management
+
+
+    owner:
+
+      module: 008_logistics_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    dependencies:
+
+      modules:
+
+        - 008_logistics_engine
+
+        - 009_commerce_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-035
+
+    name: device_packaging
+
+    title: Device Packaging
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Packages configured SmartHellas devices
+      with labels and onboarding QR codes.
+
+
+    category:
+
+      - fulfillment
+
+
+    owner:
+
+      module: 008_logistics_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    trigger:
+
+      event:
+
+        - device_configuration_completed
+
+
+    dependencies:
+
+      modules:
+
+        - 007_preconfig_engine
+
+        - 008_logistics_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-036
+
+    name: shipment_creation
+
+    title: Shipment Creation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Creates shipment after device preparation.
+
+
+    category:
+
+      - logistics
+
+
+    owner:
+
+      module: 008_logistics_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    trigger:
+
+      event:
+
+        - shipment_ready
+
+
+    dependencies:
+
+      modules:
+
+        - 008_logistics_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-037
+
+    name: delivery_tracking
+
+    title: Delivery Tracking
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Tracks shipment status until delivery.
+
+
+    category:
+
+      - logistics
+
+
+    owner:
+
+      module: 008_logistics_engine
+
+
+    workflow_type:
+
+      - monitoring_process
+
+
+    dependencies:
+
+      modules:
+
+        - 008_logistics_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-038
+
+    name: return_handling
+
+    title: Return Handling
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages returned hardware and processing.
+
+
+    category:
+
+      - returns
+
+
+    owner:
+
+      module: 008_logistics_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    dependencies:
+
+      modules:
+
+        - 008_logistics_engine
+
+        - 009_commerce_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-039
+
+    name: refund_processing
+
+    title: Refund Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Processes customer refunds after approval.
+
+
+    category:
+
+      - financial_process
+
+
+    owner:
+
+      module: 009_commerce_engine
+
+
+    workflow_type:
+
+      - financial_process
+
+
+    dependencies:
+
+      modules:
+
+        - 009_commerce_engine
+
+
+
+    integrations:
+
+      - INT-004 Payment Provider
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: Onboarding & Service
+  # ==========================================================
+
+
+  - id: WF-040
+
+    name: customer_onboarding
+
+    title: Customer Onboarding
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Complete onboarding journey for new SmartHellas customers.
+
+
+    category:
+
+      - onboarding
+
+
+    owner:
+
+      module: 011_onboarding_engine
+
+
+    workflow_type:
+
+      - customer_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-003 customer_activated
+
+
+    dependencies:
+
+      modules:
+
+        - 011_onboarding_engine
+
+        - 010_service_portal_engine
+
+
+
+    state_machine:
+
+      - SM-040 Customer Onboarding Lifecycle
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-041
+
+    name: pre_onboarding_questionnaire
+
+    title: Pre-Onboarding Questionnaire
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Collects Airbnb property information,
+      rooms, devices and installation details.
+
+
+    category:
+
+      - onboarding
+
+
+    owner:
+
+      module: 011_onboarding_engine
+
+
+    workflow_type:
+
+      - customer_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-041 onboarding_started
+
+
+    inputs:
+
+      - property_information
+
+      - room_mapping
+
+      - device_location
+
+
+
+    outputs:
+
+      - installation_plan
+
+      - device_configuration_plan
+
+
+
+    dependencies:
+
+      modules:
+
+        - 011_onboarding_engine
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-042
+
+    name: installation_guidance
+
+    title: Installation Guidance
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Provides customer instructions for device installation.
+
+
+    category:
+
+      - installation
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - customer_process
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-043
+
+    name: device_validation
+
+    title: Device Validation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Validates that installed devices are reachable
+      and correctly configured.
+
+
+    category:
+
+      - validation
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - technical_process
+
+
+    trigger:
+
+      event:
+
+        - device_installation_completed
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 003_property_device_engine
+
+
+
+    state_machine:
+
+      - SM-043 Device Validation Lifecycle
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-044
+
+    name: configuration_validation
+
+    title: Configuration Validation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Checks automations, integrations and settings
+      before customer activation.
+
+
+    category:
+
+      - quality_control
+
+
+    owner:
+
+      module: 007_preconfig_engine
+
+
+    workflow_type:
+
+      - validation_process
+
+
+    dependencies:
+
+      modules:
+
+        - 007_preconfig_engine
+
+        - 016_automation_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-045
+
+    name: support_case_creation
+
+    title: Support Case Creation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Creates support cases from customer issues.
+
+
+    category:
+
+      - support
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - service_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-045 support_requested
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 015_crm_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-046
+
+    name: remote_diagnostics
+
+    title: Remote Diagnostics
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Performs remote analysis of customer devices.
+
+
+    category:
+
+      - support
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - technical_process
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-047
+
+    name: service_completion
+
+    title: Service Completion
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Completes paid installation or configuration service.
+
+
+    category:
+
+      - service_delivery
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - service_process
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 007_preconfig_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-048
+
+    name: customer_training
+
+    title: Customer Training
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Provides customer education on portal and devices.
+
+
+    category:
+
+      - customer_enablement
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - customer_process
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-049
+
+    name: knowledge_base_guidance
+
+    title: Knowledge Base Guidance
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Provides contextual help during onboarding
+      and support processes.
+
+
+    category:
+
+      - knowledge_management
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - support_process
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: Operations & Automation
+  # ==========================================================
+
+
+  - id: WF-050
+
+    name: energy_optimization
+
+    title: Energy Optimization
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Optimizes Airbnb energy usage using smart devices,
+      sensors and automation rules.
+
+
+    category:
+
+      - energy_management
+
+
+    owner:
+
+      module: 016_automation_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    trigger:
+
+      event:
+
+        - EVT-050 energy_optimization_required
+
+
+    dependencies:
+
+      modules:
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+        - 006_operations_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-051
+
+    name: climate_automation
+
+    title: Climate Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Controls air conditioning and climate scenarios
+      based on occupancy and conditions.
+
+
+    category:
+
+      - climate_management
+
+
+    owner:
+
+      module: 016_automation_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    trigger:
+
+      event:
+
+        - temperature_change
+
+        - occupancy_change
+
+
+    dependencies:
+
+      modules:
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+
+
+    integrations:
+
+      - INT-002 Aqara Integration
+
+      - INT-006 Climate Provider
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-052
+
+    name: sensor_trigger_automation
+
+    title: Sensor Trigger Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Executes automation actions based on sensor events.
+
+
+    category:
+
+      - automation
+
+
+    owner:
+
+      module: 016_automation_engine
+
+
+    workflow_type:
+
+      - event_process
+
+
+    trigger:
+
+      event:
+
+        - sensor_state_changed
+
+
+    dependencies:
+
+      modules:
+
+        - 016_automation_engine
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-053
+
+    name: alert_processing
+
+    title: Alert Processing
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Processes alerts from devices and services.
+
+
+    category:
+
+      - monitoring
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    trigger:
+
+      event:
+
+        - device_alert_created
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+
+
+    state_machine:
+
+      - SM-053 Alert Lifecycle
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-054
+
+    name: maintenance_management
+
+    title: Maintenance Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Plans and tracks device maintenance.
+
+
+    category:
+
+      - maintenance
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 003_property_device_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-055
+
+    name: incident_management
+
+    title: Incident Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages operational incidents and resolution.
+
+
+    category:
+
+      - incident_management
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - operational_process
+
+
+    trigger:
+
+      event:
+
+        - incident_created
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-056
+
+    name: monitoring_escalation
+
+    title: Monitoring Escalation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Escalates unresolved operational issues.
+
+
+    category:
+
+      - monitoring
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - escalation_process
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 015_crm_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-057
+
+    name: rule_execution
+
+    title: Automation Rule Execution
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Executes automation rules defined by customers
+      or SmartHellas.
+
+
+    category:
+
+      - automation
+
+
+    owner:
+
+      module: 016_automation_engine
+
+
+    workflow_type:
+
+      - execution_process
+
+
+    trigger:
+
+      event:
+
+        - automation_triggered
+
+
+    dependencies:
+
+      modules:
+
+        - 016_automation_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-058
+
+    name: scheduled_automation
+
+    title: Scheduled Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Executes time-based automation schedules.
+
+
+    category:
+
+      - automation
+
+
+    owner:
+
+      module: 016_automation_engine
+
+
+    workflow_type:
+
+      - scheduled_process
+
+
+    dependencies:
+
+      modules:
+
+        - 016_automation_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-059
+
+    name: recovery_automation
+
+    title: Recovery Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Automatically restores failed automation
+      or device processes.
+
+
+    category:
+
+      - recovery
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - recovery_process
+
+
+    trigger:
+
+      event:
+
+        - automation_failure
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 016_automation_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+workflow_registry:
+
+
+  # ==========================================================
+  # Domain: CRM & Platform
+  # ==========================================================
+
+
+  - id: WF-060
+
+    name: lead_management
+
+    title: Lead Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages prospects from first contact until conversion.
+
+
+    category:
+
+      - crm
+
+
+    owner:
+
+      module: 015_crm_engine
+
+
+    workflow_type:
+
+      - business_process
+
+
+    trigger:
+
+      event:
+
+        - lead_created
+
+
+    dependencies:
+
+      modules:
+
+        - 015_crm_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-061
+
+    name: sales_follow_up
+
+    title: Sales Follow-up
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Manages sales activities after lead creation.
+
+
+    category:
+
+      - sales
+
+
+    owner:
+
+      module: 015_crm_engine
+
+
+    workflow_type:
+
+      - business_process
+
+
+    dependencies:
+
+      modules:
+
+        - 015_crm_engine
+
+        - 009_commerce_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-062
+
+    name: opportunity_management
+
+    title: Opportunity Management
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Tracks potential customer opportunities.
+
+
+    category:
+
+      - crm
+
+
+    owner:
+
+      module: 015_crm_engine
+
+
+    workflow_type:
+
+      - business_process
+
+
+    dependencies:
+
+      modules:
+
+        - 015_crm_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-063
+
+    name: customer_communication
+
+    title: Customer Communication
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Handles customer communication across channels.
+
+
+    category:
+
+      - communication
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - communication_process
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 015_crm_engine
+
+
+
+    integrations:
+
+      - INT-005 Notification Provider
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-064
+
+    name: notification_dispatch
+
+    title: Notification Dispatch
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Sends system and customer notifications.
+
+
+    category:
+
+      - communication
+
+
+    owner:
+
+      module: 010_service_portal_engine
+
+
+    workflow_type:
+
+      - integration_process
+
+
+    trigger:
+
+      event:
+
+        - notification_requested
+
+
+    dependencies:
+
+      modules:
+
+        - 010_service_portal_engine
+
+        - 005_integration_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-065
+
+    name: marketing_automation
+
+    title: Marketing Automation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Automates marketing campaigns and customer journeys.
+
+
+    category:
+
+      - marketing
+
+
+    owner:
+
+      module: 015_crm_engine
+
+
+    workflow_type:
+
+      - automation_process
+
+
+    dependencies:
+
+      modules:
+
+        - 015_crm_engine
+
+        - 016_automation_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-066
+
+    name: customer_feedback
+
+    title: Customer Feedback
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Collects and processes customer feedback.
+
+
+    category:
+
+      - customer_experience
+
+
+    owner:
+
+      module: 015_crm_engine
+
+
+    workflow_type:
+
+      - feedback_process
+
+
+    dependencies:
+
+      modules:
+
+        - 015_crm_engine
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-067
+
+    name: support_escalation
+
+    title: Support Escalation
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Escalates unresolved customer support issues.
+
+
+    category:
+
+      - support
+
+
+    owner:
+
+      module: 015_crm_engine
+
+
+    workflow_type:
+
+      - escalation_process
+
+
+    trigger:
+
+      event:
+
+        - support_escalation_required
+
+
+    dependencies:
+
+      modules:
+
+        - 015_crm_engine
+
+        - 010_service_portal_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-068
+
+    name: reporting_workflow
+
+    title: Reporting Workflow
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Generates operational and business reports.
+
+
+    category:
+
+      - reporting
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - reporting_process
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 015_crm_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+
+
+
+
+  - id: WF-069
+
+    name: audit_reporting
+
+    title: Audit Reporting
+
+
+    version: 1.0
+
+    status: active
+
+
+    description:
+      Generates compliance and architecture audit reports.
+
+
+    category:
+
+      - compliance
+
+
+    owner:
+
+      module: 006_operations_engine
+
+
+    workflow_type:
+
+      - governance_process
+
+
+    dependencies:
+
+      modules:
+
+        - 006_operations_engine
+
+        - 015_crm_engine
+
+
+
+    lifecycle:
+
+      policy: LIFE-001
+

@@ -1,0 +1,261 @@
+definition_registry:
+
+  # ==========================================================
+  # WF-047 Maintenance & Firmware Campaign
+  # ==========================================================
+
+
+  - id: WF-047
+
+    name: maintenance_firmware_campaign
+
+    title: Maintenance & Firmware Campaign
+
+
+    version: 1.0
+
+    status: active
+
+
+    identity:
+
+
+      domain:
+
+        - maintenance
+
+
+      owner:
+
+        module: 006_operations_engine
+
+
+      classification:
+
+
+        business_process: platform_maintenance
+
+        criticality: operational_critical
+
+        ssot: true
+
+
+
+    purpose:
+
+
+      description: >
+        Manages planned maintenance activities,
+        firmware updates and lifecycle management
+        of deployed devices.
+
+
+
+    scope:
+
+
+      includes:
+
+
+        - firmware_inventory
+
+        - update_planning
+
+        - update_execution
+
+        - maintenance_reporting
+
+
+
+      excludes:
+
+
+        - hardware_replacement
+
+
+
+    trigger:
+
+
+      event:
+
+
+        - EVT-035 firmware_update_required
+
+
+
+    preconditions:
+
+
+      - device_online
+
+      - maintenance_window_available
+
+
+
+    actors:
+
+
+      - system
+
+      - operations_employee
+
+
+
+    inputs:
+
+
+      - device_inventory
+
+      - firmware_versions
+
+
+
+    workflow_steps:
+
+
+      - step: 1
+
+        action:
+
+          identify_outdated_devices
+
+
+
+      - step: 2
+
+        action:
+
+          create_maintenance_plan
+
+
+
+      - step: 3
+
+        action:
+
+          execute_updates
+
+
+
+      - step: 4
+
+        action:
+
+          validate_device_health
+
+
+
+      - step: 5
+
+        action:
+
+          close_maintenance_campaign
+
+
+
+    outputs:
+
+
+      - maintenance_report
+
+
+
+    state_machine:
+
+
+      - SM-047 Maintenance Lifecycle
+
+
+
+    events:
+
+
+      produces:
+
+
+        - EVT-093 maintenance_completed
+
+
+
+    orchestration:
+
+
+      - ORCH-047 Maintenance Campaign
+
+
+
+    dependencies:
+
+
+      modules:
+
+
+        - 006_operations_engine
+
+        - 005_integration_engine
+
+
+
+    integrations:
+
+
+      - Aqara Integration
+
+      - TTLock Integration
+
+
+
+    security:
+
+
+      requirements:
+
+
+        - firmware_integrity_validation
+
+
+
+    error_handling:
+
+
+      strategy:
+
+
+        rollback_failed_update
+
+
+
+    compensation:
+
+
+      actions:
+
+
+        - restore_previous_firmware
+
+
+
+    observability:
+
+
+      metrics:
+
+
+        - update_success_rate
+
+
+
+    audit:
+
+
+      enabled: true
+
+
+
+    lifecycle:
+
+
+      policy:
+
+        LIFE-001
