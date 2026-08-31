@@ -4,33 +4,12 @@
 //
 // Responsibility:
 // - Receive OAuth authorization callback
-// - Validate presence of code + state
+// - Validate code + state
 // - Delegate token exchange to 007
 // - Delegate OAuth completion to 007
 // - Return only non-secret completion information
 //
-// Architecture:
-//
-//   OAUTH PROVIDER
-//        |
-//        | code + state
-//        v
-//   integrations-oauth-callback
-//        |
-//        v
-//   007 integrations_exchange_oauth_tokens()
-//        |
-//        v
-//      VAULT
-//        |
-//        v
-//   007 integrations_complete_oauth()
-//        |
-//        v
-//   tenant_integrations
-//
 // SSOT:
-//
 // 007 = OAuth transaction + integration lifecycle
 // Vault = OAuth credentials / tokens
 // tenant_integrations = tenant integration SSOT
@@ -46,20 +25,18 @@
 // - resolve tenant independently
 // ============================================================
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 
 // ============================================================
 // 1. SUPABASE CONFIGURATION
 // ============================================================
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 
 const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL");
 
 const SUPABASE_SERVICE_ROLE_KEY =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
 
 if (
   !SUPABASE_URL ||
@@ -69,7 +46,6 @@ if (
     "Missing Supabase environment configuration"
   );
 }
-
 
 const supabase =
   createClient(
@@ -84,6 +60,13 @@ const supabase =
 
 type JsonObject =
   Record<string, unknown>;
+
+type OAuthCompletionResult = {
+  id: string;
+  tenant_id: string;
+  provider_code: string;
+  is_enabled: boolean;
+};
 
 
 // ============================================================
@@ -101,8 +84,7 @@ class HttpError extends Error {
 
     super(message);
 
-    this.status =
-      status;
+    this.status = status;
   }
 }
 
@@ -120,7 +102,6 @@ function jsonResponse(
     JSON.stringify(body),
     {
       status,
-
       headers: {
         "Content-Type":
           "application/json",
@@ -131,7 +112,7 @@ function jsonResponse(
 
 
 // ============================================================
-// 5. VALUE HELPERS
+// 5. VALUE HELPER
 // ============================================================
 
 function asString(
@@ -154,23 +135,7 @@ function asString(
 
 
 // ============================================================
-// 6. CALLBACK RESULT
-// ============================================================
-
-type OAuthCompletionResult = {
-
-  id: string;
-
-  tenant_id: string;
-
-  provider_code: string;
-
-  is_enabled: boolean;
-};
-
-
-// ============================================================
-// 7. MAIN HANDLER
+// 6. MAIN HANDLER
 // ============================================================
 
 Deno.serve(
@@ -181,7 +146,7 @@ Deno.serve(
     try {
 
       // ======================================================
-      // HTTP METHOD
+      // 6A. HTTP METHOD
       // ======================================================
 
       if (
@@ -196,57 +161,42 @@ Deno.serve(
 
 
       // ======================================================
-      // CALLBACK PARAMETERS
+      // 6B. CALLBACK PARAMETERS
       //
-      // The provider returns:
+      // OAuth callback is intentionally limited to:
       //
-      //   ?code=...
-      //   &state=...
+      //   code
+      //   state
       //
-      // We deliberately accept ONLY these OAuth transaction
-      // parameters.
+      // Tenant/provider context is resolved from state
+      // inside 007.
       // ======================================================
 
       const url =
-        new URL(
-          req.url
-        );
-
+        new URL(req.url);
 
       const code =
         asString(
-          url.searchParams.get(
-            "code"
-          )
+          url.searchParams.get("code")
         );
-
 
       const stateToken =
         asString(
-          url.searchParams.get(
-            "state"
-          )
+          url.searchParams.get("state")
         );
 
 
       // ======================================================
-      // PROVIDER ERROR
+      // 6C. PROVIDER ERROR
       //
-      // OAuth providers can return:
-      //
-      //   ?error=access_denied
-      //   &state=...
-      //
-      // Do not attempt token exchange in that case.
+      // Do not attempt token exchange when the provider
+      // rejected the authorization request.
       // ======================================================
 
       const oauthError =
         asString(
-          url.searchParams.get(
-            "error"
-          )
+          url.searchParams.get("error")
         );
-
 
       const oauthErrorDescription =
         asString(
@@ -271,7 +221,6 @@ Deno.serve(
           }
         );
 
-
         throw new HttpError(
           400,
           oauthErrorDescription
@@ -282,7 +231,7 @@ Deno.serve(
 
 
       // ======================================================
-      // INPUT VALIDATION
+      // 6D. INPUT VALIDATION
       // ======================================================
 
       if (!code) {
@@ -292,7 +241,6 @@ Deno.serve(
           "OAuth authorization code is required"
         );
       }
-
 
       if (!stateToken) {
 
@@ -304,26 +252,26 @@ Deno.serve(
 
 
       // ======================================================
-      // 007 — TOKEN EXCHANGE
+      // 7. TOKEN EXCHANGE
       //
-      // IMPORTANT:
-      //
-      // The Edge Function does NOT provide:
+      // 007 resolves:
       //
       // - tenant_id
       // - provider_code
       // - redirect_uri
-      // - client_id
-      // - client_secret
+      // - OAuth configuration
+      // - client credentials
+      // - PKCE verifier
       //
-      // 007 resolves all of these from SSOT/Vault.
+      // Tokens are stored directly in Vault.
+      //
+      // The callback never receives or inspects the token
+      // payload.
       // ======================================================
 
       const {
-        data:
-          credentialsRef,
-        error:
-          exchangeError,
+        data: credentialsRef,
+        error: exchangeError,
       } =
         await supabase.rpc(
           "integrations_exchange_oauth_tokens",
@@ -346,13 +294,18 @@ Deno.serve(
           exchangeError
         );
 
-
         throw new HttpError(
           400,
           "OAuth token exchange failed"
         );
       }
 
+
+      // The database function returns only the Vault
+      // reference. The callback does not use or expose it.
+      //
+      // Keep this validation so a broken exchange cannot
+      // silently continue into completion.
 
       if (
         !credentialsRef ||
@@ -367,26 +320,22 @@ Deno.serve(
 
 
       // ======================================================
-      // 007 — COMPLETE OAUTH
+      // 8. COMPLETE OAUTH
       //
-      // IMPORTANT:
+      // ONLY state_token crosses the API boundary.
       //
-      // Only state_token is supplied.
+      // integrations_complete_oauth() derives:
       //
-      // integrations_complete_oauth() resolves:
+      // - tenant_id
+      // - provider_code
+      // - credentials_ref
       //
-      //   tenant_id
-      //   provider_code
-      //   credentials_ref
-      //
-      // from the authoritative transaction / Vault.
+      // from authoritative SSOT sources.
       // ======================================================
 
       const {
-        data:
-          completion,
-        error:
-          completionError,
+        data: completion,
+        error: completionError,
       } =
         await supabase.rpc(
           "integrations_complete_oauth",
@@ -405,7 +354,6 @@ Deno.serve(
           "OAuth completion failed:",
           completionError
         );
-
 
         throw new HttpError(
           500,
@@ -431,22 +379,25 @@ Deno.serve(
 
 
       // ======================================================
-      // SECURITY CHECK
+      // 9. SECURITY VALIDATION
       //
-      // credentials_ref is intentionally NOT returned.
+      // Never expose:
       //
-      // The callback only exposes non-secret integration
-      // metadata.
+      // - access_token
+      // - refresh_token
+      // - client_secret
+      // - credentials_ref
+      // - PKCE verifier
+      //
+      // Only integration metadata is returned.
       // ======================================================
 
       return jsonResponse(
         {
-
           success:
             true,
 
           integration: {
-
             id:
               result.id,
 
@@ -459,7 +410,6 @@ Deno.serve(
             is_enabled:
               result.is_enabled,
           },
-
         },
         200
       );
@@ -481,13 +431,11 @@ Deno.serve(
 
         return jsonResponse(
           {
-
             success:
               false,
 
             error:
               error.message,
-
           },
           error.status
         );
@@ -496,13 +444,11 @@ Deno.serve(
 
       return jsonResponse(
         {
-
           success:
             false,
 
           error:
             "Internal server error",
-
         },
         500
       );
