@@ -53,7 +53,30 @@ create table if not exists public.integration_providers (
 
 
 -- =====================================================
--- 2. TENANT INTEGRATIONS (CONNECTION CONFIG ONLY)
+-- 2. INTEGRATION CAPABILITIES (PROVIDER FEATURES)
+-- =====================================================
+
+create table if not exists public.integration_capabilities (
+
+    id uuid primary key default gen_random_uuid(),
+
+    provider_code text not null,
+
+    capability_code text not null,
+
+    description text,
+
+    is_supported boolean not null default true,
+
+    created_at timestamptz not null default now(),
+
+    constraint uq_provider_capability
+        unique (provider_code, capability_code)
+);
+
+
+-- =====================================================
+-- 3. TENANT INTEGRATIONS (CONNECTION CONFIG ONLY)
 -- =====================================================
 
 create table if not exists public.tenant_integrations (
@@ -79,7 +102,7 @@ create table if not exists public.tenant_integrations (
 
 
 -- =====================================================
--- 3. WEBHOOK DEFINITIONS (OUTBOUND ONLY)
+-- 4. WEBHOOK DEFINITIONS (OUTBOUND ONLY)
 -- =====================================================
 
 create table if not exists public.webhook_definitions (
@@ -101,29 +124,6 @@ create table if not exists public.webhook_definitions (
     created_at timestamptz not null default now(),
 
     updated_at timestamptz not null default now()
-);
-
-
--- =====================================================
--- 4. INTEGRATION CAPABILITIES (PROVIDER FEATURES)
--- =====================================================
-
-create table if not exists public.integration_capabilities (
-
-    id uuid primary key default gen_random_uuid(),
-
-    provider_code text not null,
-
-    capability_code text not null,
-
-    description text,
-
-    is_supported boolean not null default true,
-
-    created_at timestamptz not null default now(),
-
-    constraint uq_provider_capability
-        unique (provider_code, capability_code)
 );
 
 
@@ -173,7 +173,57 @@ create index if not exists integration_oauth_states_pending_idx
 
 
 -- =====================================================
--- 7. INTEGRATION PROVIDERS SEED (CATALOG SSOT)
+-- 7. INTEGRATION WEBHOOK MAPPINGS
+-- =====================================================
+
+-- =====================================================
+-- 7.1 WEBHOOK PAYLOAD MAPPINGS
+--
+-- Responsibility:
+-- - Define how provider webhook payloads map to
+--   integration-domain identifiers.
+--
+-- This is configuration / mapping metadata.
+-- It is NOT device state and NOT telemetry.
+--
+-- 000 must never inspect these mappings.
+-- 006 owns their interpretation.
+-- =====================================================
+
+create table if not exists public.integration_webhook_mappings (
+
+    id uuid primary key default gen_random_uuid(),
+
+    provider_code text not null
+        references public.integration_providers(code),
+
+    event_type text not null,
+
+    mapping_code text not null,
+
+    payload_path text[] not null,
+
+    value_type text not null default 'text',
+
+    is_required boolean not null default true,
+
+    is_active boolean not null default true,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    constraint uq_integration_webhook_mapping
+        unique (
+            provider_code,
+            event_type,
+            mapping_code
+        )
+);
+
+
+-- =====================================================
+-- 8. PROVIDER AND CAPABILITY SEED DATA
 -- =====================================================
 
 insert into public.integration_providers (
@@ -185,7 +235,7 @@ insert into public.integration_providers (
     supports_oauth
 )
 values
-    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, false, false),
+    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
     ('ttlock', 'TTLock', 'lock', '2026-01-01 00:00:00+00'::timestamptz, true, false),
     ('shelly', 'Shelly', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
     ('beds24', 'Beds24', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
@@ -230,6 +280,7 @@ values
     ('aqara', 'send_command', true),
     ('aqara', 'receive_event', true),
     ('ttlock', 'send_command', true),
+    ('ttlock', 'receive_event', true),
     ('ttlock', 'create_user', true),
     ('shelly', 'receive_event', true),
     ('beds24', 'sync_state', true),
@@ -242,7 +293,461 @@ do nothing;
 
 
 -- =====================================================
--- 8. INDEXES AND TABLE COMMENTS
+-- 9. WEBHOOK MAPPING SEED DATA
+-- =====================================================
+
+-- =====================================================
+-- 9.1 AQARA WEBHOOK MAPPINGS
+--
+-- 006 Integration Engine
+--
+-- These mappings describe the Aqara message contract.
+-- No provider-specific CASE logic is required in the
+-- webhook processor.
+-- =====================================================
+
+insert into public.integration_webhook_mappings (
+    provider_code,
+    event_type,
+    mapping_code,
+    payload_path,
+    value_type,
+    is_required,
+    is_active
+)
+values
+
+    -- -------------------------------------------------
+    -- Aqara device attribute messages
+    -- -------------------------------------------------
+
+    (
+        'aqara',
+        'resource_report',
+        'provider_event_id',
+        array['msgId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'resource_report',
+        'device_external_id',
+        array['subjectId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'resource_report',
+        'observed_at',
+        array['time'],
+        'epoch_milliseconds',
+        true,
+        true
+    ),
+
+
+    -- -------------------------------------------------
+    -- Aqara device control failure
+    -- -------------------------------------------------
+
+    (
+        'aqara',
+        'control_fail',
+        'provider_event_id',
+        array['msgId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'control_fail',
+        'device_external_id',
+        array['subjectId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'control_fail',
+        'observed_at',
+        array['time'],
+        'epoch_milliseconds',
+        true,
+        true
+    ),
+
+
+    -- -------------------------------------------------
+    -- Aqara device lifecycle events
+    -- -------------------------------------------------
+
+    (
+        'aqara',
+        'subdevice_online',
+        'provider_event_id',
+        array['msgId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'subdevice_online',
+        'device_external_id',
+        array['did'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'subdevice_online',
+        'observed_at',
+        array['time'],
+        'epoch_milliseconds',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'subdevice_offline',
+        'provider_event_id',
+        array['msgId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'subdevice_offline',
+        'device_external_id',
+        array['did'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'subdevice_offline',
+        'observed_at',
+        array['time'],
+        'epoch_milliseconds',
+        true,
+        true
+    ),
+
+
+    -- -------------------------------------------------
+    -- Gateway lifecycle events
+    -- -------------------------------------------------
+
+    (
+        'aqara',
+        'gateway_online',
+        'provider_event_id',
+        array['msgId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'gateway_online',
+        'device_external_id',
+        array['did'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'gateway_online',
+        'observed_at',
+        array['time'],
+        'epoch_milliseconds',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'gateway_offline',
+        'provider_event_id',
+        array['msgId'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'gateway_offline',
+        'device_external_id',
+        array['did'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'aqara',
+        'gateway_offline',
+        'observed_at',
+        array['time'],
+        'epoch_milliseconds',
+        true,
+        true
+    )
+
+on conflict (
+    provider_code,
+    event_type,
+    mapping_code
+)
+do update set
+    payload_path = excluded.payload_path,
+    value_type = excluded.value_type,
+    is_required = excluded.is_required,
+    is_active = excluded.is_active,
+    updated_at = now();
+
+
+-- =====================================================
+-- 9.2 SHELLY WEBHOOK MAPPINGS
+--
+-- 006 Integration Engine
+--
+-- Shelly webhook payloads use different paths and
+-- timestamps than Aqara/TTLock.
+-- =====================================================
+
+insert into public.integration_webhook_mappings (
+    provider_code,
+    event_type,
+    mapping_code,
+    payload_path,
+    value_type,
+    is_required,
+    is_active
+)
+values
+
+    -- -------------------------------------------------
+    -- Temperature
+    -- -------------------------------------------------
+
+    (
+        'shelly',
+        'temperature.change',
+        'device_external_id',
+        array['info','mac'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'shelly',
+        'temperature.change',
+        'temperature',
+        array['ev','tC'],
+        'text',
+        true,
+        true
+    ),
+
+    -- -------------------------------------------------
+    -- Humidity
+    -- -------------------------------------------------
+
+    (
+        'shelly',
+        'humidity.change',
+        'device_external_id',
+        array['info','mac'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'shelly',
+        'humidity.change',
+        'humidity',
+        array['ev','rh'],
+        'text',
+        true,
+        true
+    )
+
+on conflict (
+    provider_code,
+    event_type,
+    mapping_code
+)
+do update set
+    payload_path = excluded.payload_path,
+    value_type = excluded.value_type,
+    is_required = excluded.is_required,
+    is_active = excluded.is_active,
+    updated_at = now();
+
+
+-- =====================================================
+-- 9.3 TTLOCK WEBHOOK / RECORD MAPPINGS
+--
+-- 006 Integration Engine
+--
+-- TTLock records are normally obtained through the
+-- TTLock API rather than native push webhooks.
+--
+-- These mappings are intended for the normalized raw
+-- event representation created by the TTLock integration
+-- worker.
+-- =====================================================
+
+insert into public.integration_webhook_mappings (
+    provider_code,
+    event_type,
+    mapping_code,
+    payload_path,
+    value_type,
+    is_required,
+    is_active
+)
+values
+
+    -- -------------------------------------------------
+    -- DEVICE
+    -- -------------------------------------------------
+
+    (
+        'ttlock',
+        'lock.record',
+        'device_external_id',
+        array['lockId'],
+        'text',
+        true,
+        true
+    ),
+
+    -- -------------------------------------------------
+    -- EVENT
+    -- -------------------------------------------------
+
+    (
+        'ttlock',
+        'lock.record',
+        'record_type',
+        array['recordType'],
+        'text',
+        true,
+        true
+    ),
+
+    (
+        'ttlock',
+        'lock.record',
+        'success',
+        array['success'],
+        'text',
+        true,
+        true
+    ),
+
+    -- -------------------------------------------------
+    -- ACTOR
+    -- -------------------------------------------------
+
+    (
+        'ttlock',
+        'lock.record',
+        'username',
+        array['username'],
+        'text',
+        false,
+        true
+    ),
+
+    -- -------------------------------------------------
+    -- PASSCODE / CREDENTIAL
+    -- -------------------------------------------------
+
+    (
+        'ttlock',
+        'lock.record',
+        'credential',
+        array['keyboardPwd'],
+        'text',
+        false,
+        true
+    ),
+
+    -- -------------------------------------------------
+    -- EVENT TIMESTAMP
+    --
+    -- TTLock uses Unix epoch milliseconds.
+    -- This becomes device_telemetry_raw.observed_at.
+    -- -------------------------------------------------
+
+    (
+        'ttlock',
+        'lock.record',
+        'observed_at',
+        array['lockDate'],
+        'epoch_milliseconds',
+        true,
+        true
+    ),
+
+    -- -------------------------------------------------
+    -- SERVER TIMESTAMP
+    --
+    -- Also Unix epoch milliseconds.
+    -- -------------------------------------------------
+
+    (
+        'ttlock',
+        'lock.record',
+        'server_at',
+        array['serverDate'],
+        'epoch_milliseconds',
+        false,
+        true
+    )
+
+on conflict (
+    provider_code,
+    event_type,
+    mapping_code
+)
+do update set
+    payload_path = excluded.payload_path,
+    value_type = excluded.value_type,
+    is_required = excluded.is_required,
+    is_active = excluded.is_active,
+    updated_at = now();
+
+
+-- =====================================================
+-- 10. INDEXES AND TABLE COMMENTS
 -- =====================================================
 
 create index if not exists idx_integration_providers_active
@@ -334,9 +839,8 @@ comment on table public.device_integration_map is
     'Maps domain devices to provider external IDs. No credentials or runtime state.';
 
 
-
 -- =====================================================
--- 9. FOREIGN KEYS (PROVIDER + TENANT SSOT)
+-- 11. FOREIGN KEYS (PROVIDER + TENANT SSOT)
 -- =====================================================
 
 do $$
@@ -428,9 +932,8 @@ exception when duplicate_object then null;
 end $$;
 
 
-
 -- =====================================================
--- 10. RLS CONFIGURATION
+-- 12. RLS CONFIGURATION
 -- =====================================================
 
 alter table public.integration_providers enable row level security;
@@ -507,7 +1010,7 @@ drop policy if exists device_integration_map_delete on public.device_integration
 
 
 -- =====================================================
--- 11. RLS POLICIES
+-- 13. RLS POLICIES
 -- =====================================================
 
 create policy device_integration_map_delete on public.device_integration_map
@@ -703,7 +1206,7 @@ create policy webhook_definitions_update on public.webhook_definitions
 
 
 -- =====================================================
--- 12. OAUTH STATE RLS
+-- 14. OAUTH STATE RLS
 -- Tenant-scoped OAuth state
 --
 -- Tenant authority:
@@ -764,7 +1267,7 @@ with check (
 
 
 -- =====================================================
--- 13. INTEGRATION DEVICE CONSISTENCY
+-- 15. INTEGRATION DEVICE CONSISTENCY
 -- =====================================================
 
 -- -----------------------------------------------------
@@ -807,9 +1310,8 @@ end;
 $$;
 
 
-
 -- =====================================================
--- 14. TRIGGERS
+-- 16. TRIGGERS
 -- =====================================================
 
 create trigger trg_integration_providers_updated_at
@@ -835,10 +1337,125 @@ before insert or update on public.device_integration_map
 for each row execute function public.enforce_device_integration_consistency();
 
 
+-- =====================================================
+-- 17. WEBHOOK MAPPING RESOLUTION
+-- =====================================================
+
+create or replace function public.resolve_integration_webhook_mapping(
+    p_provider_code text,
+    p_event_type text,
+    p_mapping_code text,
+    p_payload jsonb
+)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_path text[];
+    v_value text;
+    v_value_type text;
+begin
+
+    if p_provider_code is null then
+        raise exception 'provider_code is required';
+    end if;
+
+    if p_event_type is null then
+        raise exception 'event_type is required';
+    end if;
+
+    if p_mapping_code is null then
+        raise exception 'mapping_code is required';
+    end if;
+
+    if p_payload is null then
+        return null;
+    end if;
+
+    select
+        m.payload_path,
+        m.value_type
+    into
+        v_path,
+        v_value_type
+    from public.integration_webhook_mappings m
+    where m.provider_code = p_provider_code
+      and (
+            m.event_type = p_event_type
+            or (
+                m.event_type like '%*'
+                and p_event_type like replace(m.event_type, '*', '%')
+            )
+          )
+      and m.mapping_code = p_mapping_code
+      and m.is_active = true
+    order by
+        case
+            when m.event_type = p_event_type then 0
+            else 1
+        end,
+        length(m.event_type) desc
+    limit 1;
+
+    if not found then
+        return null;
+    end if;
+
+    v_value := p_payload #>> v_path;
+
+    if v_value is null or btrim(v_value) = '' then
+        return null;
+    end if;
+
+    v_value := btrim(v_value);
+
+    case coalesce(v_value_type, 'text')
+
+        when 'text' then
+            return v_value;
+
+        when 'uuid' then
+            return v_value;
+
+        when 'timestamptz' then
+            return v_value;
+
+        when 'epoch_seconds' then
+            return extract(
+                epoch from to_timestamp(v_value::double precision)
+            )::text;
+
+        when 'epoch_milliseconds' then
+            return extract(
+                epoch from to_timestamp(
+                    v_value::double precision / 1000.0
+                )
+            )::text;
+
+        else
+            raise exception
+                'Unsupported integration webhook mapping value_type: %',
+                v_value_type;
+
+    end case;
+
+exception
+    when invalid_text_representation then
+        raise exception
+            'Invalid value for mapping %, provider %, event %: %',
+            p_mapping_code,
+            p_provider_code,
+            p_event_type,
+            v_value;
+
+end;
+$$;
 
 
 -- =====================================================
--- 15. INTEGRATION DOMAIN FUNCTIONS
+-- 18. INTEGRATION DOMAIN FUNCTIONS
 -- =====================================================
 
 -- -----------------------------------------------------
@@ -1057,6 +1674,9 @@ end;
 $$;
 
 
+-- =====================================================
+-- 19. INTEGRATION DOMAIN EXTENSIONS
+-- =====================================================
 
 -- -----------------------------------------------------
 -- 004: extend integrations_domain_ext with start_oauth
@@ -1175,7 +1795,6 @@ end;
 $$;
 
 
-
 -- -----------------------------------------------------
 -- 004 Integrations: OAuth state completion
 -- -----------------------------------------------------
@@ -1267,9 +1886,8 @@ end;
 $$;
 
 
-
 -- =====================================================
--- 16. OAUTH HELPERS
+-- 20. OAUTH HELPERS
 -- =====================================================
 
 -- -----------------------------------------------------
@@ -1308,7 +1926,6 @@ begin
     return v_result;
 end;
 $$;
-
 
 
 -- -----------------------------------------------------
@@ -1408,7 +2025,6 @@ end;
 $$;
 
 
-
 -- -----------------------------------------------------
 -- integrations_resolve_oauth_state: gate via current_tenant_id()
 -- -----------------------------------------------------
@@ -1457,7 +2073,6 @@ begin
     );
 end;
 $$;
-
 
 
 -- -----------------------------------------------------
@@ -1581,7 +2196,6 @@ end;
 $$;
 
 
-
 -- -----------------------------------------------------
 -- 004 Integrations: OAuth complete API (real token exchange)
 -- -----------------------------------------------------
@@ -1629,14 +2243,388 @@ end;
 $$;
 
 
+-- =====================================================
+-- 21. INBOUND WEBHOOK PROCESSOR
+-- =====================================================
 
 -- =====================================================
--- 17. FUNCTION SECURITY HARDENING
+-- 006 INTEGRATION ENGINE
+-- INBOUND WEBHOOK PROCESSOR
+--
+-- Responsibility:
+-- - Resolve external webhook provider
+-- - Resolve provider category
+-- - Resolve device through integration mapping
+-- - Resolve mapped values through mapping layer
+-- - Route device-related input to 007 telemetry
+--
+-- 006 MUST NOT:
+-- - interpret provider-specific payload structure
+-- - calculate device state
+-- - calculate metrics
+-- - make automation decisions
+-- - modify platform webhook processing lifecycle
+--
+-- 000 owns:
+--   platform.external_webhooks
+--   generic processing lifecycle
+--   retry handling
+--
+-- 007 owns:
+--   device_telemetry_raw
+--   immutable raw device telemetry storage
+--
 -- =====================================================
+
+
+create or replace function public.process_integration_webhook(
+    p_webhook_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_webhook record;
+
+    v_provider_code text;
+    v_event_type text;
+    v_tenant_id uuid;
+
+    v_device_external_id text;
+    v_device_id uuid;
+
+    v_provider_event_id text;
+    v_observed_at_text text;
+
+    v_observed_at timestamptz;
+
+    v_inserted_id uuid;
+
+    v_payload jsonb;
+
+begin
+
+    -- =====================================================
+    -- 1. LOAD PLATFORM WEBHOOK
+    -- =====================================================
+
+    select
+        ew.id,
+        ew.source,
+        ew.external_event_id,
+        ew.event_type,
+        ew.tenant_id,
+        ew.payload,
+        ew.received_at
+    into v_webhook
+    from platform.external_webhooks ew
+    where ew.id = p_webhook_id;
+
+    if not found then
+        raise exception
+            'external webhook % not found',
+            p_webhook_id;
+    end if;
+
+
+    v_provider_code := lower(trim(v_webhook.source));
+
+    v_event_type := v_webhook.event_type;
+
+    v_tenant_id := v_webhook.tenant_id;
+
+    v_payload := coalesce(
+        v_webhook.payload,
+        '{}'::jsonb
+    );
+
+
+    -- =====================================================
+    -- 2. PROVIDER VALIDATION
+    -- =====================================================
+
+    if not exists (
+        select 1
+        from public.integration_providers ip
+        where ip.code = v_provider_code
+          and ip.is_active = true
+    ) then
+
+        raise exception
+            'Unknown or inactive integration provider: %',
+            v_provider_code;
+
+    end if;
+
+
+    -- =====================================================
+    -- 3. EVENT TYPE
+    --
+    -- event_type may already have been determined by
+    -- the platform webhook receiver.
+    --
+    -- If not available, the integration mapping layer
+    -- cannot safely interpret the payload.
+    -- =====================================================
+
+    if v_event_type is null
+       or length(trim(v_event_type)) = 0 then
+
+        raise exception
+            'event_type is required for integration webhook %',
+            p_webhook_id;
+
+    end if;
+
+
+    -- =====================================================
+    -- 4. PROVIDER EVENT ID
+    -- =====================================================
+
+    v_provider_event_id :=
+        coalesce(
+            nullif(
+                public.resolve_integration_webhook_mapping(
+                    v_provider_code,
+                    v_event_type,
+                    'provider_event_id',
+                    v_payload
+                ),
+                ''
+            ),
+            v_webhook.external_event_id
+        );
+
+
+    -- =====================================================
+    -- 5. DEVICE EXTERNAL ID
+    -- =====================================================
+
+    v_device_external_id :=
+        public.resolve_integration_webhook_mapping(
+            v_provider_code,
+            v_event_type,
+            'device_external_id',
+            v_payload
+        );
+
+
+    -- =====================================================
+    -- 6. TENANT RESOLUTION
+    --
+    -- If tenant was already assigned by the platform
+    -- boundary, retain it.
+    --
+    -- Otherwise the integration mapping must resolve it
+    -- through the tenant integration/device relationship.
+    -- =====================================================
+
+    if v_tenant_id is null
+       and v_device_external_id is not null then
+
+        select dim.tenant_id
+        into v_tenant_id
+        from public.device_integration_map dim
+        where dim.provider_code = v_provider_code
+          and dim.external_id = v_device_external_id
+        limit 1;
+
+    end if;
+
+
+    -- =====================================================
+    -- 7. DEVICE RESOLUTION
+    -- =====================================================
+
+    if v_device_external_id is not null then
+
+        select dim.device_id
+        into v_device_id
+        from public.device_integration_map dim
+        where dim.provider_code = v_provider_code
+          and dim.external_id = v_device_external_id
+          and (
+                v_tenant_id is null
+                or dim.tenant_id = v_tenant_id
+              )
+        limit 1;
+
+    end if;
+
+
+    -- =====================================================
+    -- 8. TELEMETRY ROUTING
+    --
+    -- Only events for which the mapping layer explicitly
+    -- provides a device are written to 007.
+    --
+    -- 006 performs routing.
+    -- 007 performs raw telemetry storage.
+    -- =====================================================
+
+    if v_device_id is not null then
+
+        -- -------------------------------------------------
+        -- 8A. Resolve observed event timestamp
+        -- -------------------------------------------------
+
+        v_observed_at_text :=
+            public.resolve_integration_webhook_mapping(
+                v_provider_code,
+                v_event_type,
+                'observed_at',
+                v_payload
+            );
+
+
+        -- -------------------------------------------------
+        -- 8B. Convert observed timestamp
+        --
+        -- Mapping itself determines the provider format.
+        -- -------------------------------------------------
+
+        if v_observed_at_text is not null then
+
+            if exists (
+                select 1
+                from public.integration_webhook_mappings m
+                where m.provider_code = v_provider_code
+                  and (
+                        m.event_type = v_event_type
+                        or (
+                            m.event_type like '%*'
+                            and v_event_type like replace(m.event_type, '*', '%')
+                        )
+                      )
+                  and m.mapping_code = 'observed_at'
+                  and m.is_active = true
+                  and m.value_type = 'epoch_milliseconds'
+            ) then
+
+                v_observed_at :=
+                    to_timestamp(
+                        v_observed_at_text::double precision
+                        / 1000.0
+                    );
+
+            elsif exists (
+                select 1
+                from public.integration_webhook_mappings m
+                where m.provider_code = v_provider_code
+                  and (
+                        m.event_type = v_event_type
+                        or (
+                            m.event_type like '%*'
+                            and v_event_type like replace(m.event_type, '*', '%')
+                        )
+                      )
+                  and m.mapping_code = 'observed_at'
+                  and m.is_active = true
+                  and m.value_type = 'epoch_seconds'
+            ) then
+
+                v_observed_at :=
+                    to_timestamp(
+                        v_observed_at_text::double precision
+                    );
+
+            else
+
+                v_observed_at :=
+                    v_observed_at_text::timestamptz;
+
+            end if;
+
+        end if;
+
+
+        -- -------------------------------------------------
+        -- 8C. Insert immutable raw telemetry
+        -- -------------------------------------------------
+
+        insert into public.device_telemetry_raw (
+            tenant_id,
+            device_id,
+            source,
+            provider_event_id,
+            observed_at,
+            received_at,
+            raw_payload
+        )
+        values (
+            v_tenant_id,
+            v_device_id,
+            v_provider_code,
+            v_provider_event_id,
+            v_observed_at,
+            v_webhook.received_at,
+            v_payload
+        )
+        returning id
+        into v_inserted_id;
+
+
+        return jsonb_build_object(
+            'processed', true,
+            'route', 'device_telemetry',
+            'webhook_id', p_webhook_id,
+            'provider_code', v_provider_code,
+            'event_type', v_event_type,
+            'tenant_id', v_tenant_id,
+            'device_id', v_device_id,
+            'telemetry_id', v_inserted_id,
+            'observed_at', v_observed_at,
+            'received_at', v_webhook.received_at
+        );
+
+    end if;
+
+
+    -- =====================================================
+    -- 9. NO DEVICE ROUTE
+    --
+    -- Not every integration webhook is telemetry.
+    --
+    -- Examples:
+    -- - Stripe payment
+    -- - OAuth callback
+    -- - PMS event
+    -- - Airbnb reservation
+    -- - messaging event
+    --
+    -- These must NOT be written into 007.
+    -- =====================================================
+
+    return jsonb_build_object(
+        'processed', true,
+        'route', 'unhandled_domain_event',
+        'webhook_id', p_webhook_id,
+        'provider_code', v_provider_code,
+        'event_type', v_event_type,
+        'tenant_id', v_tenant_id
+    );
+
+end;
+$$;
+
+
+-- =====================================================
+-- 22. FUNCTION SECURITY HARDENING
+-- =====================================================
+
+alter function public.process_integration_webhook(uuid)
+set search_path = '';
+
+
 
 alter function public.integrations_resolve_oauth_state(text) set search_path = '';
 
 
+-- =====================================================
+-- 23. LEGACY / CROSS-MODULE SECURITY HARDENING
+-- =====================================================
 
 -- -----------------------------------------------------
 -- 004 Logistics: close direct authenticated execute bypass on dispatch RPC
@@ -1681,7 +2669,7 @@ $block$;
 
 
 -- =====================================================
--- 18. MIGRATION REGISTRATION
+-- 24. MIGRATION REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)

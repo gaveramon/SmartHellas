@@ -361,32 +361,6 @@ create type operation_context_type as enum (
     'support_event'
 );
 
--- =====================================================
---  operation enums (008)
--- =====================================================
-
-do $$
-begin
-    if not exists (select 1 from pg_type where typname = 'notification_channel') then
-        create type public.notification_channel as enum (
-            'email',
-            'sms',
-            'push',
-            'portal'
-        );
-    end if;
-
-    if not exists (select 1 from pg_type where typname = 'notification_delivery_status') then
-        create type public.notification_delivery_status as enum (
-            'queued',
-            'processing',
-            'sent',
-            'failed',
-            'cancelled'
-        );
-    end if;
-end $$;
-
 
 
 -- =====================================================

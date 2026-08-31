@@ -78,6 +78,9 @@ $$;
 -- Authority: resolve_active_tenant(auth.uid()) IS NOT NULL.
 -- =====================================================
 
+alter function public.edge_require_tenant() set search_path = '';
+
+
 create or replace function public.edge_require_tenant()
 returns void
 language plpgsql

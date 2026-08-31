@@ -1,76 +1,20 @@
--- REV22 greenfield baseline: 007_preconfig_engine.sql
+-- REV22 greenfield baseline: 009_preconfig_engine.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
 
 
 
 -- =====================================================
-
--- 2. BUNDLE DEVICES (HARDWARE COMPONENT LIST)
-
--- =====================================================
-
-
-
-create table if not exists bundle_devices (
-
-
-
-    id uuid primary key default gen_random_uuid(),
-
-
-
-    bundle_id uuid not null references device_bundles(id) on delete cascade,
-
-
-
-    category_code text not null references public.device_categories(code),
-
-
-
-    quantity int not null default 1,
-
-
-
-    is_required boolean not null default true,
-
-
-
-    config_hint jsonb not null default '{}'::jsonb,
-
-
-
-    created_at timestamptz not null default now(),
-
-
-
-    constraint uq_bundle_device unique (bundle_id, category_code),
-
-
-
-    constraint chk_bundle_device_qty check (quantity > 0)
-
-);
-
-
-
-
--- =====================================================
-
--- 007 PRECONFIG ENGINE (REV19)
-
+-- 009 PRECONFIG ENGINE
 -- PHYSICAL DEPLOYMENT / HARDWARE / INSTALLATION LAYER
-
 -- GLOBAL BLUEPRINTS ONLY — NO TENANT DATA / NO RUNTIME STATE
-
 -- =====================================================
 
 
 
 -- =====================================================
-
--- 1. DEVICE BUNDLES (VERSIONED HARDWARE BOM CATALOG)
-
+-- 1. DEVICE BUNDLES
+-- VERSIONED HARDWARE BILL-OF-MATERIALS CATALOG
 -- =====================================================
 
 
@@ -130,14 +74,13 @@ create table if not exists device_bundles (
 
 
 -- =====================================================
-
--- 4. ONBOARDING STEPS (ORDERED SPECIFICATION)
-
+-- 2. BUNDLE DEVICES
+-- HARDWARE COMPONENTS INCLUDED IN A DEVICE BUNDLE
 -- =====================================================
 
 
 
-create table if not exists onboarding_blueprint_steps (
+create table if not exists bundle_devices (
 
 
 
@@ -145,19 +88,23 @@ create table if not exists onboarding_blueprint_steps (
 
 
 
-    blueprint_id uuid not null references onboarding_blueprints(id) on delete cascade,
+    bundle_id uuid not null references device_bundles(id) on delete cascade,
 
 
 
-    step_order int not null,
+    category_code text not null references public.device_categories(code),
 
 
 
-    step_type onboarding_step_type not null,
+    quantity int not null default 1,
 
 
 
-    config jsonb not null default '{}'::jsonb,
+    is_required boolean not null default true,
+
+
+
+    config_hint jsonb not null default '{}'::jsonb,
 
 
 
@@ -165,11 +112,11 @@ create table if not exists onboarding_blueprint_steps (
 
 
 
-    unique (blueprint_id, step_order),
+    constraint uq_bundle_device unique (bundle_id, category_code),
 
 
 
-    constraint chk_step_order check (step_order > 0)
+    constraint chk_bundle_device_qty check (quantity > 0)
 
 );
 
@@ -178,9 +125,8 @@ create table if not exists onboarding_blueprint_steps (
 
 
 -- =====================================================
-
--- 3. ONBOARDING BLUEPRINTS (INSTALLATION FLOW SPEC)
-
+-- 3. ONBOARDING BLUEPRINTS
+-- GLOBAL INSTALLATION / ONBOARDING FLOW DEFINITIONS
 -- =====================================================
 
 
@@ -230,14 +176,13 @@ create table if not exists onboarding_blueprints (
 
 
 -- =====================================================
-
--- 6. DEVICE → ROOM INSTALLATION MAP
-
+-- 4. ONBOARDING BLUEPRINT STEPS
+-- ORDERED STEPS WITHIN AN ONBOARDING BLUEPRINT
 -- =====================================================
 
 
 
-create table if not exists preconfig_device_map (
+create table if not exists onboarding_blueprint_steps (
 
 
 
@@ -245,23 +190,19 @@ create table if not exists preconfig_device_map (
 
 
 
-    template_id uuid not null references preconfig_templates(id) on delete cascade,
+    blueprint_id uuid not null references onboarding_blueprints(id) on delete cascade,
 
 
 
-    category_code text not null references public.device_categories(code),
+    step_order int not null,
 
 
 
-    room_type room_type not null,
+    step_type onboarding_step_type not null,
 
 
 
-    recommended_protocol device_protocol,
-
-
-
-    default_config jsonb not null default '{}'::jsonb,
+    config jsonb not null default '{}'::jsonb,
 
 
 
@@ -269,7 +210,11 @@ create table if not exists preconfig_device_map (
 
 
 
-    unique (template_id, category_code, room_type)
+    unique (blueprint_id, step_order),
+
+
+
+    constraint chk_step_order check (step_order > 0)
 
 );
 
@@ -278,11 +223,9 @@ create table if not exists preconfig_device_map (
 
 
 -- =====================================================
-
--- 5. PRECONFIG TEMPLATES (GLOBAL INSTALL BLUEPRINT)
-
+-- 5. PRECONFIG TEMPLATES
+-- GLOBAL INSTALLATION BLUEPRINTS
 -- Tenant template selection lives in 011 onboarding_sessions.
-
 -- =====================================================
 
 
@@ -332,6 +275,59 @@ create table if not exists preconfig_templates (
 );
 
 
+
+
+
+-- =====================================================
+-- 6. PRECONFIG DEVICE MAP
+-- DEVICE → ROOM INSTALLATION MAPPING
+-- =====================================================
+
+
+
+create table if not exists preconfig_device_map (
+
+
+
+    id uuid primary key default gen_random_uuid(),
+
+
+
+    template_id uuid not null references preconfig_templates(id) on delete cascade,
+
+
+
+    category_code text not null references public.device_categories(code),
+
+
+
+    room_type room_type not null,
+
+
+
+    recommended_protocol device_protocol,
+
+
+
+    default_config jsonb not null default '{}'::jsonb,
+
+
+
+    created_at timestamptz not null default now(),
+
+
+
+    unique (template_id, category_code, room_type)
+
+);
+
+
+
+
+
+-- =====================================================
+-- 7. CATALOG INDEXES AND DOCUMENTATION
+-- =====================================================
 
 
 
@@ -392,39 +388,9 @@ create index if not exists idx_preconfig_device_map_template
 
 
 -- =====================================================
-
--- 7. RLS (GLOBAL CATALOG — READ ALL, ADMIN WRITE)
-
+-- 8. PRECONFIG DOMAIN API
+-- READ / WRITE OPERATIONS FOR THE PRECONFIG CATALOG
 -- =====================================================
-
-
-
-alter table device_bundles enable row level security;
-
-
-
-alter table bundle_devices enable row level security;
-
-
-
-alter table onboarding_blueprints enable row level security;
-
-
-
-alter table onboarding_blueprint_steps enable row level security;
-
-
-
-alter table preconfig_templates enable row level security;
-
-
-
-alter table preconfig_device_map enable row level security;
-
-
-
-
-
 
 
 
@@ -803,6 +769,49 @@ $$;
 
 
 
+-- =====================================================
+-- 9. ROW LEVEL SECURITY
+-- GLOBAL CATALOG — READ ALL, ADMIN WRITE
+-- =====================================================
+
+
+
+alter table device_bundles enable row level security;
+
+
+
+alter table bundle_devices enable row level security;
+
+
+
+alter table onboarding_blueprints enable row level security;
+
+
+
+alter table onboarding_blueprint_steps enable row level security;
+
+
+
+alter table preconfig_templates enable row level security;
+
+
+
+alter table preconfig_device_map enable row level security;
+
+
+
+
+
+
+
+
+-- =====================================================
+-- 10. ROW LEVEL SECURITY POLICIES
+-- AUTHENTICATED READ, PLATFORM ADMIN WRITE
+-- =====================================================
+
+
+
 create policy bundle_devices_select
 
 on bundle_devices for select to authenticated
@@ -935,6 +944,12 @@ with check (platform.is_platform_admin());
 
 
 
+-- =====================================================
+-- 11. UPDATED-AT TRIGGERS
+-- =====================================================
+
+
+
 create trigger trg_device_bundles_updated_at
 
 before update on device_bundles
@@ -953,10 +968,9 @@ for each row execute function platform.set_updated_at();
 
 
 -- =====================================================
--- END 007 PRECONFIG ENGINE (REV19)
+-- END 009 PRECONFIG ENGINE
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('007_preconfig_engine', 'REV22.PRECONFIG', false)
+values ('009_preconfig_engine', 'REV22.PRECONFIG', false)
 on conflict (version) do nothing;
-

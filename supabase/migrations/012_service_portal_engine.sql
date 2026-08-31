@@ -1,16 +1,62 @@
--- REV22 greenfield baseline: 010_service_portal_engine.sql
+-- REV22 greenfield baseline: 012_service_portal_engine.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
 
+-- =====================================================
+-- 012 SERVICE & PORTAL ENGINE
+-- CLEAN UI / PORTAL LAYER
+-- =====================================================
+--
+-- NO LOGS / NO EVENTS / NO DOMAIN TRUTH / NO SUPPORT CASES
+--
+-- Tenant config SSOT: tenant_portal_settings.
+-- Plan entitlements SSOT: feature_entitlements (009).
+-- Support cases SSOT: support_tickets / support_messages (006).
+-- Runtime logs SSOT: platform.event_log, operation_log, audit_log (000).
+--
+-- =====================================================
 
 
 -- =====================================================
-
--- 2. DASHBOARD CONFIGURATION (LAYOUT DEFINITION)
-
+-- 1. TENANT PORTAL SETTINGS
+-- TENANT-LEVEL PORTAL UI CONFIGURATION SSOT
 -- =====================================================
 
+create table if not exists tenant_portal_settings (
 
+    id uuid primary key default gen_random_uuid(),
+
+
+
+    tenant_id uuid not null references tenants(id) on delete cascade,
+
+
+
+    theme jsonb,
+
+
+
+    default_language text default 'en',
+
+
+
+    created_at timestamptz default now(),
+
+
+
+    updated_at timestamptz default now(),
+
+
+
+    unique (tenant_id)
+
+);
+
+
+-- =====================================================
+-- 2. DASHBOARD CONFIGURATION
+-- TENANT DASHBOARD LAYOUT DEFINITIONS
+-- =====================================================
 
 create table if not exists dashboard_configs (
 
@@ -39,56 +85,10 @@ create table if not exists dashboard_configs (
 );
 
 
-
-
-
 -- =====================================================
-
--- 4. PORTAL FEATURE FLAGS (UI-ONLY CONTROL)
-
--- Keys MUST use ui_ prefix — never overlap feature_entitlements (009).
-
+-- 3. PORTAL USER PREFERENCES
+-- PER-USER PORTAL UI STATE
 -- =====================================================
-
-
-
-create table if not exists portal_feature_flags (
-
-    id uuid primary key default gen_random_uuid(),
-
-
-
-    tenant_id uuid not null references tenants(id) on delete cascade,
-
-
-
-    feature_key text not null,
-
-
-
-    enabled boolean default true,
-
-    created_at timestamptz not null default now(),
-
-    unique (tenant_id, feature_key),
-
-
-
-    constraint chk_portal_feature_flags_ui_prefix
-        check (feature_key ~ '^ui_')
-);
-
-
-
-
-
--- =====================================================
-
--- 3. PORTAL USER PREFERENCES (PER-USER UI STATE)
-
--- =====================================================
-
-
 
 create table if not exists portal_user_preferences (
 
@@ -126,36 +126,14 @@ create table if not exists portal_user_preferences (
 
 
 -- =====================================================
-
--- 010 SERVICE & PORTAL ENGINE (CLEAN UI LAYER)
-
--- NO LOGS / NO EVENTS / NO DOMAIN TRUTH / NO SUPPORT CASES
-
--- =====================================================
-
+-- 4. PORTAL FEATURE FLAGS
+-- UI-ONLY FEATURE VISIBILITY CONTROL
 --
-
--- Tenant config SSOT: tenant_portal_settings (replaces platform.tenant_settings).
-
--- Plan entitlements SSOT: feature_entitlements (009).
-
--- Support cases SSOT: support_tickets / support_messages (006).
-
--- Runtime logs SSOT: platform.event_log, operation_log, audit_log (000).
-
+-- Keys MUST use ui_ prefix — never overlap
+-- feature_entitlements (009).
 -- =====================================================
 
-
-
--- =====================================================
-
--- 1. TENANT PORTAL SETTINGS (UI CONFIGURATION SSOT)
-
--- =====================================================
-
-
-
-create table if not exists tenant_portal_settings (
+create table if not exists portal_feature_flags (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -165,52 +143,30 @@ create table if not exists tenant_portal_settings (
 
 
 
-    theme jsonb,
+    feature_key text not null,
 
 
 
-    default_language text default 'en',
+    enabled boolean default true,
+
+    created_at timestamptz not null default now(),
+
+    unique (tenant_id, feature_key),
 
 
 
-    created_at timestamptz default now(),
-
-
-
-    updated_at timestamptz default now(),
-
-
-
-    unique (tenant_id)
-
+    constraint chk_portal_feature_flags_ui_prefix
+        check (feature_key ~ '^ui_')
 );
 
 
-
-
+-- =====================================================
+-- 5. INDEXES & PORTAL DATA ACCESS OPTIMIZATION
+-- =====================================================
 
 create index if not exists idx_portal_settings_tenant_created
 
 on tenant_portal_settings (tenant_id, created_at desc);
-
-
-
-
-
-comment on table public.tenant_portal_settings is
-
-    'Tenant portal UI configuration SSOT. Platform infra must not duplicate tenant config.';
-
-
-
-
-
-create index if not exists idx_dashboard_configs_tenant_created
-
-on dashboard_configs (tenant_id, created_at desc);
-
-
-
 
 
 create unique index if not exists idx_dashboard_configs_one_default_per_tenant
@@ -220,7 +176,9 @@ on dashboard_configs (tenant_id)
 where is_default = true;
 
 
+create index if not exists idx_dashboard_configs_tenant_created
 
+on dashboard_configs (tenant_id, created_at desc);
 
 
 create index if not exists idx_portal_user_preferences_tenant_created
@@ -228,15 +186,9 @@ create index if not exists idx_portal_user_preferences_tenant_created
 on portal_user_preferences (tenant_id, created_at desc);
 
 
-
-
-
 create index if not exists idx_portal_user_preferences_user
 
 on portal_user_preferences (tenant_id, user_id);
-
-
-
 
 
 create index if not exists idx_portal_feature_flags_tenant
@@ -244,129 +196,29 @@ create index if not exists idx_portal_feature_flags_tenant
 on portal_feature_flags (tenant_id);
 
 
-
 create index if not exists idx_portal_feature_flags_tenant_created
+
 on portal_feature_flags (tenant_id, created_at desc);
 
+
+-- =====================================================
+-- 6. TABLE DOCUMENTATION
+-- PORTAL SSOT / OWNERSHIP DECLARATIONS
+-- =====================================================
+
+comment on table public.tenant_portal_settings is
+
+    'Tenant portal UI configuration SSOT. Platform infra must not duplicate tenant config.';
 
 
 comment on table public.portal_feature_flags is
 
-    'Portal UI visibility only (ui_* keys). Plan entitlements SSOT: feature_entitlements (009).';
-
-
-
+    'Portal UI visibility only (ui_* keys). Plan entitlements SSOT: feature_entitlements (011).';
 
 
 -- =====================================================
-
--- 6. RLS
-
+-- 7. PORTAL DOMAIN & CONSISTENCY FUNCTIONS
 -- =====================================================
-
-
-
-alter table public.tenant_portal_settings enable row level security;
-
-
-
-
-
-drop policy if exists tenant_portal_settings_select on public.tenant_portal_settings;
-
-
-
-drop policy if exists tenant_portal_settings_insert on public.tenant_portal_settings;
-
-
-
-drop policy if exists tenant_portal_settings_update on public.tenant_portal_settings;
-
-
-
-drop policy if exists tenant_portal_settings_delete on public.tenant_portal_settings;
-
-
-
-
-
-alter table public.dashboard_configs enable row level security;
-
-
-
-
-
-drop policy if exists dashboard_configs_select on public.dashboard_configs;
-
-
-
-drop policy if exists dashboard_configs_insert on public.dashboard_configs;
-
-
-
-drop policy if exists dashboard_configs_update on public.dashboard_configs;
-
-
-
-drop policy if exists dashboard_configs_delete on public.dashboard_configs;
-
-
-
-
-
-alter table public.portal_user_preferences enable row level security;
-
-
-
-
-
-drop policy if exists portal_user_preferences_select on public.portal_user_preferences;
-
-
-
-drop policy if exists portal_user_preferences_insert on public.portal_user_preferences;
-
-
-
-drop policy if exists portal_user_preferences_update on public.portal_user_preferences;
-
-
-
-drop policy if exists portal_user_preferences_delete on public.portal_user_preferences;
-
-
-
-
-
-alter table public.portal_feature_flags enable row level security;
-
-
-
-
-
-drop policy if exists portal_feature_flags_select on public.portal_feature_flags;
-
-
-
-drop policy if exists portal_feature_flags_insert on public.portal_feature_flags;
-
-
-
-drop policy if exists portal_feature_flags_update on public.portal_feature_flags;
-
-
-
-drop policy if exists portal_feature_flags_delete on public.portal_feature_flags;
-
-
-
--- =====================================================
-
--- 5. TENANT CONSISTENCY GUARDS
-
--- =====================================================
-
-
 
 create or replace function public.enforce_portal_user_preference_membership()
 
@@ -405,8 +257,6 @@ begin
 end;
 
 $$;
-
-
 
 
 create or replace function public.portal_domain(
@@ -640,212 +490,75 @@ end;
 $$;
 
 
+-- =====================================================
+-- 8. ROW LEVEL SECURITY
+-- RLS ENABLEMENT & POLICY RESET
+-- =====================================================
 
+alter table public.tenant_portal_settings enable row level security;
 
 
-create policy dashboard_configs_delete on public.dashboard_configs
+drop policy if exists tenant_portal_settings_select on public.tenant_portal_settings;
 
-    for delete to authenticated
 
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
+drop policy if exists tenant_portal_settings_insert on public.tenant_portal_settings;
 
 
+drop policy if exists tenant_portal_settings_update on public.tenant_portal_settings;
 
 
+drop policy if exists tenant_portal_settings_delete on public.tenant_portal_settings;
 
-create policy dashboard_configs_insert on public.dashboard_configs
 
-    for insert to authenticated
+alter table public.dashboard_configs enable row level security;
 
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
 
+drop policy if exists dashboard_configs_select on public.dashboard_configs;
 
 
+drop policy if exists dashboard_configs_insert on public.dashboard_configs;
 
 
-create policy dashboard_configs_select on public.dashboard_configs
+drop policy if exists dashboard_configs_update on public.dashboard_configs;
 
-    for select to authenticated
 
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
+drop policy if exists dashboard_configs_delete on public.dashboard_configs;
 
 
+alter table public.portal_user_preferences enable row level security;
 
 
+drop policy if exists portal_user_preferences_select on public.portal_user_preferences;
 
-create policy dashboard_configs_update on public.dashboard_configs
 
-    for update to authenticated
+drop policy if exists portal_user_preferences_insert on public.portal_user_preferences;
 
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
 
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
+drop policy if exists portal_user_preferences_update on public.portal_user_preferences;
 
 
+drop policy if exists portal_user_preferences_delete on public.portal_user_preferences;
 
 
+alter table public.portal_feature_flags enable row level security;
 
-create policy portal_feature_flags_delete on public.portal_feature_flags
 
-    for delete to authenticated
+drop policy if exists portal_feature_flags_select on public.portal_feature_flags;
 
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
 
+drop policy if exists portal_feature_flags_insert on public.portal_feature_flags;
 
 
+drop policy if exists portal_feature_flags_update on public.portal_feature_flags;
 
 
-create policy portal_feature_flags_insert on public.portal_feature_flags
+drop policy if exists portal_feature_flags_delete on public.portal_feature_flags;
 
-    for insert to authenticated
 
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-
-
-create policy portal_feature_flags_select on public.portal_feature_flags
-
-    for select to authenticated
-
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-
-
-create policy portal_feature_flags_update on public.portal_feature_flags
-
-    for update to authenticated
-
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-
-
-create policy portal_user_preferences_delete on public.portal_user_preferences
-
-    for delete to authenticated
-
-    using (
-        platform.is_platform_admin()
-        or (
-            user_id = (select auth.uid())
-            and public.has_tenant_access(tenant_id)
-        )
-    );
-
-
-
-
-
-create policy portal_user_preferences_insert on public.portal_user_preferences
-
-    for insert to authenticated
-
-    with check (
-        platform.is_platform_admin()
-        or (
-            user_id = (select auth.uid())
-            and public.has_tenant_access(tenant_id)
-        )
-    );
-
-
-
-
-
-create policy portal_user_preferences_select on public.portal_user_preferences
-
-    for select to authenticated
-
-    using (
-        platform.is_platform_admin()
-        or (
-            user_id = (select auth.uid())
-            and public.has_tenant_access(tenant_id)
-        )
-    );
-
-
-
-
-
-create policy portal_user_preferences_update on public.portal_user_preferences
-
-    for update to authenticated
-
-    using (
-        platform.is_platform_admin()
-        or (
-            user_id = (select auth.uid())
-            and public.has_tenant_access(tenant_id)
-        )
-    )
-
-    with check (
-        platform.is_platform_admin()
-        or (
-            user_id = (select auth.uid())
-            and public.has_tenant_access(tenant_id)
-        )
-    );
-
-
-
-
+-- =====================================================
+-- 9. RLS POLICIES
+-- TENANT PORTAL SETTINGS
+-- =====================================================
 
 create policy tenant_portal_settings_delete on public.tenant_portal_settings
 
@@ -858,9 +571,6 @@ create policy tenant_portal_settings_delete on public.tenant_portal_settings
             and (platform.is_admin() or platform.has_role('manager'))
         )
     );
-
-
-
 
 
 create policy tenant_portal_settings_insert on public.tenant_portal_settings
@@ -876,17 +586,11 @@ create policy tenant_portal_settings_insert on public.tenant_portal_settings
     );
 
 
-
-
-
 create policy tenant_portal_settings_select on public.tenant_portal_settings
 
     for select to authenticated
 
     using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
 
 
 create policy tenant_portal_settings_update on public.tenant_portal_settings
@@ -910,8 +614,193 @@ create policy tenant_portal_settings_update on public.tenant_portal_settings
     );
 
 
+-- =====================================================
+-- 10. RLS POLICIES
+-- DASHBOARD CONFIGURATIONS
+-- =====================================================
+
+create policy dashboard_configs_delete on public.dashboard_configs
+
+    for delete to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
 
 
+create policy dashboard_configs_insert on public.dashboard_configs
+
+    for insert to authenticated
+
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+create policy dashboard_configs_select on public.dashboard_configs
+
+    for select to authenticated
+
+    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
+
+
+create policy dashboard_configs_update on public.dashboard_configs
+
+    for update to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    )
+
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+-- =====================================================
+-- 11. RLS POLICIES
+-- PORTAL FEATURE FLAGS
+-- =====================================================
+
+create policy portal_feature_flags_delete on public.portal_feature_flags
+
+    for delete to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+create policy portal_feature_flags_insert on public.portal_feature_flags
+
+    for insert to authenticated
+
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+create policy portal_feature_flags_select on public.portal_feature_flags
+
+    for select to authenticated
+
+    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
+
+
+create policy portal_feature_flags_update on public.portal_feature_flags
+
+    for update to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    )
+
+    with check (
+        platform.is_platform_admin()
+        or (
+            public.has_tenant_access(tenant_id)
+            and (platform.is_admin() or platform.has_role('manager'))
+        )
+    );
+
+
+-- =====================================================
+-- 12. RLS POLICIES
+-- PORTAL USER PREFERENCES
+-- =====================================================
+
+create policy portal_user_preferences_delete on public.portal_user_preferences
+
+    for delete to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            user_id = (select auth.uid())
+            and public.has_tenant_access(tenant_id)
+        )
+    );
+
+
+create policy portal_user_preferences_insert on public.portal_user_preferences
+
+    for insert to authenticated
+
+    with check (
+        platform.is_platform_admin()
+        or (
+            user_id = (select auth.uid())
+            and public.has_tenant_access(tenant_id)
+        )
+    );
+
+
+create policy portal_user_preferences_select on public.portal_user_preferences
+
+    for select to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            user_id = (select auth.uid())
+            and public.has_tenant_access(tenant_id)
+        )
+    );
+
+
+create policy portal_user_preferences_update on public.portal_user_preferences
+
+    for update to authenticated
+
+    using (
+        platform.is_platform_admin()
+        or (
+            user_id = (select auth.uid())
+            and public.has_tenant_access(tenant_id)
+        )
+    )
+
+    with check (
+        platform.is_platform_admin()
+        or (
+            user_id = (select auth.uid())
+            and public.has_tenant_access(tenant_id)
+        )
+    );
+
+
+-- =====================================================
+-- 13. PORTAL TRIGGERS
+-- AUTOMATIC TIMESTAMPS & MEMBERSHIP VALIDATION
+-- =====================================================
 
 create trigger trg_portal_settings_updated_at
 
@@ -920,17 +809,11 @@ before update on tenant_portal_settings
 for each row execute function platform.set_updated_at();
 
 
-
-
-
 create trigger trg_portal_user_preferences_updated_at
 
 before update on portal_user_preferences
 
 for each row execute function platform.set_updated_at();
-
-
-
 
 
 create trigger trg_portal_user_preferences_membership
@@ -941,9 +824,14 @@ for each row execute function public.enforce_portal_user_preference_membership()
 
 
 -- =====================================================
--- END 010 SERVICE & PORTAL ENGINE
+-- 14. MIGRATION REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('010_service_portal_engine', 'REV22.SERVICE.PORTAL', false)
+values ('012_service_portal_engine', 'REV22.SERVICE.PORTAL', false)
 on conflict (version) do nothing;
+
+
+-- =====================================================
+-- END 012 SERVICE & PORTAL ENGINE
+-- =====================================================

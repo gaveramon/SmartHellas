@@ -3,30 +3,120 @@
 
 
 -- =====================================================
--- 5. ONBOARDING CHECKLIST (BUSINESS VALIDATION STATE)
+-- 011 ONBOARDING ENGINE
+-- CLEAN DOMAIN STATE / PROGRESS / LIFECYCLE TRACKING
+-- NO EXECUTION / NO AUTOMATION / NO SIDE EFFECTS
+-- =====================================================
+--
+-- Wizard state, QR pairing outcomes, room/device mapping input,
+-- lifecycle state, and progress tracking only.
+-- QR minting and step orchestration → 000.
+-- Flow definition → 007 onboarding_blueprints / preconfig_templates.
 -- =====================================================
 
-create table if not exists onboarding_checklist (
+
+-- =====================================================
+-- 1. ONBOARDING LIFECYCLE STATE ENUM
+-- =====================================================
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_type t
+        join pg_namespace n on n.oid = t.typnamespace
+        where t.typname = 'onboarding_lifecycle_state'
+          and n.nspname = 'public'
+    ) then
+        create type public.onboarding_lifecycle_state as enum (
+            'created',
+            'pre_onboarding',
+            'configured',
+            'devices_assigned',
+            'shipped',
+            'installed',
+            'verified',
+            'active'
+        );
+    end if;
+end $$;
+
+
+-- =====================================================
+-- 2. ONBOARDING SESSIONS
+-- Per-tenant property onboarding session
+-- =====================================================
+
+create table if not exists onboarding_sessions (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    property_id uuid not null,
+
+    preconfig_template_id uuid references preconfig_templates(id) on delete set null,
+
+    onboarding_blueprint_id uuid references onboarding_blueprints(id) on delete set null,
+
+    status onboarding_status default 'not_started',
+
+    current_step onboarding_step_type,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now()
+);
+
+
+-- =====================================================
+-- 3. ONBOARDING STEP STATE
+-- Progress tracking only
+-- =====================================================
+
+create table if not exists onboarding_step_state (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
 
     session_id uuid not null references onboarding_sessions(id) on delete cascade,
 
-    checklist_key text not null,
-    -- wifi_connected, devices_received, app_installed
+    step_type onboarding_step_type not null,
 
-    is_completed boolean default false,
+    status onboarding_step_status not null default 'pending',
 
-    updated_at timestamptz default now(),
+    completed_at timestamptz,
 
-    unique (session_id, checklist_key)
+    unique (session_id, step_type)
 );
 
 
+-- =====================================================
+-- 4. ROOM MAPPING INPUT
+-- User-defined room structure during onboarding
+-- =====================================================
+
+create table if not exists onboarding_room_mapping (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    session_id uuid not null references onboarding_sessions(id) on delete cascade,
+
+    room_name text not null,
+
+    room_type room_type,
+
+    promoted_room_id uuid references rooms(id) on delete set null,
+
+    created_at timestamptz default now(),
+
+    unique (session_id, room_name)
+);
+
 
 -- =====================================================
--- 4. DEVICE PLACEMENT + QR PAIRING STATE (NO EXECUTION)
+-- 5. DEVICE PLACEMENT + QR PAIRING STATE
+-- No execution
 -- =====================================================
 
 create table if not exists onboarding_device_mapping (
@@ -54,6 +144,53 @@ create table if not exists onboarding_device_mapping (
 );
 
 
+-- =====================================================
+-- 6. ONBOARDING CHECKLIST
+-- Business validation state
+-- =====================================================
+
+create table if not exists onboarding_checklist (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    session_id uuid not null references onboarding_sessions(id) on delete cascade,
+
+    checklist_key text not null,
+    -- wifi_connected, devices_received, app_installed
+
+    is_completed boolean default false,
+
+    updated_at timestamptz default now(),
+
+    unique (session_id, checklist_key)
+);
+
+
+-- =====================================================
+-- 7. ONBOARDING NOTES
+-- Support + context only
+-- =====================================================
+
+create table if not exists onboarding_notes (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    session_id uuid not null references onboarding_sessions(id) on delete cascade,
+
+    author_user_id uuid references platform.profiles(id) on delete set null,
+
+    note text,
+
+    created_at timestamptz default now()
+);
+
+
+-- =====================================================
+-- 8. ONBOARDING LIFECYCLE
+-- Property-level lifecycle state
+-- =====================================================
 
 create table if not exists onboarding_lifecycle (
     id uuid primary key default gen_random_uuid(),
@@ -74,6 +211,10 @@ create table if not exists onboarding_lifecycle (
 );
 
 
+-- =====================================================
+-- 9. ONBOARDING LIFECYCLE TRANSITIONS
+-- Immutable lifecycle transition history
+-- =====================================================
 
 create table if not exists onboarding_lifecycle_transitions (
     id uuid primary key default gen_random_uuid(),
@@ -92,116 +233,16 @@ create table if not exists onboarding_lifecycle_transitions (
 );
 
 
-
 -- =====================================================
--- 6. ONBOARDING NOTES (SUPPORT + CONTEXT ONLY)
+-- 10. CORE ONBOARDING INDEXES
 -- =====================================================
-
-create table if not exists onboarding_notes (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    session_id uuid not null references onboarding_sessions(id) on delete cascade,
-
-    author_user_id uuid references platform.profiles(id) on delete set null,
-
-    note text,
-
-    created_at timestamptz default now()
-);
-
-
-
--- =====================================================
--- 3. ROOM MAPPING INPUT (USER-DEFINED STRUCTURE)
--- =====================================================
-
-create table if not exists onboarding_room_mapping (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    session_id uuid not null references onboarding_sessions(id) on delete cascade,
-
-    room_name text not null,
-
-    room_type room_type,
-
-    promoted_room_id uuid references rooms(id) on delete set null,
-
-    created_at timestamptz default now(),
-
-    unique (session_id, room_name)
-);
-
-
--- =====================================================
--- 011 ONBOARDING ENGINE (CLEAN STATE TRACKING LAYER)
--- NO EXECUTION / NO AUTOMATION / NO SIDE EFFECTS
--- =====================================================
---
--- Wizard state, QR pairing outcomes, room/device mapping input,
--- and progress tracking only. QR minting and step orchestration → 000.
--- Flow definition → 007 onboarding_blueprints / preconfig_templates.
--- =====================================================
-
--- =====================================================
--- 1. ONBOARDING SESSIONS (PER TENANT PROPERTY)
--- =====================================================
-
-create table if not exists onboarding_sessions (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    property_id uuid not null,
-
-    preconfig_template_id uuid references preconfig_templates(id) on delete set null,
-
-    onboarding_blueprint_id uuid references onboarding_blueprints(id) on delete set null,
-
-    status onboarding_status default 'not_started',
-
-    current_step onboarding_step_type,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now()
-);
-
-
-
--- =====================================================
--- 2. ONBOARDING STEPS STATE (PROGRESS TRACKING ONLY)
--- =====================================================
-
-create table if not exists onboarding_step_state (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    session_id uuid not null references onboarding_sessions(id) on delete cascade,
-
-    step_type onboarding_step_type not null,
-
-    status onboarding_step_status not null default 'pending',
-
-    completed_at timestamptz,
-
-    unique (session_id, step_type)
-);
-
-
 
 create index if not exists idx_onboarding_sessions_tenant_created
 on onboarding_sessions (tenant_id, created_at desc);
 
 
-
 create index if not exists idx_onboarding_sessions_property
 on onboarding_sessions (property_id);
-
 
 
 create unique index if not exists uq_onboarding_sessions_property_active
@@ -209,55 +250,80 @@ on onboarding_sessions (property_id)
 where status in ('not_started', 'in_progress', 'waiting_user');
 
 
-
-comment on column public.onboarding_sessions.preconfig_template_id is
-    'Links wizard to global 007 preconfig_templates / onboarding_blueprints. Tenant selection only — no tenant-owned templates.';
-
-
-
-comment on column public.onboarding_sessions.onboarding_blueprint_id is
-    'Optional traceability FK to 007 onboarding_blueprints. May mirror preconfig_templates.onboarding_blueprint_id.';
-
-
-
-comment on column public.onboarding_sessions.current_step is
-    'Denormalized wizard pointer; canonical progress lives in onboarding_step_state.';
-
-
-
 create index if not exists idx_onboarding_step_state_session
 on onboarding_step_state (session_id);
-
 
 
 create index if not exists idx_onboarding_step_state_tenant
 on onboarding_step_state (tenant_id);
 
 
-
 create index if not exists idx_onboarding_room_mapping_session
 on onboarding_room_mapping (session_id);
-
 
 
 create index if not exists idx_onboarding_room_mapping_tenant_created
 on onboarding_room_mapping (tenant_id, created_at desc);
 
 
-
-comment on column public.onboarding_room_mapping.promoted_room_id is
-    'Set after wizard promotes draft mapping into 003 rooms SSOT.';
-
-
-
 create index if not exists idx_onboarding_device_mapping_session
 on onboarding_device_mapping (session_id);
-
 
 
 create index if not exists idx_onboarding_device_mapping_tenant_created
 on onboarding_device_mapping (tenant_id, created_at desc);
 
+
+create index if not exists idx_onboarding_checklist_session
+on onboarding_checklist (session_id);
+
+
+create index if not exists idx_onboarding_checklist_tenant
+on onboarding_checklist (tenant_id);
+
+
+create index if not exists idx_onboarding_notes_session
+on onboarding_notes (session_id);
+
+
+create index if not exists idx_onboarding_notes_tenant_created
+on onboarding_notes (tenant_id, created_at desc);
+
+
+-- =====================================================
+-- 11. LIFECYCLE INDEXES
+-- =====================================================
+
+create index if not exists idx_onboarding_lifecycle_tenant
+    on onboarding_lifecycle (tenant_id, updated_at desc);
+
+
+create index if not exists idx_onboarding_lifecycle_transitions_lifecycle
+    on onboarding_lifecycle_transitions (lifecycle_id, created_at desc);
+
+
+create index if not exists idx_onboarding_lifecycle_transitions_tenant_created
+    on public.onboarding_lifecycle_transitions (tenant_id, created_at desc);
+
+
+-- =====================================================
+-- 12. COLUMN COMMENTS / DOMAIN DOCUMENTATION
+-- =====================================================
+
+comment on column public.onboarding_sessions.preconfig_template_id is
+    'Links wizard to global 007 preconfig_templates / onboarding_blueprints. Tenant selection only — no tenant-owned templates.';
+
+
+comment on column public.onboarding_sessions.onboarding_blueprint_id is
+    'Optional traceability FK to 007 onboarding_blueprints. May mirror preconfig_templates.onboarding_blueprint_id.';
+
+
+comment on column public.onboarding_sessions.current_step is
+    'Denormalized wizard pointer; canonical progress lives in onboarding_step_state.';
+
+
+comment on column public.onboarding_room_mapping.promoted_room_id is
+    'Set after wizard promotes draft mapping into 003 rooms SSOT.';
 
 
 comment on column public.onboarding_device_mapping.device_id is
@@ -268,29 +334,8 @@ comment on column public.onboarding_device_mapping.scan_status is
     'QR pairing outcome only — token generation belongs in 000 / app layer.';
 
 
-
-create index if not exists idx_onboarding_checklist_session
-on onboarding_checklist (session_id);
-
-
-
-create index if not exists idx_onboarding_checklist_tenant
-on onboarding_checklist (tenant_id);
-
-
-
-create index if not exists idx_onboarding_notes_session
-on onboarding_notes (session_id);
-
-
-
-create index if not exists idx_onboarding_notes_tenant_created
-on onboarding_notes (tenant_id, created_at desc);
-
-
-
 -- =====================================================
--- 7. TENANT / PROPERTY FKs + CONSISTENCY (DEFERRED)
+-- 13. TENANT FOREIGN KEY CONSTRAINTS
 -- =====================================================
 
 do $$
@@ -303,7 +348,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
     alter table public.onboarding_sessions
@@ -314,71 +358,6 @@ exception
 end $$;
 
 
-
--- =====================================================
--- 8. RLS
--- onboarding_sessions: explicit tenant RLS (not 014 bootstrap)
--- Child tables: session join; mutations admin/manager
--- =====================================================
-
-alter table public.onboarding_sessions enable row level security;
-
-
-
-drop policy if exists onboarding_sessions_select on public.onboarding_sessions;
-
-
-drop policy if exists onboarding_sessions_insert on public.onboarding_sessions;
-
-
-drop policy if exists onboarding_sessions_update on public.onboarding_sessions;
-
-
-drop policy if exists onboarding_sessions_delete on public.onboarding_sessions;
-
-
-
-do $$
-declare
-    v_table text;
-begin
-    foreach v_table in array array[
-        'onboarding_step_state',
-        'onboarding_room_mapping',
-        'onboarding_device_mapping',
-        'onboarding_checklist',
-        'onboarding_notes'
-    ] loop
-        execute format('alter table public.%I enable row level security', v_table);
-        execute format('drop policy if exists %1$s_select on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_insert on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_update on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_delete on public.%1$I', v_table);
-        execute format(
-            'create policy %1$s_select on public.%1$I for select to authenticated using (platform.is_platform_admin() or public.has_tenant_access(tenant_id))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_insert on public.%1$I for insert to authenticated with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_update on public.%1$I for update to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager'')))) with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_delete on public.%1$I for delete to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-    end loop;
-end $$;
-
-
-
--- =====================================================
--- END 011 ONBOARDING ENGINE (CLEAN DOMAIN ONLY)
--- =====================================================
-
 do $$
 begin
     alter table public.onboarding_step_state
@@ -387,7 +366,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
 
 
 do $$
@@ -400,7 +378,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
     alter table public.onboarding_device_mapping
@@ -409,7 +386,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
 
 
 do $$
@@ -422,7 +398,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
     alter table public.onboarding_notes
@@ -433,67 +408,6 @@ exception
 end $$;
 
 
-
-
-
-
--- =====================================================
--- 1. ONBOARDING LIFECYCLE STATE MACHINE (011 SSOT)
--- Enum SSOT: 001 — idempotent when 001 predates this type
--- =====================================================
-
-do $$
-begin
-    if not exists (
-        select 1
-        from pg_type t
-        join pg_namespace n on n.oid = t.typnamespace
-        where t.typname = 'onboarding_lifecycle_state'
-          and n.nspname = 'public'
-    ) then
-        create type public.onboarding_lifecycle_state as enum (
-            'created',
-            'pre_onboarding',
-            'configured',
-            'devices_assigned',
-            'shipped',
-            'installed',
-            'verified',
-            'active'
-        );
-    end if;
-end $$;
-
-
-
-create index if not exists idx_onboarding_lifecycle_tenant
-    on onboarding_lifecycle (tenant_id, updated_at desc);
-
-
-
-create index if not exists idx_onboarding_lifecycle_transitions_lifecycle
-    on onboarding_lifecycle_transitions (lifecycle_id, created_at desc);
-
-
-
-alter table public.onboarding_lifecycle enable row level security;
-
-
-alter table public.onboarding_lifecycle_transitions enable row level security;
-
-
-
-select public._apply_public_tenant_rls('public.onboarding_lifecycle'::regclass);
-
-
-select public._apply_public_tenant_rls('public.onboarding_lifecycle_transitions'::regclass);
-
-
-
--- =====================================================
--- 2. TENANT FK CONSTRAINTS (011 pattern)
--- =====================================================
-
 do $$
 begin
     alter table public.onboarding_lifecycle
@@ -502,7 +416,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
 
 
 do $$
@@ -515,114 +428,61 @@ exception
 end $$;
 
 
-
-create index if not exists idx_onboarding_lifecycle_transitions_tenant_created
-    on public.onboarding_lifecycle_transitions (tenant_id, created_at desc);
-
-
-
-drop trigger if exists trg_onboarding_lifecycle_tenant_consistency on public.onboarding_lifecycle;
-
-
-
-drop trigger if exists trg_onboarding_lifecycle_transitions_consistency on public.onboarding_lifecycle_transitions;
-
-
-
 -- =====================================================
--- 5. UI VIEWS (Appsmith read contract)
+-- 14. ONBOARDING DOMAIN CONSISTENCY FUNCTIONS
 -- =====================================================
 
-drop view if exists public.v_onboarding_lifecycle;
+create or replace function public.enforce_onboarding_session_tenant_consistency()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_property_tenant uuid;
+begin
+    select p.tenant_id
+    into v_property_tenant
+    from public.properties p
+    where p.id = new.property_id;
+
+    if not found then
+        raise exception 'property not found';
+    end if;
+
+    if v_property_tenant <> new.tenant_id then
+        raise exception 'onboarding session property must belong to the same tenant';
+    end if;
+
+    return new;
+end;
+$$;
 
 
-drop view if exists public.v_properties_overview;
+create or replace function public.enforce_onboarding_session_blueprint_trace()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_template_blueprint uuid;
+begin
+    if new.onboarding_blueprint_id is null or new.preconfig_template_id is null then
+        return new;
+    end if;
 
+    select pt.onboarding_blueprint_id
+    into v_template_blueprint
+    from public.preconfig_templates pt
+    where pt.id = new.preconfig_template_id;
 
-drop view if exists public.v_onboarding_progress;
+    if v_template_blueprint is not null
+       and v_template_blueprint is distinct from new.onboarding_blueprint_id then
+        raise exception 'onboarding_blueprint_id must match preconfig_templates.onboarding_blueprint_id';
+    end if;
 
-
--- =====================================================
--- END 026 ONBOARDING LIFECYCLE EXTENSIONS
--- =====================================================
-
-
-create or replace view public.v_onboarding_lifecycle_overview
-with (security_invoker = true)
-as
-select
-    ol.id,
-    ol.tenant_id,
-    ol.property_id,
-    p.name as property_name,
-    ol.session_id,
-    os.status as session_status,
-    ol.current_state,
-    (
-        select count(*)
-        from public.onboarding_lifecycle_transitions olt
-        where olt.lifecycle_id = ol.id
-    ) as transition_count,
-    (
-        select olt.created_at
-        from public.onboarding_lifecycle_transitions olt
-        where olt.lifecycle_id = ol.id
-        order by olt.created_at desc
-        limit 1
-    ) as last_transition_at,
-    ol.created_at,
-    ol.updated_at
-from public.onboarding_lifecycle ol
-join public.properties p on p.id = ol.property_id
-left join public.onboarding_sessions os on os.id = ol.session_id;
-
-
-
-create or replace view public.v_onboarding_progress
-with (security_invoker = true)
-as
-select
-    os.id as session_id,
-    os.tenant_id,
-    os.property_id,
-    p.name as property_name,
-    os.status as session_status,
-    os.current_step,
-    ol.current_state as lifecycle_state,
-    count(*) filter (where ss.status = 'completed') as completed_steps,
-    count(*) as total_steps,
-    os.created_at,
-    os.updated_at
-from public.onboarding_sessions os
-join public.properties p on p.id = os.property_id
-left join public.onboarding_lifecycle ol on ol.property_id = os.property_id
-left join public.onboarding_step_state ss on ss.session_id = os.id
-group by os.id, p.name, ol.current_state;
-
-
-
-create or replace view public.v_properties_overview
-with (security_invoker = true)
-as
-select
-    p.id,
-    p.tenant_id,
-    p.name,
-    p.address,
-    p.property_type,
-    p.timezone,
-    count(distinct r.id) as room_count,
-    count(distinct d.id) as device_count,
-    ol.current_state as onboarding_lifecycle_state,
-    p.created_at,
-    p.updated_at
-from public.properties p
-left join public.rooms r on r.property_id = p.id
-left join public.device_assignments da on da.room_id = r.id
-left join public.devices d on d.id = da.device_id and d.is_active = true
-left join public.onboarding_lifecycle ol on ol.property_id = p.id
-group by p.id, ol.current_state;
-
+    return new;
+end;
+$$;
 
 
 create or replace function public.enforce_onboarding_child_tenant_consistency()
@@ -648,6 +508,42 @@ begin
 end;
 $$;
 
+
+create or replace function public.enforce_onboarding_room_mapping_consistency()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_session record;
+begin
+    if new.promoted_room_id is null then
+        return new;
+    end if;
+
+    select s.property_id, s.tenant_id
+    into v_session
+    from public.onboarding_sessions s
+    where s.id = new.session_id;
+
+    if not found then
+        raise exception 'onboarding session not found';
+    end if;
+
+    if not exists (
+        select 1
+        from public.rooms r
+        join public.properties p on p.id = r.property_id
+        where r.id = new.promoted_room_id
+          and r.property_id = v_session.property_id
+          and p.tenant_id = v_session.tenant_id
+    ) then
+        raise exception 'promoted room must belong to the onboarding session property and tenant';
+    end if;
+
+    return new;
+end;
+$$;
 
 
 create or replace function public.enforce_onboarding_device_mapping_consistency()
@@ -690,9 +586,8 @@ end;
 $$;
 
 
-
 -- =====================================================
--- 3. TENANT CONSISTENCY TRIGGERS
+-- 15. LIFECYCLE CONSISTENCY FUNCTIONS
 -- =====================================================
 
 create or replace function public.enforce_onboarding_lifecycle_tenant_consistency()
@@ -735,7 +630,6 @@ end;
 $$;
 
 
-
 create or replace function public.enforce_onboarding_lifecycle_transitions_consistency()
 returns trigger
 language plpgsql
@@ -761,100 +655,186 @@ end;
 $$;
 
 
+-- =====================================================
+-- 16. LIFECYCLE STATE MACHINE FUNCTIONS
+-- =====================================================
 
-create or replace function public.enforce_onboarding_room_mapping_consistency()
-returns trigger
+create or replace function public.onboarding_lifecycle_allowed_transition(
+    p_from public.onboarding_lifecycle_state,
+    p_to public.onboarding_lifecycle_state
+)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+    select case
+        when p_from is null and p_to = 'created' then true
+        when p_from = 'created' and p_to = 'pre_onboarding' then true
+        when p_from = 'pre_onboarding' and p_to = 'configured' then true
+        when p_from = 'configured' and p_to = 'devices_assigned' then true
+        when p_from = 'devices_assigned' and p_to = 'shipped' then true
+        when p_from = 'shipped' and p_to = 'installed' then true
+        when p_from = 'installed' and p_to = 'verified' then true
+        when p_from = 'verified' and p_to = 'active' then true
+        else false
+    end;
+$$;
+
+
+create or replace function public.onboarding_lifecycle_apply_transition(
+    p_property_id uuid,
+    p_to_state public.onboarding_lifecycle_state,
+    p_metadata jsonb default '{}'::jsonb
+)
+returns jsonb
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare
-    v_session record;
+    v_tid uuid;
+    v_row public.onboarding_lifecycle%rowtype;
+    v_from public.onboarding_lifecycle_state;
 begin
-    if new.promoted_room_id is null then
-        return new;
+    v_tid := platform.current_tenant_id();
+    if v_tid is null then
+        raise exception 'no active tenant';
     end if;
 
-    select s.property_id, s.tenant_id
-    into v_session
-    from public.onboarding_sessions s
-    where s.id = new.session_id;
+    select * into v_row
+    from public.onboarding_lifecycle ol
+    where ol.property_id = p_property_id and ol.tenant_id = v_tid
+    for update;
 
     if not found then
-        raise exception 'onboarding session not found';
+        if p_to_state <> 'created' then
+            raise exception 'lifecycle must start at created';
+        end if;
+
+        insert into public.onboarding_lifecycle (tenant_id, property_id, current_state)
+        values (v_tid, p_property_id, 'created')
+        returning * into v_row;
+
+        v_from := null;
+    else
+        v_from := v_row.current_state;
     end if;
 
-    if not exists (
-        select 1
-        from public.rooms r
-        join public.properties p on p.id = r.property_id
-        where r.id = new.promoted_room_id
-          and r.property_id = v_session.property_id
-          and p.tenant_id = v_session.tenant_id
-    ) then
-        raise exception 'promoted room must belong to the onboarding session property and tenant';
+    if v_from = p_to_state then
+        return to_jsonb(v_row);
     end if;
 
-    return new;
+    if not public.onboarding_lifecycle_allowed_transition(v_from, p_to_state) then
+        raise exception 'invalid onboarding lifecycle transition: % -> %', v_from, p_to_state;
+    end if;
+
+    update public.onboarding_lifecycle ol set
+        current_state = p_to_state,
+        updated_at = now()
+    where ol.id = v_row.id
+    returning * into v_row;
+
+    insert into public.onboarding_lifecycle_transitions (
+        tenant_id, lifecycle_id, from_state, to_state, metadata
+    )
+    values (v_tid, v_row.id, v_from, p_to_state, coalesce(p_metadata, '{}'::jsonb));
+
+    perform public.insert_event(
+        'onboarding.lifecycle.changed',
+        jsonb_build_object(
+            'property_id', p_property_id,
+            'from_state', v_from,
+            'to_state', p_to_state
+        ) || coalesce(p_metadata, '{}'::jsonb)
+    );
+
+    return to_jsonb(v_row);
 end;
 $$;
 
 
+-- =====================================================
+-- 17. DOMAIN READ FUNCTIONS
+-- 011 — no Edge guards
+-- =====================================================
 
-create or replace function public.enforce_onboarding_session_blueprint_trace()
-returns trigger
+create or replace function public.onboarding_lifecycle_get(p_property_id uuid)
+returns jsonb
 language plpgsql
+stable
+security definer
 set search_path = ''
 as $$
 declare
-    v_template_blueprint uuid;
+    v_tid uuid;
+    v_result jsonb;
 begin
-    if new.onboarding_blueprint_id is null or new.preconfig_template_id is null then
-        return new;
+    v_tid := platform.current_tenant_id();
+    if v_tid is null then
+        raise exception 'no active tenant';
     end if;
 
-    select pt.onboarding_blueprint_id
-    into v_template_blueprint
-    from public.preconfig_templates pt
-    where pt.id = new.preconfig_template_id;
+    select to_jsonb(t) into v_result
+    from (
+        select
+            ol.id,
+            ol.tenant_id,
+            ol.property_id,
+            ol.session_id,
+            ol.current_state,
+            ol.created_at,
+            ol.updated_at
+        from public.onboarding_lifecycle ol
+        where ol.property_id = p_property_id
+          and ol.tenant_id = v_tid
+    ) t;
 
-    if v_template_blueprint is not null
-       and v_template_blueprint is distinct from new.onboarding_blueprint_id then
-        raise exception 'onboarding_blueprint_id must match preconfig_templates.onboarding_blueprint_id';
-    end if;
-
-    return new;
+    return coalesce(v_result, 'null'::jsonb);
 end;
 $$;
 
 
-
-create or replace function public.enforce_onboarding_session_tenant_consistency()
-returns trigger
+create or replace function public.onboarding_lifecycle_list_transitions(p_property_id uuid)
+returns jsonb
 language plpgsql
+stable
+security definer
 set search_path = ''
 as $$
 declare
-    v_property_tenant uuid;
+    v_tid uuid;
+    v_result jsonb;
 begin
-    select p.tenant_id
-    into v_property_tenant
-    from public.properties p
-    where p.id = new.property_id;
-
-    if not found then
-        raise exception 'property not found';
+    v_tid := platform.current_tenant_id();
+    if v_tid is null then
+        raise exception 'no active tenant';
     end if;
 
-    if v_property_tenant <> new.tenant_id then
-        raise exception 'onboarding session property must belong to the same tenant';
-    end if;
+    select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
+    into v_result
+    from (
+        select
+            olt.id,
+            olt.lifecycle_id,
+            olt.from_state,
+            olt.to_state,
+            olt.metadata,
+            olt.created_at
+        from public.onboarding_lifecycle_transitions olt
+        join public.onboarding_lifecycle ol on ol.id = olt.lifecycle_id
+        where ol.property_id = p_property_id
+          and olt.tenant_id = v_tid
+    ) t;
 
-    return new;
+    return v_result;
 end;
 $$;
 
 
-
+-- =====================================================
+-- 18. ONBOARDING DOMAIN API
+-- =====================================================
 
 create or replace function public.onboarding_domain(
     p_op text,
@@ -1208,181 +1188,164 @@ end;
 $$;
 
 
-
-create or replace function public.onboarding_lifecycle_allowed_transition(
-    p_from public.onboarding_lifecycle_state,
-    p_to public.onboarding_lifecycle_state
-)
-returns boolean
-language sql
-immutable
-set search_path = ''
-as $$
-    select case
-        when p_from is null and p_to = 'created' then true
-        when p_from = 'created' and p_to = 'pre_onboarding' then true
-        when p_from = 'pre_onboarding' and p_to = 'configured' then true
-        when p_from = 'configured' and p_to = 'devices_assigned' then true
-        when p_from = 'devices_assigned' and p_to = 'shipped' then true
-        when p_from = 'shipped' and p_to = 'installed' then true
-        when p_from = 'installed' and p_to = 'verified' then true
-        when p_from = 'verified' and p_to = 'active' then true
-        else false
-    end;
-$$;
-
-
-
-create or replace function public.onboarding_lifecycle_apply_transition(
-    p_property_id uuid,
-    p_to_state public.onboarding_lifecycle_state,
-    p_metadata jsonb default '{}'::jsonb
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_row public.onboarding_lifecycle%rowtype;
-    v_from public.onboarding_lifecycle_state;
-begin
-    v_tid := platform.current_tenant_id();
-    if v_tid is null then
-        raise exception 'no active tenant';
-    end if;
-
-    select * into v_row
-    from public.onboarding_lifecycle ol
-    where ol.property_id = p_property_id and ol.tenant_id = v_tid
-    for update;
-
-    if not found then
-        if p_to_state <> 'created' then
-            raise exception 'lifecycle must start at created';
-        end if;
-
-        insert into public.onboarding_lifecycle (tenant_id, property_id, current_state)
-        values (v_tid, p_property_id, 'created')
-        returning * into v_row;
-
-        v_from := null;
-    else
-        v_from := v_row.current_state;
-    end if;
-
-    if v_from = p_to_state then
-        return to_jsonb(v_row);
-    end if;
-
-    if not public.onboarding_lifecycle_allowed_transition(v_from, p_to_state) then
-        raise exception 'invalid onboarding lifecycle transition: % -> %', v_from, p_to_state;
-    end if;
-
-    update public.onboarding_lifecycle ol set
-        current_state = p_to_state,
-        updated_at = now()
-    where ol.id = v_row.id
-    returning * into v_row;
-
-    insert into public.onboarding_lifecycle_transitions (
-        tenant_id, lifecycle_id, from_state, to_state, metadata
-    )
-    values (v_tid, v_row.id, v_from, p_to_state, coalesce(p_metadata, '{}'::jsonb));
-
-    perform public.insert_event(
-        'onboarding.lifecycle.changed',
-        jsonb_build_object(
-            'property_id', p_property_id,
-            'from_state', v_from,
-            'to_state', p_to_state
-        ) || coalesce(p_metadata, '{}'::jsonb)
-    );
-
-    return to_jsonb(v_row);
-end;
-$$;
-
-
-
 -- =====================================================
--- 4. DOMAIN READ FUNCTIONS (011 — no Edge guards)
+-- 19. UI READ VIEWS
+-- Appsmith read contract
 -- =====================================================
 
-create or replace function public.onboarding_lifecycle_get(p_property_id uuid)
-returns jsonb
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_result jsonb;
-begin
-    v_tid := platform.current_tenant_id();
-    if v_tid is null then
-        raise exception 'no active tenant';
-    end if;
-
-    select to_jsonb(t) into v_result
-    from (
-        select
-            ol.id,
-            ol.tenant_id,
-            ol.property_id,
-            ol.session_id,
-            ol.current_state,
-            ol.created_at,
-            ol.updated_at
-        from public.onboarding_lifecycle ol
-        where ol.property_id = p_property_id
-          and ol.tenant_id = v_tid
-    ) t;
-
-    return coalesce(v_result, 'null'::jsonb);
-end;
-$$;
+drop view if exists public.v_onboarding_lifecycle;
 
 
+drop view if exists public.v_properties_overview;
 
-create or replace function public.onboarding_lifecycle_list_transitions(p_property_id uuid)
-returns jsonb
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-declare
-    v_tid uuid;
-    v_result jsonb;
-begin
-    v_tid := platform.current_tenant_id();
-    if v_tid is null then
-        raise exception 'no active tenant';
-    end if;
 
-    select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at desc), '[]'::jsonb)
-    into v_result
-    from (
-        select
-            olt.id,
-            olt.lifecycle_id,
-            olt.from_state,
-            olt.to_state,
-            olt.metadata,
-            olt.created_at
+drop view if exists public.v_onboarding_progress;
+
+
+create or replace view public.v_onboarding_lifecycle_overview
+with (security_invoker = true)
+as
+select
+    ol.id,
+    ol.tenant_id,
+    ol.property_id,
+    p.name as property_name,
+    ol.session_id,
+    os.status as session_status,
+    ol.current_state,
+    (
+        select count(*)
         from public.onboarding_lifecycle_transitions olt
-        join public.onboarding_lifecycle ol on ol.id = olt.lifecycle_id
-        where ol.property_id = p_property_id
-          and olt.tenant_id = v_tid
-    ) t;
+        where olt.lifecycle_id = ol.id
+    ) as transition_count,
+    (
+        select olt.created_at
+        from public.onboarding_lifecycle_transitions olt
+        where olt.lifecycle_id = ol.id
+        order by olt.created_at desc
+        limit 1
+    ) as last_transition_at,
+    ol.created_at,
+    ol.updated_at
+from public.onboarding_lifecycle ol
+join public.properties p on p.id = ol.property_id
+left join public.onboarding_sessions os on os.id = ol.session_id;
 
-    return v_result;
-end;
-$$;
 
+create or replace view public.v_onboarding_progress
+with (security_invoker = true)
+as
+select
+    os.id as session_id,
+    os.tenant_id,
+    os.property_id,
+    p.name as property_name,
+    os.status as session_status,
+    os.current_step,
+    ol.current_state as lifecycle_state,
+    count(*) filter (where ss.status = 'completed') as completed_steps,
+    count(*) as total_steps,
+    os.created_at,
+    os.updated_at
+from public.onboarding_sessions os
+join public.properties p on p.id = os.property_id
+left join public.onboarding_lifecycle ol on ol.property_id = os.property_id
+left join public.onboarding_step_state ss on ss.session_id = os.id
+group by os.id, p.name, ol.current_state;
+
+
+create or replace view public.v_properties_overview
+with (security_invoker = true)
+as
+select
+    p.id,
+    p.tenant_id,
+    p.name,
+    p.address,
+    p.property_type,
+    p.timezone,
+    count(distinct r.id) as room_count,
+    count(distinct d.id) as device_count,
+    ol.current_state as onboarding_lifecycle_state,
+    p.created_at,
+    p.updated_at
+from public.properties p
+left join public.rooms r on r.property_id = p.id
+left join public.device_assignments da on da.room_id = r.id
+left join public.devices d on d.id = da.device_id and d.is_active = true
+left join public.onboarding_lifecycle ol on ol.property_id = p.id
+group by p.id, ol.current_state;
+
+
+-- =====================================================
+-- 20. RLS ENABLEMENT
+-- =====================================================
+
+alter table public.onboarding_sessions enable row level security;
+
+
+do $$
+declare
+    v_table text;
+begin
+    foreach v_table in array array[
+        'onboarding_step_state',
+        'onboarding_room_mapping',
+        'onboarding_device_mapping',
+        'onboarding_checklist',
+        'onboarding_notes'
+    ] loop
+        execute format('alter table public.%I enable row level security', v_table);
+        execute format('drop policy if exists %1$s_select on public.%1$I', v_table);
+        execute format('drop policy if exists %1$s_insert on public.%1$I', v_table);
+        execute format('drop policy if exists %1$s_update on public.%1$I', v_table);
+        execute format('drop policy if exists %1$s_delete on public.%1$I', v_table);
+        execute format(
+            'create policy %1$s_select on public.%1$I for select to authenticated using (platform.is_platform_admin() or public.has_tenant_access(tenant_id))',
+            v_table
+        );
+        execute format(
+            'create policy %1$s_insert on public.%1$I for insert to authenticated with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
+            v_table
+        );
+        execute format(
+            'create policy %1$s_update on public.%1$I for update to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager'')))) with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
+            v_table
+        );
+        execute format(
+            'create policy %1$s_delete on public.%1$I for delete to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
+            v_table
+        );
+    end loop;
+end $$;
+
+
+alter table public.onboarding_lifecycle enable row level security;
+
+
+alter table public.onboarding_lifecycle_transitions enable row level security;
+
+
+select public._apply_public_tenant_rls('public.onboarding_lifecycle'::regclass);
+
+
+select public._apply_public_tenant_rls('public.onboarding_lifecycle_transitions'::regclass);
+
+
+-- =====================================================
+-- 21. ONBOARDING SESSION RLS POLICIES
+-- =====================================================
+
+drop policy if exists onboarding_sessions_select on public.onboarding_sessions;
+
+
+drop policy if exists onboarding_sessions_insert on public.onboarding_sessions;
+
+
+drop policy if exists onboarding_sessions_update on public.onboarding_sessions;
+
+
+drop policy if exists onboarding_sessions_delete on public.onboarding_sessions;
 
 
 create policy onboarding_sessions_delete on public.onboarding_sessions
@@ -1396,7 +1359,6 @@ create policy onboarding_sessions_delete on public.onboarding_sessions
     );
 
 
-
 create policy onboarding_sessions_insert on public.onboarding_sessions
     for insert to authenticated
     with check (
@@ -1408,11 +1370,9 @@ create policy onboarding_sessions_insert on public.onboarding_sessions
     );
 
 
-
 create policy onboarding_sessions_select on public.onboarding_sessions
     for select to authenticated
     using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
 
 
 create policy onboarding_sessions_update on public.onboarding_sessions
@@ -1433,11 +1393,13 @@ create policy onboarding_sessions_update on public.onboarding_sessions
     );
 
 
+-- =====================================================
+-- 22. TIMESTAMP + DOMAIN CONSISTENCY TRIGGERS
+-- =====================================================
 
 create trigger trg_onboarding_sessions_updated_at
 before update on onboarding_sessions
 for each row execute function platform.set_updated_at();
-
 
 
 create trigger trg_onboarding_checklist_updated_at
@@ -1445,53 +1407,14 @@ before update on onboarding_checklist
 for each row execute function platform.set_updated_at();
 
 
+create trigger trg_onboarding_lifecycle_updated_at
+before update on onboarding_lifecycle
+for each row execute function platform.set_updated_at();
+
 
 create trigger trg_onboarding_sessions_tenant_consistency
 before insert or update on public.onboarding_sessions
 for each row execute function public.enforce_onboarding_session_tenant_consistency();
-
-
-
-create trigger trg_onboarding_room_mapping_consistency
-before insert or update on public.onboarding_room_mapping
-for each row execute function public.enforce_onboarding_room_mapping_consistency();
-
-
-
-create trigger trg_onboarding_device_mapping_consistency
-before insert or update on public.onboarding_device_mapping
-for each row execute function public.enforce_onboarding_device_mapping_consistency();
-
-
-
-create trigger trg_onboarding_step_state_tenant_consistency
-before insert or update on public.onboarding_step_state
-for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
-
-
-create trigger trg_onboarding_room_mapping_tenant_consistency
-before insert or update on public.onboarding_room_mapping
-for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
-
-
-create trigger trg_onboarding_device_mapping_tenant_consistency
-before insert or update on public.onboarding_device_mapping
-for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
-
-
-create trigger trg_onboarding_checklist_tenant_consistency
-before insert or update on public.onboarding_checklist
-for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
-
-
-create trigger trg_onboarding_notes_tenant_consistency
-before insert or update on public.onboarding_notes
-for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
 
 
 create trigger trg_onboarding_sessions_blueprint_trace
@@ -1499,10 +1422,39 @@ before insert or update on public.onboarding_sessions
 for each row execute function public.enforce_onboarding_session_blueprint_trace();
 
 
+create trigger trg_onboarding_step_state_tenant_consistency
+before insert or update on public.onboarding_step_state
+for each row execute function public.enforce_onboarding_child_tenant_consistency();
 
-create trigger trg_onboarding_lifecycle_updated_at
-before update on onboarding_lifecycle
-for each row execute function platform.set_updated_at();
+
+create trigger trg_onboarding_room_mapping_consistency
+before insert or update on public.onboarding_room_mapping
+for each row execute function public.enforce_onboarding_room_mapping_consistency();
+
+
+create trigger trg_onboarding_room_mapping_tenant_consistency
+before insert or update on public.onboarding_room_mapping
+for each row execute function public.enforce_onboarding_child_tenant_consistency();
+
+
+create trigger trg_onboarding_device_mapping_consistency
+before insert or update on public.onboarding_device_mapping
+for each row execute function public.enforce_onboarding_device_mapping_consistency();
+
+
+create trigger trg_onboarding_device_mapping_tenant_consistency
+before insert or update on public.onboarding_device_mapping
+for each row execute function public.enforce_onboarding_child_tenant_consistency();
+
+
+create trigger trg_onboarding_checklist_tenant_consistency
+before insert or update on public.onboarding_checklist
+for each row execute function public.enforce_onboarding_child_tenant_consistency();
+
+
+create trigger trg_onboarding_notes_tenant_consistency
+before insert or update on public.onboarding_notes
+for each row execute function public.enforce_onboarding_child_tenant_consistency();
 
 
 create trigger trg_onboarding_lifecycle_tenant_consistency
@@ -1516,9 +1468,24 @@ for each row execute function public.enforce_onboarding_lifecycle_transitions_co
 
 
 -- =====================================================
--- 011 ONBOARDING ENGINE
+-- 23. LEGACY / EXTENSION TRIGGER CLEANUP
+-- =====================================================
+
+drop trigger if exists trg_onboarding_lifecycle_tenant_consistency on public.onboarding_lifecycle;
+
+
+drop trigger if exists trg_onboarding_lifecycle_transitions_consistency on public.onboarding_lifecycle_transitions;
+
+
+-- =====================================================
+-- 24. MIGRATION REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
 values ('011_onboarding_engine', 'REV22.ONBOARDING.ENGINE', false)
 on conflict (version) do nothing;
+
+
+-- =====================================================
+-- END 011 ONBOARDING ENGINE
+-- =====================================================

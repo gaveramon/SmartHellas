@@ -3,8 +3,194 @@
 
 
 -- =====================================================
--- 5. FULFILMENT ORDERS (SHIPMENT INTENT — NO TRACKING)
--- Business lifecycle only. Carrier tracking and labels live in 000.
+-- 008 LOGISTICS ENGINE
+-- CLEAN FULFILMENT DEFINITION & DOMAIN LAYER
+-- NO SHIPPING EXECUTION / NO TRACKING / NO EVENTS / NO LABEL GENERATION
+-- =====================================================
+--
+-- SSOT HIERARCHY
+-- device_bundles (007)     — hardware BOM (package contents live there)
+-- logistics_templates      — delivery blueprint per tenant or platform
+-- package_definitions      — shipment package = template + device_bundle
+-- shipping_carriers       — carrier catalog
+-- shipping_rules           — routing/pricing rules (definition only)
+-- warehouses               — fulfilment origin locations (definition only)
+-- shipping_label_templates — label format/service codes per carrier
+-- fulfilment_orders        — shipment intent (business status only, no tracking)
+--
+-- EXECUTION (000): shipment_dispatch_queue, shipment_tracking_events, carrier API
+-- =====================================================
+
+
+-- =====================================================
+-- 1. SHIPPING CARRIERS
+-- GLOBAL CARRIER CATALOG
+-- =====================================================
+
+create table if not exists shipping_carriers (
+    id uuid primary key default gen_random_uuid(),
+
+    name text not null,
+
+    provider_code text,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    unique (name)
+);
+
+
+-- =====================================================
+-- 2. SHIPPING LABEL TEMPLATES
+-- CARRIER-SPECIFIC LABEL FORMAT DEFINITIONS
+-- =====================================================
+
+create table if not exists shipping_label_templates (
+    id uuid primary key default gen_random_uuid(),
+
+    carrier_id uuid not null references shipping_carriers(id) on delete cascade,
+
+    name text not null,
+
+    label_format text not null default 'pdf',
+
+    service_code text,
+
+    config jsonb not null default '{}'::jsonb,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    unique (carrier_id, name),
+
+    constraint chk_shipping_label_templates_format check (
+        label_format in ('pdf', 'zpl', 'png')
+    )
+);
+
+
+-- =====================================================
+-- 3. LOGISTICS TEMPLATES
+-- DELIVERY BLUEPRINTS PER TENANT OR PLATFORM
+-- =====================================================
+
+create table if not exists logistics_templates (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid,
+
+    is_system boolean not null default false,
+
+    name text not null,
+
+    description text,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    constraint chk_logistics_templates_system_scope check (
+        (is_system and tenant_id is null)
+        or (not is_system and tenant_id is not null)
+    )
+);
+
+
+-- =====================================================
+-- 4. WAREHOUSES
+-- FULFILMENT ORIGIN LOCATIONS
+-- =====================================================
+
+create table if not exists warehouses (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid,
+
+    is_system boolean not null default false,
+
+    name text not null,
+
+    address text,
+
+    country_code text not null default 'GR',
+
+    default_carrier_id uuid references shipping_carriers(id) on delete set null,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    constraint chk_warehouses_system_scope check (
+        (is_system and tenant_id is null)
+        or (not is_system and tenant_id is not null)
+    )
+);
+
+
+-- =====================================================
+-- 5. SHIPPING RULES
+-- ROUTING / PRICING / SERVICE DEFINITIONS
+-- =====================================================
+
+create table if not exists shipping_rules (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid,
+
+    is_system boolean not null default false,
+
+    carrier_id uuid references shipping_carriers(id) on delete set null,
+
+    rule_name text not null,
+
+    rule_config jsonb not null default '{}'::jsonb,
+
+    is_active boolean default true,
+
+    created_at timestamptz default now(),
+
+    updated_at timestamptz default now(),
+
+    constraint chk_shipping_rules_system_scope check (
+        (is_system and tenant_id is null)
+        or (not is_system and tenant_id is not null)
+    )
+);
+
+
+-- =====================================================
+-- 6. PACKAGE DEFINITIONS
+-- SHIPMENT PACKAGE = LOGISTICS TEMPLATE + DEVICE BUNDLE
+-- BOM CONTENTS REMAIN IN 007 device_bundles
+-- =====================================================
+
+create table if not exists package_definitions (
+    id uuid primary key default gen_random_uuid(),
+
+    template_id uuid not null references logistics_templates(id) on delete cascade,
+
+    device_bundle_id uuid not null references device_bundles(id) on delete restrict,
+
+    name text not null,
+
+    description text,
+
+    unique (template_id, device_bundle_id)
+);
+
+
+-- =====================================================
+-- 7. FULFILMENT ORDERS
+-- SHIPMENT INTENT — NO TRACKING
 -- =====================================================
 
 create table if not exists fulfilment_orders (
@@ -38,241 +224,32 @@ create table if not exists fulfilment_orders (
 
 
 -- =====================================================
--- 008 LOGISTICS ENGINE (CLEAN FULFILMENT DEFINITION LAYER)
--- NO SHIPPING EXECUTION / NO TRACKING / NO EVENTS / NO LABEL GENERATION
+-- 8. INDEXES
+-- DOMAIN QUERY PERFORMANCE
 -- =====================================================
---
--- SSOT HIERARCHY
--- device_bundles (007)     — hardware BOM (package contents live there)
--- logistics_templates      — delivery blueprint per tenant or platform
--- package_definitions      — shipment package = template + device_bundle
--- shipping_carriers        — carrier catalog
--- shipping_rules           — routing/pricing rules (definition only)
--- warehouses               — fulfilment origin locations (definition only)
--- shipping_label_templates — label format/service codes per carrier
--- fulfilment_orders        — shipment intent (business status only, no tracking)
---
--- EXECUTION (000): shipment_dispatch_queue, shipment_tracking_events, carrier API
--- =====================================================
-
--- =====================================================
--- 1. LOGISTICS TEMPLATES (DELIVERY BLUEPRINTS)
--- =====================================================
-
-create table if not exists logistics_templates (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid,
-
-    is_system boolean not null default false,
-
-    name text not null,
-
-    description text,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    constraint chk_logistics_templates_system_scope check (
-        (is_system and tenant_id is null)
-        or (not is_system and tenant_id is not null)
-    )
-);
-
-
-
--- =====================================================
--- 2. PACKAGE DEFINITIONS (LINK TO 007 device_bundles — NO DUPLICATE BOM)
--- =====================================================
-
-create table if not exists package_definitions (
-    id uuid primary key default gen_random_uuid(),
-
-    template_id uuid not null references logistics_templates(id) on delete cascade,
-
-    device_bundle_id uuid not null references device_bundles(id) on delete restrict,
-
-    name text not null,
-
-    description text,
-
-    unique (template_id, device_bundle_id)
-);
-
-
-
--- =====================================================
--- 3. SHIPPING CARRIERS (CATALOG — DEFINITION ONLY)
--- =====================================================
-
-create table if not exists shipping_carriers (
-    id uuid primary key default gen_random_uuid(),
-
-    name text not null,
-
-    provider_code text,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    unique (name)
-);
-
-
-
--- =====================================================
--- 3C. SHIPPING LABEL TEMPLATES (FORMAT DEFINITION ONLY)
--- =====================================================
-
-create table if not exists shipping_label_templates (
-    id uuid primary key default gen_random_uuid(),
-
-    carrier_id uuid not null references shipping_carriers(id) on delete cascade,
-
-    name text not null,
-
-    label_format text not null default 'pdf',
-
-    service_code text,
-
-    config jsonb not null default '{}'::jsonb,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    unique (carrier_id, name),
-
-    constraint chk_shipping_label_templates_format check (
-        label_format in ('pdf', 'zpl', 'png')
-    )
-);
-
-
-
--- =====================================================
--- 4. SHIPPING RULES (LOGIC ONLY, NO EXECUTION)
--- =====================================================
-
-create table if not exists shipping_rules (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid,
-
-    is_system boolean not null default false,
-
-    carrier_id uuid references shipping_carriers(id) on delete set null,
-
-    rule_name text not null,
-
-    rule_config jsonb not null default '{}'::jsonb,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    constraint chk_shipping_rules_system_scope check (
-        (is_system and tenant_id is null)
-        or (not is_system and tenant_id is not null)
-    )
-);
-
-
-
--- =====================================================
--- 3B. WAREHOUSES (FULFILMENT ORIGIN — DEFINITION ONLY)
--- =====================================================
-
-create table if not exists warehouses (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid,
-
-    is_system boolean not null default false,
-
-    name text not null,
-
-    address text,
-
-    country_code text not null default 'GR',
-
-    default_carrier_id uuid references shipping_carriers(id) on delete set null,
-
-    is_active boolean default true,
-
-    created_at timestamptz default now(),
-
-    updated_at timestamptz default now(),
-
-    constraint chk_warehouses_system_scope check (
-        (is_system and tenant_id is null)
-        or (not is_system and tenant_id is not null)
-    )
-);
-
-
 
 create index if not exists idx_logistics_templates_tenant
 on logistics_templates (tenant_id);
-
 
 
 create index if not exists idx_package_definitions_template
 on package_definitions (template_id);
 
 
-
 create index if not exists idx_package_definitions_bundle
 on package_definitions (device_bundle_id);
-
-
-
-comment on table public.package_definitions is
-    'Shipment package definition. BOM contents come from 007 device_bundles / bundle_devices.';
-
-
-
-comment on table public.shipping_carriers is
-    'Carrier catalog. API dispatch and tracking ingest belong in platform layer (000).';
-
 
 
 create index if not exists idx_warehouses_tenant
 on warehouses (tenant_id);
 
 
-
-comment on table public.warehouses is
-    'Fulfilment origin locations. Stock movements and inventory execution belong in 000.';
-
-
-
 create index if not exists idx_shipping_label_templates_carrier
 on shipping_label_templates (carrier_id);
 
 
-
-comment on table public.shipping_label_templates is
-    'Label format and carrier service codes. Generated artifacts stored via platform.shipment_dispatch_queue (000).';
-
-
-
-comment on column public.shipping_label_templates.config is
-    'Non-secret template options: { paper_size, orientation, margin_mm }.';
-
-
-
 create index if not exists idx_shipping_rules_tenant
 on shipping_rules (tenant_id);
-
 
 
 create index if not exists idx_shipping_rules_carrier
@@ -280,44 +257,61 @@ on shipping_rules (carrier_id)
 where carrier_id is not null;
 
 
-
-comment on column public.shipping_rules.rule_config is
-    'Non-secret routing rules: { country, min_weight, max_weight, service_level, priority }.';
-
-
-
 create index if not exists idx_fulfilment_orders_tenant
 on fulfilment_orders (tenant_id);
-
 
 
 create index if not exists idx_fulfilment_orders_tenant_status
 on fulfilment_orders (tenant_id, status);
 
 
-
 create index if not exists idx_fulfilment_orders_tenant_created
 on fulfilment_orders (tenant_id, created_at desc);
-
 
 
 create index if not exists idx_fulfilment_orders_property
 on fulfilment_orders (property_id);
 
 
+-- =====================================================
+-- 9. TABLE & COLUMN DOCUMENTATION
+-- =====================================================
+
+comment on table public.package_definitions is
+    'Shipment package definition. BOM contents come from 007 device_bundles / bundle_devices.';
+
+
+comment on table public.shipping_carriers is
+    'Carrier catalog. API dispatch and tracking ingest belong in platform layer (000).';
+
+
+comment on table public.warehouses is
+    'Fulfilment origin locations. Stock movements and inventory execution belong in 000.';
+
+
+comment on table public.shipping_label_templates is
+    'Label format and carrier service codes. Generated artifacts stored via platform.shipment_dispatch_queue (000).';
+
+
+comment on column public.shipping_label_templates.config is
+    'Non-secret template options: { paper_size, orientation, margin_mm }.';
+
+
+comment on column public.shipping_rules.rule_config is
+    'Non-secret routing rules: { country, min_weight, max_weight, service_level, priority }.';
+
 
 comment on table public.fulfilment_orders is
     'Domain shipment intent. No tracking numbers or label URLs — those belong in platform layer (000).';
 
 
-
 -- =====================================================
--- 5C. SYSTEM SCOPE BACKFILL (EXISTING DEPLOYS)
+-- 10. SYSTEM SCOPE BACKFILL
+-- EXISTING DEPLOYMENT COMPATIBILITY
 -- =====================================================
 
 alter table public.warehouses
     add column if not exists is_system boolean not null default false;
-
 
 
 update public.warehouses
@@ -326,10 +320,8 @@ where tenant_id is null
   and not is_system;
 
 
-
 alter table public.warehouses
     drop constraint if exists chk_warehouses_system_scope;
-
 
 
 alter table public.warehouses
@@ -339,10 +331,8 @@ alter table public.warehouses
     );
 
 
-
 alter table public.shipping_rules
     add column if not exists is_system boolean not null default false;
-
 
 
 update public.shipping_rules
@@ -351,10 +341,8 @@ where tenant_id is null
   and not is_system;
 
 
-
 alter table public.shipping_rules
     drop constraint if exists chk_shipping_rules_system_scope;
-
 
 
 alter table public.shipping_rules
@@ -364,9 +352,9 @@ alter table public.shipping_rules
     );
 
 
-
 -- =====================================================
--- 6. TENANT FKs (DEFERRED — TENANTS EXIST FROM 002)
+-- 11. DEFERRED TENANT FOREIGN KEYS
+-- TENANTS ARE ESTABLISHED IN 002
 -- =====================================================
 
 do $$
@@ -379,7 +367,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
     alter table public.shipping_rules
@@ -388,7 +375,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
 
 
 do $$
@@ -401,7 +387,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
     alter table public.warehouses
@@ -412,9 +397,23 @@ exception
 end $$;
 
 
+-- =====================================================
+-- 12. SHIPPING CARRIER PROVIDER FK
+-- PROVIDER CATALOG SSOT FROM 005
+-- =====================================================
+
+do $$
+begin
+    alter table public.shipping_carriers
+        add constraint fk_shipping_carriers_provider_code
+        foreign key (provider_code) references public.integration_providers(code);
+exception when duplicate_object then null;
+end $$;
+
 
 -- =====================================================
--- 6B. PLATFORM EXECUTION BINDING (000 SHIPMENT QUEUES)
+-- 13. PLATFORM EXECUTION BINDINGS
+-- 000 SHIPMENT DISPATCH / TRACKING
 -- =====================================================
 
 do $$
@@ -427,7 +426,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
     alter table platform.shipment_tracking_events
@@ -438,166 +436,13 @@ exception
 end $$;
 
 
-
 comment on constraint fk_shipment_dispatch_fulfilment_order on platform.shipment_dispatch_queue is
     'Domain fulfilment intent (008) is SSOT; restrict delete while dispatch may exist.';
 
 
-
 -- =====================================================
--- 7. RLS — GLOBAL CATALOG (shipping_carriers, label templates)
--- =====================================================
-
-alter table public.shipping_carriers enable row level security;
-
-
-
-drop policy if exists shipping_carriers_select on public.shipping_carriers;
-
-
-drop policy if exists shipping_carriers_insert on public.shipping_carriers;
-
-
-drop policy if exists shipping_carriers_update on public.shipping_carriers;
-
-
-drop policy if exists shipping_carriers_delete on public.shipping_carriers;
-
-
-
-alter table public.shipping_label_templates enable row level security;
-
-
-
-drop policy if exists shipping_label_templates_select on public.shipping_label_templates;
-
-
-drop policy if exists shipping_label_templates_insert on public.shipping_label_templates;
-
-
-drop policy if exists shipping_label_templates_update on public.shipping_label_templates;
-
-
-drop policy if exists shipping_label_templates_delete on public.shipping_label_templates;
-
-
-
--- =====================================================
--- 8. RLS — TENANT WAREHOUSES
--- =====================================================
-
-alter table public.warehouses enable row level security;
-
-
-
-drop policy if exists warehouses_select on public.warehouses;
-
-
-drop policy if exists warehouses_insert on public.warehouses;
-
-
-drop policy if exists warehouses_update on public.warehouses;
-
-
-drop policy if exists warehouses_delete on public.warehouses;
-
-
-
--- =====================================================
--- 9. RLS — LOGISTICS TEMPLATES + PACKAGES + RULES
--- =====================================================
-
-alter table public.logistics_templates enable row level security;
-
-
-
-drop policy if exists logistics_templates_select on public.logistics_templates;
-
-
-drop policy if exists logistics_templates_insert on public.logistics_templates;
-
-
-drop policy if exists logistics_templates_update on public.logistics_templates;
-
-
-drop policy if exists logistics_templates_delete on public.logistics_templates;
-
-
-
-alter table public.package_definitions enable row level security;
-
-
-
-drop policy if exists package_definitions_select on public.package_definitions;
-
-
-drop policy if exists package_definitions_insert on public.package_definitions;
-
-
-drop policy if exists package_definitions_update on public.package_definitions;
-
-
-drop policy if exists package_definitions_delete on public.package_definitions;
-
-
-
-alter table public.shipping_rules enable row level security;
-
-
-
-drop policy if exists shipping_rules_select on public.shipping_rules;
-
-
-drop policy if exists shipping_rules_insert on public.shipping_rules;
-
-
-drop policy if exists shipping_rules_update on public.shipping_rules;
-
-
-drop policy if exists shipping_rules_delete on public.shipping_rules;
-
-
-
--- =====================================================
--- 10. RLS — FULFILMENT ORDERS (EXPLICIT — NOT 014 BOOTSTRAP)
--- =====================================================
-
-alter table public.fulfilment_orders enable row level security;
-
-
-
-drop policy if exists fulfilment_orders_select on public.fulfilment_orders;
-
-
-drop policy if exists fulfilment_orders_insert on public.fulfilment_orders;
-
-
-drop policy if exists fulfilment_orders_update on public.fulfilment_orders;
-
-
-drop policy if exists fulfilment_orders_delete on public.fulfilment_orders;
-
-
-
--- =====================================================
--- SHIPPING CARRIERS — PROVIDER CATALOG FK (005 SSOT)
--- =====================================================
-
-do $$
-begin
-    alter table public.shipping_carriers
-        add constraint fk_shipping_carriers_provider_code
-        foreign key (provider_code) references public.integration_providers(code);
-exception when duplicate_object then null;
-end $$;
-
-
-
-
-
-
--- =====================================================
--- 5B. FULFILMENT ORDER CONSISTENCY
+-- 14. FULFILMENT ORDER CONSISTENCY
+-- DOMAIN INTEGRITY TRIGGER FUNCTION
 -- =====================================================
 
 create or replace function public.enforce_fulfilment_order_consistency()
@@ -668,10 +513,10 @@ end;
 $$;
 
 
-
--- -----------------------------------------------------
--- 008 Logistics: fulfilment dispatch workflow
--- -----------------------------------------------------
+-- =====================================================
+-- 15. FULFILMENT DISPATCH WORKFLOW
+-- DOMAIN → PLATFORM DISPATCH QUEUE
+-- =====================================================
 
 create or replace function public.logistics_dispatch_fulfilment_order(
     p_fulfilment_order_id uuid,
@@ -731,6 +576,10 @@ end;
 $$;
 
 
+-- =====================================================
+-- 16. LOGISTICS DOMAIN API
+-- TENANT-FACING DOMAIN OPERATIONS
+-- =====================================================
 
 create or replace function public.logistics_domain(
     p_op text,
@@ -1983,6 +1832,136 @@ end;
 $$;
 
 
+-- =====================================================
+-- 17. RLS ENABLEMENT
+-- GLOBAL CATALOGS
+-- =====================================================
+
+alter table public.shipping_carriers enable row level security;
+
+
+drop policy if exists shipping_carriers_select on public.shipping_carriers;
+
+
+drop policy if exists shipping_carriers_insert on public.shipping_carriers;
+
+
+drop policy if exists shipping_carriers_update on public.shipping_carriers;
+
+
+drop policy if exists shipping_carriers_delete on public.shipping_carriers;
+
+
+alter table public.shipping_label_templates enable row level security;
+
+
+drop policy if exists shipping_label_templates_select on public.shipping_label_templates;
+
+
+drop policy if exists shipping_label_templates_insert on public.shipping_label_templates;
+
+
+drop policy if exists shipping_label_templates_update on public.shipping_label_templates;
+
+
+drop policy if exists shipping_label_templates_delete on public.shipping_label_templates;
+
+
+-- =====================================================
+-- 18. RLS ENABLEMENT
+-- TENANT WAREHOUSES
+-- =====================================================
+
+alter table public.warehouses enable row level security;
+
+
+drop policy if exists warehouses_select on public.warehouses;
+
+
+drop policy if exists warehouses_insert on public.warehouses;
+
+
+drop policy if exists warehouses_update on public.warehouses;
+
+
+drop policy if exists warehouses_delete on public.warehouses;
+
+
+-- =====================================================
+-- 19. RLS ENABLEMENT
+-- LOGISTICS TEMPLATES / PACKAGES / RULES
+-- =====================================================
+
+alter table public.logistics_templates enable row level security;
+
+
+drop policy if exists logistics_templates_select on public.logistics_templates;
+
+
+drop policy if exists logistics_templates_insert on public.logistics_templates;
+
+
+drop policy if exists logistics_templates_update on public.logistics_templates;
+
+
+drop policy if exists logistics_templates_delete on public.logistics_templates;
+
+
+alter table public.package_definitions enable row level security;
+
+
+drop policy if exists package_definitions_select on public.package_definitions;
+
+
+drop policy if exists package_definitions_insert on public.package_definitions;
+
+
+drop policy if exists package_definitions_update on public.package_definitions;
+
+
+drop policy if exists package_definitions_delete on public.package_definitions;
+
+
+alter table public.shipping_rules enable row level security;
+
+
+drop policy if exists shipping_rules_select on public.shipping_rules;
+
+
+drop policy if exists shipping_rules_insert on public.shipping_rules;
+
+
+drop policy if exists shipping_rules_update on public.shipping_rules;
+
+
+drop policy if exists shipping_rules_delete on public.shipping_rules;
+
+
+-- =====================================================
+-- 20. RLS ENABLEMENT
+-- FULFILMENT ORDERS
+-- EXPLICIT — NOT 014 BOOTSTRAP
+-- =====================================================
+
+alter table public.fulfilment_orders enable row level security;
+
+
+drop policy if exists fulfilment_orders_select on public.fulfilment_orders;
+
+
+drop policy if exists fulfilment_orders_insert on public.fulfilment_orders;
+
+
+drop policy if exists fulfilment_orders_update on public.fulfilment_orders;
+
+
+drop policy if exists fulfilment_orders_delete on public.fulfilment_orders;
+
+
+-- =====================================================
+-- 21. RLS POLICIES
+-- FULFILMENT ORDERS
+-- =====================================================
 
 create policy fulfilment_orders_delete on public.fulfilment_orders
     for delete to authenticated
@@ -1993,7 +1972,6 @@ create policy fulfilment_orders_delete on public.fulfilment_orders
             and (platform.is_admin() or platform.has_role('manager'))
         )
     );
-
 
 
 create policy fulfilment_orders_insert on public.fulfilment_orders
@@ -2007,11 +1985,9 @@ create policy fulfilment_orders_insert on public.fulfilment_orders
     );
 
 
-
 create policy fulfilment_orders_select on public.fulfilment_orders
     for select to authenticated
     using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
 
 
 create policy fulfilment_orders_update on public.fulfilment_orders
@@ -2032,6 +2008,10 @@ create policy fulfilment_orders_update on public.fulfilment_orders
     );
 
 
+-- =====================================================
+-- 22. RLS POLICIES
+-- LOGISTICS TEMPLATES
+-- =====================================================
 
 create policy logistics_templates_delete on public.logistics_templates
     for delete to authenticated
@@ -2043,7 +2023,6 @@ create policy logistics_templates_delete on public.logistics_templates
             and (platform.is_admin() or platform.has_role('manager'))
         )
     );
-
 
 
 create policy logistics_templates_insert on public.logistics_templates
@@ -2059,7 +2038,6 @@ create policy logistics_templates_insert on public.logistics_templates
     );
 
 
-
 create policy logistics_templates_select on public.logistics_templates
     for select to authenticated
     using (
@@ -2067,7 +2045,6 @@ create policy logistics_templates_select on public.logistics_templates
         or is_system = true
         or public.has_tenant_access(tenant_id)
     );
-
 
 
 create policy logistics_templates_update on public.logistics_templates
@@ -2091,6 +2068,10 @@ create policy logistics_templates_update on public.logistics_templates
     );
 
 
+-- =====================================================
+-- 23. RLS POLICIES
+-- PACKAGE DEFINITIONS
+-- =====================================================
 
 create policy package_definitions_delete on public.package_definitions
     for delete to authenticated
@@ -2105,7 +2086,6 @@ create policy package_definitions_delete on public.package_definitions
               and (platform.is_admin() or platform.has_role('manager'))
         )
     );
-
 
 
 create policy package_definitions_insert on public.package_definitions
@@ -2123,7 +2103,6 @@ create policy package_definitions_insert on public.package_definitions
     );
 
 
-
 create policy package_definitions_select on public.package_definitions
     for select to authenticated
     using (
@@ -2135,7 +2114,6 @@ create policy package_definitions_select on public.package_definitions
               and (lt.is_system = true or public.has_tenant_access(lt.tenant_id))
         )
     );
-
 
 
 create policy package_definitions_update on public.package_definitions
@@ -2164,11 +2142,14 @@ create policy package_definitions_update on public.package_definitions
     );
 
 
+-- =====================================================
+-- 24. RLS POLICIES
+-- SHIPPING CARRIERS
+-- =====================================================
 
 create policy shipping_carriers_delete on public.shipping_carriers
     for delete to authenticated
     using (platform.is_platform_admin());
-
 
 
 create policy shipping_carriers_insert on public.shipping_carriers
@@ -2176,11 +2157,9 @@ create policy shipping_carriers_insert on public.shipping_carriers
     with check (platform.is_platform_admin());
 
 
-
 create policy shipping_carriers_select on public.shipping_carriers
     for select to authenticated
     using (true);
-
 
 
 create policy shipping_carriers_update on public.shipping_carriers
@@ -2189,11 +2168,14 @@ create policy shipping_carriers_update on public.shipping_carriers
     with check (platform.is_platform_admin());
 
 
+-- =====================================================
+-- 25. RLS POLICIES
+-- SHIPPING LABEL TEMPLATES
+-- =====================================================
 
 create policy shipping_label_templates_delete on public.shipping_label_templates
     for delete to authenticated
     using (platform.is_platform_admin());
-
 
 
 create policy shipping_label_templates_insert on public.shipping_label_templates
@@ -2201,11 +2183,9 @@ create policy shipping_label_templates_insert on public.shipping_label_templates
     with check (platform.is_platform_admin());
 
 
-
 create policy shipping_label_templates_select on public.shipping_label_templates
     for select to authenticated
     using (true);
-
 
 
 create policy shipping_label_templates_update on public.shipping_label_templates
@@ -2214,6 +2194,10 @@ create policy shipping_label_templates_update on public.shipping_label_templates
     with check (platform.is_platform_admin());
 
 
+-- =====================================================
+-- 26. RLS POLICIES
+-- SHIPPING RULES
+-- =====================================================
 
 create policy shipping_rules_delete on public.shipping_rules
     for delete to authenticated
@@ -2225,7 +2209,6 @@ create policy shipping_rules_delete on public.shipping_rules
             and (platform.is_admin() or platform.has_role('manager'))
         )
     );
-
 
 
 create policy shipping_rules_insert on public.shipping_rules
@@ -2241,7 +2224,6 @@ create policy shipping_rules_insert on public.shipping_rules
     );
 
 
-
 create policy shipping_rules_select on public.shipping_rules
     for select to authenticated
     using (
@@ -2249,7 +2231,6 @@ create policy shipping_rules_select on public.shipping_rules
         or is_system = true
         or public.has_tenant_access(tenant_id)
     );
-
 
 
 create policy shipping_rules_update on public.shipping_rules
@@ -2273,6 +2254,10 @@ create policy shipping_rules_update on public.shipping_rules
     );
 
 
+-- =====================================================
+-- 27. RLS POLICIES
+-- WAREHOUSES
+-- =====================================================
 
 create policy warehouses_delete on public.warehouses
     for delete to authenticated
@@ -2284,7 +2269,6 @@ create policy warehouses_delete on public.warehouses
             and (platform.is_admin() or platform.has_role('manager'))
         )
     );
-
 
 
 create policy warehouses_insert on public.warehouses
@@ -2300,7 +2284,6 @@ create policy warehouses_insert on public.warehouses
     );
 
 
-
 create policy warehouses_select on public.warehouses
     for select to authenticated
     using (
@@ -2308,7 +2291,6 @@ create policy warehouses_select on public.warehouses
         or is_system = true
         or public.has_tenant_access(tenant_id)
     );
-
 
 
 create policy warehouses_update on public.warehouses
@@ -2332,11 +2314,13 @@ create policy warehouses_update on public.warehouses
     );
 
 
+-- =====================================================
+-- 28. UPDATED_AT TRIGGERS
+-- =====================================================
 
 create trigger trg_logistics_templates_updated_at
 before update on logistics_templates
 for each row execute function platform.set_updated_at();
-
 
 
 create trigger trg_warehouses_updated_at
@@ -2344,11 +2328,9 @@ before update on warehouses
 for each row execute function platform.set_updated_at();
 
 
-
 create trigger trg_shipping_label_templates_updated_at
 before update on shipping_label_templates
 for each row execute function platform.set_updated_at();
-
 
 
 create trigger trg_shipping_rules_updated_at
@@ -2356,12 +2338,14 @@ before update on shipping_rules
 for each row execute function platform.set_updated_at();
 
 
-
 create trigger trg_fulfilment_orders_updated_at
 before update on fulfilment_orders
 for each row execute function platform.set_updated_at();
 
 
+-- =====================================================
+-- 29. FULFILMENT ORDER CONSISTENCY TRIGGER
+-- =====================================================
 
 create trigger trg_fulfilment_orders_consistency
 before insert or update on public.fulfilment_orders
@@ -2369,7 +2353,8 @@ for each row execute function public.enforce_fulfilment_order_consistency();
 
 
 -- =====================================================
--- END 008 LOGISTICS ENGINE (CLEAN DOMAIN ONLY)
+-- END 008 LOGISTICS ENGINE
+-- CLEAN DOMAIN ONLY
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)

@@ -1,5 +1,88 @@
--- REV22 greenfield baseline: 015_crm_engine.sql
+-- REV22 greenfield baseline: 003_crm_engine.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
+
+-- =====================================================
+-- 003 CRM ENGINE (CLEAN CUSTOMER RELATIONSHIP DOMAIN)
+-- NO EXECUTION / NO RUNTIME STATE / NO PLATFORM LOGIC
+-- =====================================================
+--
+-- SSOT: contacts, companies, leads, pipelines, opportunities,
+-- tasks, interactions, notes, tags, lists, campaigns, custom fields.
+--
+-- References only: tenants, profiles (002/000), customer tenants via FK.
+-- Does NOT own: orders, subscriptions, payments, bookings, devices,
+-- portal, onboarding, support cases (008).
+-- Campaign SSOT: crm_campaigns (marketing acquisition) only.
+-- In-product upsells → 013.upsell_campaigns. Plan upsells → 011.upsell_rules.
+-- CRM domain enums SSOT: 001_core_types_rev19.sql (section 14).
+-- =====================================================
+
+-- =====================================================
+-- 1. PIPELINES
+-- =====================================================
+
+create table if not exists crm_pipelines (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    name text not null,
+
+    description text,
+
+    is_default boolean not null default false,
+
+    is_active boolean not null default true,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    deleted_at timestamptz
+);
+
+
+
+-- =====================================================
+-- 2. PIPELINE STAGES
+-- =====================================================
+
+create table if not exists crm_pipeline_stages (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    pipeline_id uuid not null references crm_pipelines(id) on delete cascade,
+
+    name text not null,
+
+    stage_order int not null,
+
+    probability numeric(5,2) not null default 0,
+
+    is_terminal boolean not null default false,
+
+    terminal_outcome crm_terminal_outcome,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    unique (pipeline_id, stage_order),
+
+    constraint chk_crm_pipeline_stages_order check (stage_order > 0),
+
+    constraint chk_crm_pipeline_stages_probability check (
+        probability >= 0 and probability <= 100
+    ),
+
+    constraint chk_crm_pipeline_stages_terminal_outcome check (
+        (not is_terminal and terminal_outcome is null)
+        or (is_terminal and terminal_outcome is not null)
+    )
+);
 
 
 -- =====================================================
@@ -45,6 +128,26 @@ create table if not exists crm_campaigns (
 
 
 -- =====================================================
+-- 4. TAGS
+-- =====================================================
+
+create table if not exists crm_tags (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    name text not null,
+
+    color text,
+
+    created_at timestamptz not null default now(),
+
+    deleted_at timestamptz
+);
+
+
+
+-- =====================================================
 -- 5. COMPANIES
 -- =====================================================
 
@@ -69,81 +172,6 @@ create table if not exists crm_companies (
 
     deleted_at timestamptz
 );
-
-
-
--- =====================================================
--- 9. COMPANY ↔ TENANT (M:N — REQUIRED FOR NORMALIZATION)
--- =====================================================
-
-create table if not exists crm_company_tenants (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    company_id uuid not null references crm_companies(id) on delete cascade,
-
-    linked_tenant_id uuid,
-
-    relationship_type text,
-
-    created_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    unique (company_id, linked_tenant_id)
-);
-
-
-
--- =====================================================
--- 8. CONTACT ↔ COMPANY (M:N WITH ROLES)
--- =====================================================
-
-create table if not exists crm_contact_company (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    contact_id uuid not null references crm_contacts(id) on delete cascade,
-
-    company_id uuid not null references crm_companies(id) on delete cascade,
-
-    role text not null,
-
-    is_primary boolean not null default false,
-
-    created_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    unique (contact_id, company_id, role)
-);
-
-
-
--- =====================================================
--- 10. CONTACT ↔ TENANT (M:N — REQUIRED FOR NORMALIZATION)
--- =====================================================
-
-create table if not exists crm_contact_tenants (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    contact_id uuid not null references crm_contacts(id) on delete cascade,
-
-    linked_tenant_id uuid,
-
-    relationship_type text,
-
-    created_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    unique (contact_id, linked_tenant_id)
-);
-
 
 
 -- =====================================================
@@ -208,127 +236,26 @@ create table if not exists crm_contacts (
 );
 
 
-
 -- =====================================================
--- 19. CUSTOM FIELD VALUES
+-- 9. COMPANY ↔ TENANT (M:N — REQUIRED FOR NORMALIZATION)
 -- =====================================================
 
-create table if not exists crm_custom_field_values (
+create table if not exists crm_company_tenants (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
 
-    custom_field_id uuid not null references crm_custom_fields(id) on delete cascade,
+    company_id uuid not null references crm_companies(id) on delete cascade,
 
-    entity_type crm_entity_type not null,
+    linked_tenant_id uuid,
 
-    entity_id uuid not null,
-
-    value_text text,
-
-    value_number numeric,
-
-    value_boolean boolean,
-
-    value_date date,
-
-    value_datetime timestamptz,
-
-    value_json jsonb,
-
-    created_at timestamptz not null default now(),
-
-    updated_at timestamptz not null default now(),
-
-    unique (custom_field_id, entity_id),
-
-    constraint chk_crm_custom_field_values_has_value check (
-        value_text is not null
-        or value_number is not null
-        or value_boolean is not null
-        or value_date is not null
-        or value_datetime is not null
-        or value_json is not null
-    )
-);
-
-
-
--- =====================================================
--- 18. CUSTOM FIELDS
--- =====================================================
-
-create table if not exists crm_custom_fields (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    field_key text not null,
-
-    label text not null,
-
-    field_type crm_custom_field_type not null,
-
-    applies_to crm_entity_type not null,
-
-    options jsonb,
-
-    is_required boolean not null default false,
-
-    display_order int not null default 0,
-
-    created_at timestamptz not null default now(),
-
-    updated_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    unique (tenant_id, field_key, applies_to),
-
-    constraint chk_crm_custom_fields_options check (
-        field_type not in ('select', 'multiselect') or options is not null
-    )
-);
-
-
-
--- =====================================================
--- 13. INTERACTIONS (APPEND-ONLY)
--- =====================================================
-
-create table if not exists crm_interactions (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    interaction_type crm_interaction_type not null,
-
-    subject text,
-
-    metadata jsonb not null default '{}'::jsonb,
-
-    contact_id uuid references crm_contacts(id) on delete set null,
-
-    company_id uuid references crm_companies(id) on delete set null,
-
-    lead_id uuid references crm_leads(id) on delete set null,
-
-    opportunity_id uuid references crm_opportunities(id) on delete set null,
-
-    recorded_by uuid references platform.profiles(id) on delete set null,
-
-    occurred_at timestamptz not null default now(),
+    relationship_type text,
 
     created_at timestamptz not null default now(),
 
     deleted_at timestamptz,
 
-    constraint chk_crm_interactions_has_context check (
-        contact_id is not null
-        or company_id is not null
-        or lead_id is not null
-        or opportunity_id is not null
-    )
+    unique (company_id, linked_tenant_id)
 );
 
 
@@ -395,83 +322,51 @@ create table if not exists crm_leads (
 
 
 -- =====================================================
--- 17. LIST MEMBERS
+-- 8. CONTACT ↔ COMPANY (M:N WITH ROLES)
 -- =====================================================
 
-create table if not exists crm_list_members (
+create table if not exists crm_contact_company (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
-
-    list_id uuid not null references crm_lists(id) on delete cascade,
 
     contact_id uuid not null references crm_contacts(id) on delete cascade,
 
-    added_at timestamptz not null default now(),
+    company_id uuid not null references crm_companies(id) on delete cascade,
+
+    role text not null,
+
+    is_primary boolean not null default false,
+
+    created_at timestamptz not null default now(),
 
     deleted_at timestamptz,
 
-    unique (list_id, contact_id)
+    unique (contact_id, company_id, role)
 );
 
 
 
 -- =====================================================
--- 16. LISTS
+-- 10. CONTACT ↔ TENANT (M:N — REQUIRED FOR NORMALIZATION)
 -- =====================================================
 
-create table if not exists crm_lists (
+create table if not exists crm_contact_tenants (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
 
-    name text not null,
+    contact_id uuid not null references crm_contacts(id) on delete cascade,
 
-    description text,
+    linked_tenant_id uuid,
 
-    list_type crm_list_type not null default 'static',
-
-    filter_config jsonb,
+    relationship_type text,
 
     created_at timestamptz not null default now(),
 
-    updated_at timestamptz not null default now(),
-
     deleted_at timestamptz,
 
-    constraint chk_crm_lists_dynamic_filter check (
-        list_type <> 'dynamic' or filter_config is not null
-    )
-);
-
-
-
--- =====================================================
--- 14. NOTES
--- =====================================================
-
-create table if not exists crm_notes (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    entity_type crm_entity_type not null,
-
-    entity_id uuid not null,
-
-    body text not null,
-
-    version int not null default 1,
-
-    author_user_id uuid references platform.profiles(id) on delete set null,
-
-    created_at timestamptz not null default now(),
-
-    updated_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    constraint chk_crm_notes_version check (version > 0)
+    unique (contact_id, linked_tenant_id)
 );
 
 
@@ -531,134 +426,6 @@ create table if not exists crm_opportunities (
 
 
 -- =====================================================
--- 2. PIPELINE STAGES
--- =====================================================
-
-create table if not exists crm_pipeline_stages (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    pipeline_id uuid not null references crm_pipelines(id) on delete cascade,
-
-    name text not null,
-
-    stage_order int not null,
-
-    probability numeric(5,2) not null default 0,
-
-    is_terminal boolean not null default false,
-
-    terminal_outcome crm_terminal_outcome,
-
-    created_at timestamptz not null default now(),
-
-    updated_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    unique (pipeline_id, stage_order),
-
-    constraint chk_crm_pipeline_stages_order check (stage_order > 0),
-
-    constraint chk_crm_pipeline_stages_probability check (
-        probability >= 0 and probability <= 100
-    ),
-
-    constraint chk_crm_pipeline_stages_terminal_outcome check (
-        (not is_terminal and terminal_outcome is null)
-        or (is_terminal and terminal_outcome is not null)
-    )
-);
-
-
--- =====================================================
--- 015 CRM ENGINE (CLEAN CUSTOMER RELATIONSHIP DOMAIN)
--- NO EXECUTION / NO RUNTIME STATE / NO PLATFORM LOGIC
--- =====================================================
---
--- SSOT: contacts, companies, leads, pipelines, opportunities,
--- tasks, interactions, notes, tags, lists, campaigns, custom fields.
---
--- References only: tenants, profiles (002/000), customer tenants via FK.
--- Does NOT own: orders, subscriptions, payments, bookings, devices,
--- portal, onboarding, support cases (006).
--- Campaign SSOT: crm_campaigns (marketing acquisition) only.
--- In-product upsells → 013.upsell_campaigns. Plan upsells → 009.upsell_rules.
--- CRM domain enums SSOT: 001_core_types_rev19.sql (section 14).
--- =====================================================
-
--- =====================================================
--- 1. PIPELINES
--- =====================================================
-
-create table if not exists crm_pipelines (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    name text not null,
-
-    description text,
-
-    is_default boolean not null default false,
-
-    is_active boolean not null default true,
-
-    created_at timestamptz not null default now(),
-
-    updated_at timestamptz not null default now(),
-
-    deleted_at timestamptz
-);
-
-
-
--- =====================================================
--- 15. TAG ASSIGNMENTS
--- =====================================================
-
-create table if not exists crm_tag_assignments (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    tag_id uuid not null references crm_tags(id) on delete cascade,
-
-    entity_type crm_entity_type not null,
-
-    entity_id uuid not null,
-
-    created_at timestamptz not null default now(),
-
-    deleted_at timestamptz,
-
-    unique (tag_id, entity_type, entity_id)
-);
-
-
-
--- =====================================================
--- 4. TAGS
--- =====================================================
-
-create table if not exists crm_tags (
-    id uuid primary key default gen_random_uuid(),
-
-    tenant_id uuid not null,
-
-    name text not null,
-
-    color text,
-
-    created_at timestamptz not null default now(),
-
-    deleted_at timestamptz
-);
-
-
-
--- =====================================================
 -- 12. TASKS
 -- =====================================================
 
@@ -690,6 +457,245 @@ create table if not exists crm_tasks (
     deleted_at timestamptz
 );
 
+
+
+-- =====================================================
+-- 13. INTERACTIONS (APPEND-ONLY)
+-- =====================================================
+
+create table if not exists crm_interactions (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    interaction_type crm_interaction_type not null,
+
+    subject text,
+
+    metadata jsonb not null default '{}'::jsonb,
+
+    contact_id uuid references crm_contacts(id) on delete set null,
+
+    company_id uuid references crm_companies(id) on delete set null,
+
+    lead_id uuid references crm_leads(id) on delete set null,
+
+    opportunity_id uuid references crm_opportunities(id) on delete set null,
+
+    recorded_by uuid references platform.profiles(id) on delete set null,
+
+    occurred_at timestamptz not null default now(),
+
+    created_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    constraint chk_crm_interactions_has_context check (
+        contact_id is not null
+        or company_id is not null
+        or lead_id is not null
+        or opportunity_id is not null
+    )
+);
+
+
+
+-- =====================================================
+-- 14. NOTES
+-- =====================================================
+
+create table if not exists crm_notes (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    entity_type crm_entity_type not null,
+
+    entity_id uuid not null,
+
+    body text not null,
+
+    version int not null default 1,
+
+    author_user_id uuid references platform.profiles(id) on delete set null,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    constraint chk_crm_notes_version check (version > 0)
+);
+
+
+
+
+-- =====================================================
+-- 15. TAG ASSIGNMENTS
+-- =====================================================
+
+create table if not exists crm_tag_assignments (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    tag_id uuid not null references crm_tags(id) on delete cascade,
+
+    entity_type crm_entity_type not null,
+
+    entity_id uuid not null,
+
+    created_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    unique (tag_id, entity_type, entity_id)
+);
+
+
+
+-- =====================================================
+-- 16. LISTS
+-- =====================================================
+
+create table if not exists crm_lists (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    name text not null,
+
+    description text,
+
+    list_type crm_list_type not null default 'static',
+
+    filter_config jsonb,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    constraint chk_crm_lists_dynamic_filter check (
+        list_type <> 'dynamic' or filter_config is not null
+    )
+);
+
+
+
+-- =====================================================
+-- 17. LIST MEMBERS
+-- =====================================================
+
+create table if not exists crm_list_members (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    list_id uuid not null references crm_lists(id) on delete cascade,
+
+    contact_id uuid not null references crm_contacts(id) on delete cascade,
+
+    added_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    unique (list_id, contact_id)
+);
+
+
+-- =====================================================
+-- 18. CUSTOM FIELDS
+-- =====================================================
+
+create table if not exists crm_custom_fields (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    field_key text not null,
+
+    label text not null,
+
+    field_type crm_custom_field_type not null,
+
+    applies_to crm_entity_type not null,
+
+    options jsonb,
+
+    is_required boolean not null default false,
+
+    display_order int not null default 0,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    deleted_at timestamptz,
+
+    unique (tenant_id, field_key, applies_to),
+
+    constraint chk_crm_custom_fields_options check (
+        field_type not in ('select', 'multiselect') or options is not null
+    )
+);
+
+
+
+-- =====================================================
+-- 19. CUSTOM FIELD VALUES
+-- =====================================================
+
+create table if not exists crm_custom_field_values (
+    id uuid primary key default gen_random_uuid(),
+
+    tenant_id uuid not null,
+
+    custom_field_id uuid not null references crm_custom_fields(id) on delete cascade,
+
+    entity_type crm_entity_type not null,
+
+    entity_id uuid not null,
+
+    value_text text,
+
+    value_number numeric,
+
+    value_boolean boolean,
+
+    value_date date,
+
+    value_datetime timestamptz,
+
+    value_json jsonb,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    unique (custom_field_id, entity_id),
+
+    constraint chk_crm_custom_field_values_has_value check (
+        value_text is not null
+        or value_number is not null
+        or value_boolean is not null
+        or value_date is not null
+        or value_datetime is not null
+        or value_json is not null
+    )
+);
+
+
+
+
+
+
+
+-- ==========================
+--  Triggers
+-- ==========================
 
 
 create index if not exists idx_crm_pipelines_tenant_created
@@ -2682,7 +2688,7 @@ $$;
 
 
 -- -----------------------------------------------------
--- 015 CRM: whitelist soft-delete targets
+-- 003 CRM: whitelist soft-delete targets
 -- -----------------------------------------------------
 
 create or replace function public.crm_soft_delete_row(
@@ -3298,7 +3304,7 @@ $$;
 
 
 -- -----------------------------------------------------
--- 015 CRM: domain triggers (lifecycle timestamps / versioning)
+-- 003 CRM: domain triggers (lifecycle timestamps / versioning)
 -- -----------------------------------------------------
 
 create or replace function public.trg_crm_contacts_consent_timestamps()
@@ -3588,9 +3594,9 @@ for each row execute function public.trg_crm_notes_version_increment();
 
 
 -- =====================================================
--- END 015 CRM ENGINE
+-- END 003 CRM ENGINE
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('015_crm_engine', 'REV22.CRM', false)
+values ('003_crm_engine', 'REV22.CRM', false)
 on conflict (version) do nothing;

@@ -159,7 +159,7 @@ $$ language plpgsql;
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('018_security_hardening', 'REV22.SECURITY.HARDENING', false)
+values (''018_security_hardening', 'REV22.SECURITY.HARDENING', false)
 on conflict (version) do nothing;
 
 

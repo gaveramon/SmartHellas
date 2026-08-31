@@ -49,9 +49,6 @@ begin;
 
 
 
-
-
-
 -- =====================================================
 -- 2. VERIFY REQUIRED MODULE MIGRATIONS
 -- KGS-002 MODULE CATALOG VALIDATION
@@ -149,6 +146,7 @@ end $$;
 
 -- =====================================================
 -- 4. VERIFY SECURITY DEFINER HARDENING
+-- SECURITY EXECUTION BOUNDARY
 --
 -- Reference:
 -- 018_security_hardening.sql
@@ -202,6 +200,7 @@ end $$;
 
 -- =====================================================
 -- 5. VERIFY RLS ENABLEMENT
+-- ROW-LEVEL SECURITY BOUNDARY
 --
 -- Reference:
 -- 017_edge_rpc_foundation.sql
@@ -240,6 +239,7 @@ end $$;
 
 -- =====================================================
 -- 6. VERIFY GRANT MATRIX
+-- PERMISSION BOUNDARY
 --
 -- Reference:
 -- 019_grant_matrix.sql
@@ -279,8 +279,7 @@ end $$;
 
 -- =====================================================
 -- 7. VERIFY DOMAIN API SURFACE
---
--- KGS-002 MODULE INTERFACE CHECK
+-- KGS-002 MODULE INTERFACE VALIDATION
 -- =====================================================
 
 
@@ -316,9 +315,8 @@ end $$;
 
 
 -- =====================================================
--- 8. VERIFY REQUIRED VIEWS
---
--- Portal reporting SSOT
+-- 8. VERIFY REQUIRED PORTAL VIEWS
+-- PORTAL REPORTING SSOT
 -- =====================================================
 
 
@@ -359,7 +357,8 @@ end $$;
 
 
 -- =====================================================
--- 9. VERIFY CRON
+-- 9. VERIFY OPERATIONAL SCHEDULING
+-- CRON INFRASTRUCTURE
 --
 -- Reference:
 -- 014_platform_bootstrap.sql
@@ -371,9 +370,8 @@ select platform.ensure_pg_cron_jobs();
 
 
 -- =====================================================
--- 10. FINAL AUDIT EVENT
---
--- Human approval checkpoint
+-- 10. REGISTER FINAL PRODUCTION AUDIT EVENT
+-- HUMAN APPROVAL CHECKPOINT
 -- =====================================================
 
 
@@ -398,9 +396,12 @@ jsonb_build_object
 );
 
 
+
 -- =====================================================
--- END REGISTER MIGRATION
+-- 11. REGISTER MIGRATION
+-- FINAL MIGRATION STATE
 -- =====================================================
+
 
 insert into platform.schema_migrations( migration_name, version, rollback_available)
 values( '020_production_finalize', '020.PRODUCTION.FINALIZE', false)

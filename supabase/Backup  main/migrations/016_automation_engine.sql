@@ -4,7 +4,7 @@
 
 -- =====================================================
 -- 016 AUTOMATION ENGINE (RUNTIME EXECUTION LAYER)
--- Event-driven workflow execution — definitions live in 008
+-- Event-driven workflow execution — definitions live in 006
 -- Platform queues / device commands live in 000
 -- NO business rule duplication — triggers dispatch via RPC only
 -- =====================================================

@@ -82,7 +82,7 @@ create table if not exists platform.dead_letter_archive (
 
 -- =====================================================
 -- 000.05 COMMAND QUEUE (WITH PRIORITY + TIMEOUT SUPPORT)
--- device_id FK to public.devices added in 004
+-- device_id FK to public.devices added in 003
 -- =====================================================
 
 create table if not exists platform.device_commands (
@@ -576,7 +576,7 @@ create table if not exists platform.payment_intents (
     tenant_id uuid not null,
 
     provider text not null,
-    -- stripe | vivawallet → FK to public.integration_providers(code) in 007
+    -- stripe | vivawallet → FK to public.integration_providers(code) in 009
 
     external_intent_id text,
 
@@ -635,7 +635,7 @@ create table if not exists platform.payment_provider_refs (
     id uuid primary key default gen_random_uuid(),
 
     provider text not null,
-    -- stripe | vivawallet → FK to public.integration_providers(code) in 011
+    -- stripe | vivawallet → FK to public.integration_providers(code) in 009
 
     ref_type text not null,
     -- plan_pricing | product_plan
@@ -857,8 +857,8 @@ create table if not exists platform.schema_migrations (
 
 
 -- =====================================================
--- 000.05B SHIPMENT DISPATCH QUEUE (CARRIER EXECUTION — 008 DOMAIN LINK IN 010)
--- Label generation and carrier API calls. fulfilment_order_id FK added in 010.
+-- 000.05B SHIPMENT DISPATCH QUEUE (CARRIER EXECUTION — 008 DOMAIN LINK IN 008)
+-- Label generation and carrier API calls. fulfilment_order_id FK added in 008.
 -- =====================================================
 
 create table if not exists platform.shipment_dispatch_queue (
@@ -1013,7 +1013,7 @@ create table if not exists platform.system_metrics_aggregated (
 -- 000 SUPABASE PLATFORM LAYER
 -- =====================================================
 -- 000.06 PLATFORM CONTRACT (ARCHITECTURE ENFORCEMENT BASE)
--- Tenant UI/config SSOT: public.tenant_portal_settings (012)
+-- Tenant UI/config SSOT: public.tenant_portal_settings (010)
 -- =====================================================
 
 create table if not exists platform.table_contracts (
@@ -1346,7 +1346,7 @@ REV19 TENANT + RBAC RULES:
 2. platform helpers are stubs until 002 binds implementations
 3. multi-tenant users require JWT app_metadata.tenant_id or client selection
 4. RLS must use platform.rls_allow(tenant_id) which requires JWT tenant match via 002
-5. public._apply_public_tenant_rls uses platform.rls_allow(tenant_id) (020 bootstrap)
+5. public._apply_public_tenant_rls uses platform.rls_allow(tenant_id) (014 bootstrap)
 ';
 
 
@@ -1486,7 +1486,7 @@ on platform.shipment_dispatch_queue (fulfilment_order_id);
 
 
 comment on table platform.shipment_dispatch_queue is
-    'Carrier label/dispatch execution queue. Domain intent lives in public.fulfilment_orders (010).';
+    'Carrier label/dispatch execution queue. Domain intent lives in public.fulfilment_orders (008).';
 
 
 
@@ -1520,8 +1520,8 @@ REV19 EXECUTION RULES FINAL:
 1. All commands MUST support priority execution
 2. All retries MUST use exponential backoff
 3. All failures after max_retries MUST go to DLQ
-4. device_id references public.devices (FK added in 004)
-5. Execution watchdog MUST run periodically (cron in 020)
+4. device_id references public.devices (FK added in 003)
+5. Execution watchdog MUST run periodically (cron in 014)
 6. Workers MUST use SKIP LOCKED model
 7. No silent failures allowed in any subsystem
 8. Integration layer MUST support retry + delay
@@ -1540,7 +1540,7 @@ on platform.operation_contexts (tenant_id, status, created_at);
 
 
 comment on table platform.operation_contexts is
-    'Transient workflow trigger input staging. Workers consume rows; definitions live in 008.';
+    'Transient workflow trigger input staging. Workers consume rows; definitions live in 006.';
 
 
 
@@ -1605,7 +1605,7 @@ on platform.payment_provider_refs (provider, external_id);
 
 
 comment on table platform.payment_provider_refs is
-    'Provider ID map for catalog rows (011 plan_pricing / product_plans). Not a business catalog.';
+    'Provider ID map for catalog rows (009 plan_pricing / product_plans). Not a business catalog.';
 
 
 
@@ -1631,7 +1631,7 @@ comment on schema platform is '
 1. internal_events = immutable system event log
 2. external_webhooks = idempotent ingestion layer only
 3. payment_intents + payment_events = durable charge/checkout execution state
-4. payment_provider_refs = Stripe/Viva ID map for 011 catalog rows
+4. payment_provider_refs = Stripe/Viva ID map for 009 catalog rows
 5. retry_tasks = execution abstraction (worker-driven)
 6. dead_letter_archive = final failure sink only
 7. event_outbox = consistency buffer only
@@ -1959,7 +1959,7 @@ $$;
 
 -- =====================================================
 -- PART 9 - PLATFORM RLS BOOTSTRAP
--- (Public domain RLS loop deferred to 020_platform_bootstrap_finale_rev19.sql)
+-- (Public domain RLS loop deferred to 014_platform_bootstrap_finale_rev19.sql)
 -- =====================================================
 
 alter table platform.profiles enable row level security;
@@ -2204,13 +2204,23 @@ comment on schema platform is '
 4. get_vault_secret = service_role vault read wrapper
 5. enqueue_http_delivery = durable outbound HTTP via integration_queue
 6. dispatch_http_request = direct pg_net stub for workers/cron
-7. shipment_dispatch_queue + shipment_tracking_events = carrier execution (010 domain link)
+7. shipment_dispatch_queue + shipment_tracking_events = carrier execution (008 domain link)
 ';
 
 
 -- =====================================================
 -- END PART 10-11 - STORAGE + VAULT + PG_NET
 -- =====================================================
+
+-- =====================================================
+-- 028 PLATFORM VIEWS EXTENSIONS (000)
+-- Appsmith-safe read contracts for tenant event stream
+-- Does NOT modify prior migrations
+-- =====================================================
+
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('028_platform_views_extensions_rev19', 'REV19.PLATFORM.VIEWS.EXT', false)
+on conflict (version) do nothing;
 
 
 
@@ -2646,7 +2656,7 @@ $$;
 
 
 -- =====================================================
--- 000.02.02 IDENTITY LAYER (ONLY ACCESS POINT FOR 001–014)
+-- 000.02.02 IDENTITY LAYER (ONLY ACCESS POINT FOR 001–013)
 -- =====================================================
 
 create or replace function platform.current_user_id()
@@ -2988,13 +2998,13 @@ begin
         exception
             when duplicate_object then null;
             when others then
-                raise warning '020 bootstrap: pg_cron extension unavailable — invoke platform.run_platform_cron_tick() and platform.run_platform_daily_maintenance() externally, or call platform.ensure_pg_cron_jobs() after enabling pg_cron';
+                raise warning '014 bootstrap: pg_cron extension unavailable — invoke platform.run_platform_cron_tick() and platform.run_platform_daily_maintenance() externally, or call platform.ensure_pg_cron_jobs() after enabling pg_cron';
                 return false;
         end;
     end if;
 
     if not exists (select 1 from pg_extension where extname = 'pg_cron') then
-        raise warning '020 bootstrap: pg_cron extension missing — invoke platform.run_platform_cron_tick() and platform.run_platform_daily_maintenance() externally, or call platform.ensure_pg_cron_jobs() after enabling pg_cron';
+        raise warning '014 bootstrap: pg_cron extension missing — invoke platform.run_platform_cron_tick() and platform.run_platform_daily_maintenance() externally, or call platform.ensure_pg_cron_jobs() after enabling pg_cron';
         return false;
     end if;
 
@@ -4119,7 +4129,7 @@ $$;
 -- RESPONSIBILITY:
 -- - Lock and load the webhook
 -- - Protect against duplicate processing
--- - Delegate processing to integration engine (007)
+-- - Delegate processing to integration engine (006)
 -- - Maintain generic processing state
 --
 -- 000 MUST NOT:
@@ -4130,7 +4140,7 @@ $$;
 -- - write telemetry
 -- - contain provider-specific logic
 --
--- 007 is responsible for:
+-- 006 is responsible for:
 -- - provider resolution
 -- - provider category resolution
 -- - tenant integration resolution
@@ -4205,7 +4215,7 @@ begin
     begin
 
         -- =================================================
-        -- 4. DELEGATE TO INTEGRATION ENGINE (007)
+        -- 4. DELEGATE TO INTEGRATION ENGINE (006)
         --
         -- 000 does not determine:
         -- - provider
@@ -4215,7 +4225,7 @@ begin
         -- - lock event
         -- - smart-home event
         --
-        -- 007 owns that routing decision.
+        -- 006 owns that routing decision.
         -- =================================================
 
         v_result := public.process_integration_webhook(
@@ -4628,7 +4638,7 @@ $$;
 
 -- =====================================================
 -- 10. CRON WORKERS (RETRY + MAINTENANCE ORCHESTRATION)
--- pg_cron schedule wired in 020_platform_bootstrap.sql
+-- pg_cron schedule wired in 014_platform_bootstrap_finale_rev19.sql
 -- =====================================================
 
 create or replace function platform.process_retry_tasks()
@@ -5280,7 +5290,7 @@ $$;
 
 
 -- =====================================================
--- 5. SERVICE ACTIVATION PROJECTION SYNC (012 SSOT → WORKER)
+-- 5. SERVICE ACTIVATION PROJECTION SYNC (013 SSOT → WORKER)
 -- Writes service_activation_state (013) only via service_role.
 -- SSOT remains subscriptions (002) + feature_entitlements (009).
 -- =====================================================
@@ -5541,52 +5551,10 @@ begin
 end;
 $$;
 
--- =====================================================
--- Platform Vault: secret existence check
--- =====================================================
-
-create or replace function platform.vault_secret_exists(
-    p_name text
-)
-returns boolean
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-
-    if p_name is null
-       or btrim(p_name) = '' then
-
-        raise exception
-            'vault secret name is required';
-
-    end if;
-
-
-    if not exists (
-        select 1
-        from pg_extension
-        where extname = 'vault'
-    ) then
-
-        return false;
-
-    end if;
-
-
-    return exists (
-        select 1
-        from vault.secrets s
-        where s.name = p_name
-    );
-
-end;
-$$;
 
 
 -- -----------------------------------------------------
--- 003 CRM: generic soft delete (Edge guard → domain)
+-- 015 CRM: generic soft delete (Edge guard → domain)
 -- -----------------------------------------------------
 
 create or replace function public.edge_soft_delete_row(
@@ -5796,7 +5764,7 @@ on conflict (table_name) do nothing;
 
 
 
--- authenticated platform grants: 020 bootstrap finale (after full domain stack)
+-- authenticated platform grants: 014 bootstrap finale (after full domain stack)
 
 -- =====================================================
 -- END PART 9 - PLATFORM RLS BOOTSTRAP
