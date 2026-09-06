@@ -1064,7 +1064,7 @@ values
 -- =====================================================
 
 insert into platform.schema_migrations
-(
+(    
     migration_name,
     version,
     rollback_available

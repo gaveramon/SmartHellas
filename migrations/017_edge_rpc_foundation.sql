@@ -1,38 +1,7 @@
 -- REV22 greenfield baseline: 017_edge_rpc_foundation.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
 
 -- =====================================================
--- 1. LEGACY PUBLIC API PRIVILEGE HARDENING
--- =====================================================
--- Revoke public execution rights from all Edge-facing API
--- functions before recreating the hardened wrappers.
---
--- Consolidation:
--- - Supersedes scattered grant/revoke statements from 002–049.
--- - Idempotent: safe to re-run on databases already partially hardened.
--- - Edge handlers unchanged: all client traffic routes via {module}_api.
--- - Domain *_domain / *_domain_ext / standalone mutators: service_role only.
--- - Infrastructure guards retained per 11_edge_jobs_lockdown.mdc §10:
---   has_tenant_access, edge_require_manager, edge_require_admin.
--- - RLS helper functions (platform.current_* / has_role / is_*):
---   retained for policy evaluation.
--- - SECURITY DEFINER search_path reinforcement:
---   defense-in-depth only; definitions already set in 000–049.
--- - Production security fixes (Option B):
---   locks_api credential guard,
---   operations_api ticket guard,
---   integrations_api complete_oauth block,
---   integrations_api credential read manager guard (H3),
---   auth_domain create_tenant owner invariant.
--- - REV21 authority layer (edge_require_tenant, resolve_oauth_state bind):
---   051–053 only.
--- =====================================================
-
-
-
--- =====================================================
--- 2. TENANT AUTHORITY FOUNDATION
+-- 1. TENANT AUTHORITY FOUNDATION
 -- =====================================================
 -- Sole Edge tenant-enforcement gate.
 -- Authority: resolve_active_tenant(auth.uid()) IS NOT NULL.
@@ -57,7 +26,7 @@ $$;
 
 
 -- =====================================================
--- 3. ROLE AUTHORITY GUARDS
+-- 2. ROLE AUTHORITY GUARDS
 -- =====================================================
 -- Edge-level role enforcement.
 -- These guards depend on edge_require_tenant().
@@ -100,7 +69,7 @@ $$;
 
 
 -- =====================================================
--- 4. PLATFORM ADMIN AUTHORITY HELPER
+-- 3. PLATFORM ADMIN AUTHORITY HELPER
 -- =====================================================
 
 create or replace function platform.is_platform_admin()
@@ -119,7 +88,7 @@ $$;
 
 
 -- =====================================================
--- 5. PUBLIC PLATFORM ADMIN WRAPPER
+-- 4. PUBLIC PLATFORM ADMIN WRAPPER
 -- =====================================================
 
 create or replace function public.is_platform_admin()
@@ -134,7 +103,7 @@ $$;
 
 
 -- =====================================================
--- 6. EVENT LOGGING FOUNDATION
+-- 5. EVENT LOGGING FOUNDATION
 -- =====================================================
 -- Public authenticated-JWT wrapper around platform.event_log.
 -- Used by selected named RPCs for explicit business-event logging.
@@ -514,7 +483,7 @@ $$;
 
 
 -- =====================================================
--- 8. DOMAIN API WRAPPERS
+-- 7. DOMAIN API WRAPPERS
 -- =====================================================
 -- Consistent order:
 -- AUTH → AUTOMATION → BOOKING → COMMERCE → CRM →
@@ -525,7 +494,7 @@ $$;
 
 
 -- =====================================================
--- 8.1 AUTH API
+-- 7.1 AUTH API
 -- =====================================================
 
 create or replace function public.auth_api(
@@ -570,7 +539,7 @@ $$;
 
 
 -- =====================================================
--- 8.2 AUTOMATION API
+-- 7.2 AUTOMATION API
 -- =====================================================
 
 create or replace function public.automation_api(
@@ -600,7 +569,7 @@ $$;
 
 
 -- =====================================================
--- 8.3 BOOKING API
+-- 7.3 BOOKING API
 -- =====================================================
 
 create or replace function public.booking_api(
@@ -653,7 +622,7 @@ $$;
 
 
 -- =====================================================
--- 8.4 COMMERCE API
+-- 7.4 COMMERCE API
 -- =====================================================
 
 create or replace function public.commerce_api(
@@ -690,7 +659,7 @@ $$;
 
 
 -- =====================================================
--- 8.5 CRM API
+-- 7.5 CRM API
 -- =====================================================
 
 create or replace function public.crm_api(
@@ -735,7 +704,7 @@ $$;
 
 
 -- =====================================================
--- 8.6 DEVICES API
+-- 7.6 DEVICES API
 -- =====================================================
 
 create or replace function public.devices_api(
@@ -765,7 +734,7 @@ $$;
 
 
 -- =====================================================
--- 8.7 INTEGRATIONS API
+-- 7.7 INTEGRATIONS API
 -- =====================================================
 
 create or replace function public.integrations_api(
@@ -814,7 +783,7 @@ $$;
 
 
 -- =====================================================
--- 8.8 LOGISTICS API
+-- 7.8 LOGISTICS API
 -- =====================================================
 
 create or replace function public.logistics_api(
@@ -856,7 +825,7 @@ $$;
 
 
 -- =====================================================
--- 8.9 LOCKS API
+-- 7.9 LOCKS API
 -- =====================================================
 -- Production security fix:
 -- credential reads require manager-level access.
@@ -891,7 +860,7 @@ $$;
 
 
 -- =====================================================
--- 8.10 MONETIZATION API
+-- 7.10 MONETIZATION API
 -- =====================================================
 
 create or replace function public.monetization_api(
@@ -930,7 +899,7 @@ $$;
 
 
 -- =====================================================
--- 8.11 NOTIFICATION API
+-- 7.11 NOTIFICATION API
 -- =====================================================
 
 create or replace function public.notification_api(
@@ -962,7 +931,7 @@ $$;
 
 
 -- =====================================================
--- 8.12 ONBOARDING API
+-- 7.12 ONBOARDING API
 -- =====================================================
 
 create or replace function public.onboarding_api(
@@ -1010,7 +979,7 @@ $$;
 
 
 -- =====================================================
--- 8.13 OPERATIONS API
+-- 7.13 OPERATIONS API
 -- =====================================================
 -- Production security fix:
 -- support-ticket mutations require manager-level access.
@@ -1045,7 +1014,7 @@ $$;
 
 
 -- =====================================================
--- 8.14 OPTIMIZATION API
+-- 7.14 OPTIMIZATION API
 -- =====================================================
 
 create or replace function public.optimization_api(
@@ -1075,7 +1044,7 @@ $$;
 
 
 -- =====================================================
--- 8.15 PAYMENT API
+-- 7.15 PAYMENT API
 -- =====================================================
 
 create or replace function public.payment_api(
@@ -1107,7 +1076,7 @@ $$;
 
 
 -- =====================================================
--- 8.16 PORTAL API
+-- 7.16 PORTAL API
 -- =====================================================
 
 create or replace function public.portal_api(
@@ -1137,7 +1106,7 @@ $$;
 
 
 -- =====================================================
--- 8.17 PRECONFIG API
+-- 7.17 PRECONFIG API
 -- =====================================================
 
 create or replace function public.preconfig_api(
@@ -1175,7 +1144,7 @@ $$;
 
 
 -- =====================================================
--- 9. MIGRATION REGISTRATION
+-- 8. MIGRATION REGISTRATION
 -- =====================================================
 -- 017 EDGE RPC FOUNDATION (REV19)
 -- Edge orchestration guards only — no business logic.
