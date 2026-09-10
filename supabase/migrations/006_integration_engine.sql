@@ -1,4 +1,4 @@
--- REV22 greenfield baseline: 007_integration_engine.sql
+-- REV22 greenfield baseline: 006_integration_engine.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
 
 
@@ -340,77 +340,6 @@ comment on column public.device_integration_map.external_id is
 comment on table public.device_integration_map is
     'Provider device identity mapping. external_id is the current provider identifier; hardware_id is the stable provider hardware identity. No device state, telemetry or credentials.';
 
-
--- =====================================================
--- 8. PROVIDER AND CAPABILITY SEED DATA
--- =====================================================
-
-insert into public.integration_providers (
-    code,
-    name,
-    category,
-    valid_from,
-    supports_webhooks,
-    supports_oauth
-)
-values
-    ('aqara', 'Aqara', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('ttlock', 'TTLock', 'lock', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('shelly', 'Shelly', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('beds24', 'Beds24', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('stripe', 'Stripe', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('vivawallet', 'Viva Wallet', 'payment', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('zoho', 'Zoho', 'crm', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('home_assistant', 'Home Assistant', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('generic', 'Generic', 'smarthome', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('airbnb', 'Airbnb', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('booking', 'Booking.com', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('expedia', 'Expedia', 'ota', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('pricelabs', 'PriceLabs', 'pricing', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('hostaway', 'Hostaway', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('guesty', 'Guesty', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('smoobu', 'Smoobu', 'pms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('mailgun', 'Mailgun', 'email', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('postmark', 'Postmark', 'email', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('smtp', 'SMTP', 'email', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('twilio', 'Twilio', 'sms', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('whatsapp', 'WhatsApp', 'messaging', '2026-01-01 00:00:00+00'::timestamptz, true, true),
-    ('firebase', 'Firebase', 'notification', '2026-01-01 00:00:00+00'::timestamptz, true, false),
-    ('openai', 'OpenAI', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('openrouter', 'OpenRouter', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false),
-    ('anthropic', 'Anthropic', 'ai', '2026-01-01 00:00:00+00'::timestamptz, false, false)
-on conflict (code)
-do update set
-    name = excluded.name,
-    category = excluded.category,
-    supports_webhooks = excluded.supports_webhooks,
-    supports_oauth = excluded.supports_oauth,
-    valid_from = excluded.valid_from,
-    updated_at = now();
-
-
-
-insert into public.integration_capabilities (
-    provider_code,
-    capability_code,
-    is_supported
-)
-values
-    ('aqara', 'send_command', true),
-    ('aqara', 'receive_event', true),
-    ('ttlock', 'send_command', true),
-    ('ttlock', 'receive_event', true),
-    ('ttlock', 'create_user', true),
-    ('shelly', 'receive_event', true),
-    ('beds24', 'sync_state', true),
-    ('stripe', 'receive_event', true),
-    ('zoho', 'send_command', true),
-    ('home_assistant', 'sync_state', true),
-    ('generic', 'send_command', true)
-on conflict (provider_code, capability_code)
-do nothing;
-
-
 -- =====================================================
 -- 9. WEBHOOK MAPPING SEED DATA
 -- =====================================================
@@ -470,7 +399,6 @@ values
         true
     ),
 
-
     -- -------------------------------------------------
     -- Aqara device control failure
     -- -------------------------------------------------
@@ -504,7 +432,6 @@ values
         true,
         true
     ),
-
 
     -- -------------------------------------------------
     -- Aqara device lifecycle events
@@ -569,7 +496,6 @@ values
         true,
         true
     ),
-
 
     -- -------------------------------------------------
     -- Gateway lifecycle events
@@ -646,7 +572,6 @@ do update set
     is_required = excluded.is_required,
     is_active = excluded.is_active,
     updated_at = now();
-
 
 -- =====================================================
 -- 9.2 SHELLY WEBHOOK MAPPINGS
@@ -727,7 +652,6 @@ do update set
     is_required = excluded.is_required,
     is_active = excluded.is_active,
     updated_at = now();
-
 
 -- =====================================================
 -- 9.3 TTLOCK WEBHOOK / RECORD MAPPINGS
@@ -864,7 +788,6 @@ do update set
     is_active = excluded.is_active,
     updated_at = now();
 
-
 -- =====================================================
 -- 9.6 — OAuth API signature cleanup
 -- =====================================================
@@ -877,19 +800,22 @@ drop function if exists public.integrations_exchange_oauth_tokens(
     text
 );
 
--- Legacy OAuth completion signature
+-- Legacy/incorrect API alias, indien aanwezig
+drop function if exists public.integrations_oauth_complete_api(
+    text
+);
+
+drop function if exists public.integrations_complete_oauth(
+    text,
+    text
+);
+
 drop function if exists public.integrations_complete_oauth(
     uuid,
     text,
     text,
     text
 );
-
--- Legacy/incorrect API alias, indien aanwezig
-drop function if exists public.integrations_oauth_complete_api(
-    text
-);
-
 
 -- =====================================================
 -- 10. INDEXES AND TABLE COMMENTS
@@ -898,97 +824,69 @@ drop function if exists public.integrations_oauth_complete_api(
 create index if not exists idx_integration_providers_active
     on public.integration_providers (is_active);
 
-
-
 create index if not exists idx_device_integration_hardware
     on public.device_integration_map (tenant_id, provider_code, hardware_id)
       where hardware_id is not null;
 
-
-
 create index if not exists idx_integration_providers_category
     on public.integration_providers (category);
-
-
 
 comment on table public.integration_providers is
     'Integration provider catalog. code is the stable FK target for provider_code columns.';
 
-
-
 create index if not exists idx_tenant_integrations_tenant
     on public.tenant_integrations (tenant_id);
-
-
 
 create index if not exists idx_tenant_integrations_tenant_created
     on public.tenant_integrations (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_tenant_integrations_provider
     on public.tenant_integrations (provider_code);
-
-
 
 comment on column public.tenant_integrations.credentials_ref is
     'Vault secret name. Never store secrets in config.';
 
-
-
 create index if not exists idx_webhook_definitions_tenant
     on public.webhook_definitions (tenant_id);
-
-
 
 create index if not exists idx_webhook_definitions_tenant_created
     on public.webhook_definitions (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_webhook_definitions_provider
     on public.webhook_definitions (provider_code);
-
-
 
 create index if not exists idx_webhook_definitions_tenant_provider
     on public.webhook_definitions (tenant_id, provider_code);
 
-
-
 comment on table public.webhook_definitions is
     'Outbound webhook subscription targets. Inbound ingest lives in platform.external_webhooks (000).';
-
-
 
 create index if not exists idx_capabilities_provider
     on public.integration_capabilities (provider_code);
 
-
-
 create index if not exists idx_device_integration_device
     on public.device_integration_map (device_id);
-
-
 
 create index if not exists idx_device_integration_tenant
     on public.device_integration_map (tenant_id);
 
-
-
 create index if not exists idx_device_integration_provider
     on public.device_integration_map (provider_code);
-
-
 
 create unique index if not exists uq_device_integration_tenant_provider_external
     on public.device_integration_map (tenant_id, provider_code, external_id);
 
-
-
 comment on table public.device_integration_map is
     'Maps domain devices to provider external IDs. No credentials or runtime state.';
 
+create unique index if not exists
+    uq_integration_webhook_mapping_active_identity
+on public.integration_webhook_mappings (
+    provider_code,
+    event_type,
+    mapping_code
+)
+where is_active = true;
 
 -- =====================================================
 -- HARDWARE IDENTITY UNIQUENESS
@@ -1000,7 +898,6 @@ comment on table public.device_integration_map is
 create unique index if not exists uq_device_integration_tenant_provider_hardware
     on public.device_integration_map (tenant_id, provider_code, hardware_id)
         where hardware_id is not null;
-
 
 -- =====================================================
 -- 11. FOREIGN KEYS (PROVIDER + TENANT SSOT)
@@ -1014,8 +911,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.webhook_definitions
@@ -1023,8 +918,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1034,8 +927,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.webhook_definitions
@@ -1043,8 +934,6 @@ begin
         foreign key (provider_code) references public.integration_providers(code);
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1054,8 +943,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.device_integration_map
@@ -1063,8 +950,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1074,8 +959,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.service_accounts
@@ -1084,8 +967,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.access_credentials
@@ -1093,340 +974,6 @@ begin
         foreign key (provider_code) references public.integration_providers(code);
 exception when duplicate_object then null;
 end $$;
-
-
--- =====================================================
--- 12. RLS CONFIGURATION
--- =====================================================
-
-alter table public.integration_providers enable row level security;
-
-
-
-drop policy if exists integration_providers_select on public.integration_providers;
-
-
-drop policy if exists integration_providers_write on public.integration_providers;
-
-
-
-alter table public.integration_capabilities enable row level security;
-
-
-
-drop policy if exists integration_capabilities_select on public.integration_capabilities;
-
-
-drop policy if exists integration_capabilities_write on public.integration_capabilities;
-
-
-
-alter table public.tenant_integrations enable row level security;
-
-
-
-drop policy if exists tenant_integrations_select on public.tenant_integrations;
-
-
-drop policy if exists tenant_integrations_insert on public.tenant_integrations;
-
-
-drop policy if exists tenant_integrations_update on public.tenant_integrations;
-
-
-drop policy if exists tenant_integrations_delete on public.tenant_integrations;
-
-
-
-alter table public.webhook_definitions enable row level security;
-
-
-
-drop policy if exists webhook_definitions_select on public.webhook_definitions;
-
-
-drop policy if exists webhook_definitions_insert on public.webhook_definitions;
-
-
-drop policy if exists webhook_definitions_update on public.webhook_definitions;
-
-
-drop policy if exists webhook_definitions_delete on public.webhook_definitions;
-
-
-
-alter table public.device_integration_map enable row level security;
-
-
-
-drop policy if exists device_integration_map_select on public.device_integration_map;
-
-
-drop policy if exists device_integration_map_insert on public.device_integration_map;
-
-
-drop policy if exists device_integration_map_update on public.device_integration_map;
-
-
-drop policy if exists device_integration_map_delete on public.device_integration_map;
-
-
-
--- =====================================================
--- 13. RLS POLICIES
--- =====================================================
-
-create policy device_integration_map_delete on public.device_integration_map
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy device_integration_map_insert on public.device_integration_map
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy device_integration_map_select on public.device_integration_map
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_integration_map_update on public.device_integration_map
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_integration_map.device_id
-              and public.has_tenant_access(d.tenant_id)
-              and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy integration_capabilities_select on public.integration_capabilities
-    for select to authenticated
-    using (true);
-
-
-
-create policy integration_capabilities_write on public.integration_capabilities
-    for all to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-
-create policy integration_providers_select on public.integration_providers
-    for select to authenticated
-    using (true);
-
-
-
-create policy integration_providers_write on public.integration_providers
-    for all to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-
-create policy tenant_integrations_delete on public.tenant_integrations
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy tenant_integrations_insert on public.tenant_integrations
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy tenant_integrations_select on public.tenant_integrations
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy tenant_integrations_update on public.tenant_integrations
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy webhook_definitions_delete on public.webhook_definitions
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy webhook_definitions_insert on public.webhook_definitions
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-
-create policy webhook_definitions_select on public.webhook_definitions
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy webhook_definitions_update on public.webhook_definitions
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
--- =====================================================
--- 14. OAUTH STATE RLS
--- Tenant-scoped OAuth state
---
--- Tenant authority:
--- public.resolve_active_tenant(auth.uid())
---
--- RLS compatibility shim:
--- platform.has_tenant_access(tenant_id)
--- =====================================================
-
-alter table public.integration_oauth_states
-    enable row level security;
-
-alter table public.integration_oauth_states
-    force row level security;
-
-
-drop policy if exists integration_oauth_states_select
-    on public.integration_oauth_states;
-
-drop policy if exists integration_oauth_states_insert
-    on public.integration_oauth_states;
-
-drop policy if exists integration_oauth_states_update
-    on public.integration_oauth_states;
-
-drop policy if exists integration_oauth_states_delete
-    on public.integration_oauth_states;
-
-
-create policy integration_oauth_states_select
-on public.integration_oauth_states
-for select
-to authenticated
-using (
-    platform.has_tenant_access(tenant_id)
-);
-
-
-create policy integration_oauth_states_insert
-on public.integration_oauth_states
-for insert
-to authenticated
-with check (
-    platform.has_tenant_access(tenant_id)
-);
-
-
-create policy integration_oauth_states_update
-on public.integration_oauth_states
-for update
-to authenticated
-using (
-    platform.has_tenant_access(tenant_id)
-)
-with check (
-    platform.has_tenant_access(tenant_id)
-);
 
 
 -- =====================================================
@@ -1473,7 +1020,6 @@ begin
 end;
 $$;
 
-
 -- =====================================================
 -- 16. TRIGGERS
 -- =====================================================
@@ -1482,24 +1028,17 @@ create trigger trg_integration_providers_updated_at
 before update on public.integration_providers
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_tenant_integrations_updated_at
 before update on public.tenant_integrations
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_webhook_definitions_updated_at
 before update on public.webhook_definitions
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_device_integration_consistency
 before insert or update on public.device_integration_map
 for each row execute function public.enforce_device_integration_consistency();
-
 
 -- =====================================================
 -- 17. WEBHOOK MAPPING RESOLUTION
@@ -1546,13 +1085,7 @@ begin
         v_value_type
     from public.integration_webhook_mappings m
     where m.provider_code = p_provider_code
-      and (
-            m.event_type = p_event_type
-            or (
-                m.event_type like '%*'
-                and p_event_type like replace(m.event_type, '*', '%')
-            )
-          )
+      and m.event_type = p_event_type
       and m.mapping_code = p_mapping_code
       and m.is_active = true
     order by
@@ -1602,7 +1135,6 @@ begin
             raise exception
                 'Unsupported integration webhook mapping value_type: %',
                 v_value_type;
-
     end case;
 
 exception
@@ -1613,11 +1145,8 @@ exception
             p_provider_code,
             p_event_type,
             v_value;
-
 end;
 $$;
-
-
 
 -- =====================================================
 -- GENERIC PROVIDER DEVICE LOOKUP
@@ -1642,30 +1171,12 @@ as $$
     limit 1;
 $$;
 
-
-revoke all on function public.resolve_provider_device_by_external_id(
-    uuid,
-    text,
-    text
-)
-from public, anon, authenticated;
-
-
-grant execute on function public.resolve_provider_device_by_external_id(
-    uuid,
-    text,
-    text
-)
-to service_role;
-
-
 comment on function public.resolve_provider_device_by_external_id(
     uuid,
     text,
     text
 ) is
     'Generic provider device lookup by current external provider identifier.';
-
 
 -- =====================================================
 -- GENERIC PROVIDER HARDWARE LOOKUP
@@ -1690,30 +1201,12 @@ as $$
     limit 1;
 $$;
 
-
-revoke all on function public.resolve_provider_device_by_hardware_id(
-    uuid,
-    text,
-    text
-)
-from public, anon, authenticated;
-
-
-grant execute on function public.resolve_provider_device_by_hardware_id(
-    uuid,
-    text,
-    text
-)
-to service_role;
-
-
 comment on function public.resolve_provider_device_by_hardware_id(
     uuid,
     text,
     text
 ) is
     'Generic provider device lookup by stable provider hardware identity.';
-
 
 -- =====================================================
 -- GENERIC PROVIDER DEVICE RECONCILIATION
@@ -1874,25 +1367,6 @@ begin
 end;
 $$;
 
-
-revoke all on function public.reconcile_provider_device(
-    uuid,
-    text,
-    text,
-    text
-)
-from public, anon, authenticated;
-
-
-grant execute on function public.reconcile_provider_device(
-    uuid,
-    text,
-    text,
-    text
-)
-to service_role;
-
-
 comment on function public.reconcile_provider_device(
     uuid,
     text,
@@ -1901,17 +1375,12 @@ comment on function public.reconcile_provider_device(
 ) is
     'Generic provider device identity reconciliation. Stable hardware identity resolves a device when the current provider external identifier changes.';
 
-
-
-
-
-
 -- =====================================================
 -- 18. INTEGRATION DOMAIN FUNCTIONS
 -- =====================================================
 
 -- -----------------------------------------------------
--- 007 Integrations: domain authorization hardening
+-- 006 Integrations: domain authorization hardening
 -- -----------------------------------------------------
 
 create or replace function public.integrations_domain(
@@ -2340,56 +1809,6 @@ begin
                 'provider_code',
                 p_payload->>'provider_code'
             );
-
-
-    -- =================================================
-    -- OAUTH COMPLETION
-    --
-    -- Caller supplies ONLY:
-    -- - credentials_ref
-    -- - state_token
-    --
-    -- tenant_id and provider_code are resolved from
-    -- integration_oauth_states by integrations_complete_oauth().
-    -- =================================================
-
-    when 'complete_oauth' then
-
-        if p_payload->>'credentials_ref' is null
-           or length(
-                trim(
-                    p_payload->>'credentials_ref'
-                )
-              ) = 0 then
-
-            raise exception
-                'credentials_ref is required';
-
-        end if;
-
-
-        if p_payload->>'state_token' is null
-           or length(
-                trim(
-                    p_payload->>'state_token'
-                )
-              ) = 0 then
-
-            raise exception
-                'state_token is required';
-
-        end if;
-
-
-        return public.integrations_complete_oauth(
-            trim(
-                p_payload->>'credentials_ref'
-            ),
-            trim(
-                p_payload->>'state_token'
-            )
-        );
-
 
     -- =================================================
     -- WEBHOOK DEFINITIONS
@@ -2830,7 +2249,7 @@ $$;
 -- =====================================================
 
 -- -----------------------------------------------------
--- 007: extend integrations_domain_ext with start_oauth
+-- 006: extend integrations_domain_ext with start_oauth
 -- -----------------------------------------------------
 
 create or replace function public.integrations_domain_ext(
@@ -2920,22 +2339,6 @@ begin
             'provider_code', p_payload->>'provider_code'
         );
 
-    when 'resolve_oauth_state' then
-        if p_payload->>'state_token' is null or length(trim(p_payload->>'state_token')) = 0 then
-            raise exception 'state_token is required';
-        end if;
-        return public.integrations_resolve_oauth_state(p_payload->>'state_token');
-
-    when 'complete_oauth' then
-        if p_payload->>'state_token' is null or length(trim(p_payload->>'state_token')) = 0 then
-            raise exception 'state_token is required';
-        end if;
-        return public.integrations_complete_oauth(
-            (p_payload->>'tenant_id')::uuid,
-            p_payload->>'provider_code',
-            p_payload->>'credentials_ref',
-            p_payload->>'state_token'
-        );
 
     else
         raise exception 'unknown integrations_domain operation: %', p_op;
@@ -2944,9 +2347,6 @@ begin
     return v_result;
 end;
 $$;
-
-
-
 
 -- =====================================================
 -- OAuth state completion
@@ -2957,7 +2357,7 @@ drop function if exists public.integrations_complete_oauth(
 );
 
 -- =====================================================
--- 007 Integrations: OAuth completion (SSOT hardened)
+-- 006 Integrations: OAuth completion (SSOT hardened)
 -- =====================================================
 --
 -- Responsibility:
@@ -3057,6 +2457,11 @@ begin
     -- =================================================
     -- 3. RESOLVE TENANT / PROVIDER FROM STATE
     -- =================================================
+
+    v_state :=
+        public._integrations_resolve_oauth_state_internal(
+            trim(p_state_token)
+    );
 
     v_tenant_id :=
         v_state.tenant_id;
@@ -3367,7 +2772,7 @@ end;
 $$;
 
 -- =====================================================
--- 007: GENERIC OAUTH START
+-- 006: GENERIC OAUTH START
 --
 -- Responsibility:
 -- - Validate provider OAuth capability
@@ -3426,7 +2831,7 @@ begin
     p_payload := coalesce(p_payload, '{}'::jsonb);
 
 -- =====================================================
--- 007: GENERIC OAUTH START
+-- 006: GENERIC OAUTH START
 --
 -- Responsibility:
 -- - Validate provider OAuth capability
@@ -3948,38 +3353,53 @@ begin
 end;
 $$;
 
-
 -- =====================================================
--- 007 Integrations: OAuth state resolution
+-- 006 Integrations: Internal OAuth state resolution
 --
 -- Responsibility:
 -- - Validate an OAuth transaction state
 -- - Resolve the original tenant/user/provider context
--- - Return transaction-specific OAuth parameters
+-- - Return the complete transaction state to trusted
+--   server-side OAuth functions only
 --
 -- MUST NOT:
+-- - be callable by tenant/browser clients
+-- - return OAuth state as JSON to clients
+-- - perform tenant authorization for portal requests
 -- - consume the OAuth state
 -- - exchange authorization codes
 -- - create/update tenant_integrations
 -- - accept tenant/provider context from the caller
 --
+-- Security:
+-- - SECURITY DEFINER
+-- - complete OAuth state remains server-side
+-- - code_verifier is never exposed through a
+--   client-facing resolver
+--
 -- SSOT:
 -- integration_oauth_states
 -- =====================================================
 
-create or replace function public.integrations_resolve_oauth_state(
+drop function if exists public.integrations_resolve_oauth_state(
+    text
+);
+
+drop function if exists public._integrations_resolve_oauth_state_internal(
+    text
+);
+
+
+create or replace function public._integrations_resolve_oauth_state_internal(
     p_state_token text
 )
-returns jsonb
+returns public.integration_oauth_states
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
     v_state public.integration_oauth_states;
-
-    v_uid uuid;
-    v_tid uuid;
 begin
 
     -- =================================================
@@ -3999,22 +3419,32 @@ begin
     -- 2. RESOLVE ACTIVE OAUTH TRANSACTION
     --
     -- The state token is the only lookup key supplied
-    -- by the caller.
+    -- to this function.
     --
-    -- Tenant/provider/user are resolved from the state.
+    -- Tenant/provider/user context is NEVER accepted
+    -- from the caller.
     --
-    -- FOR UPDATE protects the transaction from concurrent
-    -- processing.
+    -- FOR UPDATE ensures that the OAuth transaction
+    -- cannot be concurrently consumed/processed.
     -- =================================================
 
     select *
     into v_state
+
     from public.integration_oauth_states s
+
     where s.state_token = trim(p_state_token)
+
       and s.consumed_at is null
+
       and s.expires_at > now()
+
     for update;
 
+
+    -- =================================================
+    -- 3. STATE VALIDATION
+    -- =================================================
 
     if not found then
 
@@ -4025,88 +3455,35 @@ begin
 
 
     -- =================================================
-    -- 3. AUTHENTICATED REQUEST BINDING
+    -- 4. RETURN INTERNAL TRANSACTION STATE
     --
-    -- When called from an authenticated portal request,
-    -- bind the state to the current user and tenant.
+    -- The complete row is returned because this function
+    -- is exclusively an internal dependency of trusted
+    -- OAuth server-side functions.
     --
-    -- OAuth callback requests may not have a Supabase
-    -- user session. In that case the state itself remains
-    -- the authoritative transaction context.
+    -- This includes code_verifier.
+    --
+    -- code_verifier MUST NEVER be returned directly to
+    -- an authenticated browser/client.
+    --
+    -- The function itself is therefore NOT a public API.
     -- =================================================
 
-    v_uid := auth.uid();
-
-    if v_uid is not null then
-
-        v_tid := platform.current_tenant_id();
-
-        if v_state.user_id <> v_uid then
-
-            raise exception
-                'Unauthorized OAuth state';
-
-        end if;
-
-        if v_tid is null
-           or v_state.tenant_id <> v_tid then
-
-            raise exception
-                'Unauthorized OAuth state';
-
-        end if;
-
-    end if;
-
-
-    -- =================================================
-    -- 4. RETURN TRANSACTION CONTEXT
-    --
-    -- All OAuth transaction-specific values originate
-    -- from integration_oauth_states.
-    --
-    -- The state is NOT consumed here.
-    -- =================================================
-
-    return jsonb_build_object(
-
-        'state_id',
-        v_state.id,
-
-        'tenant_id',
-        v_state.tenant_id,
-
-        'user_id',
-        v_state.user_id,
-
-        'provider_code',
-        v_state.provider_code,
-
-        'state_token',
-        v_state.state_token,
-
-        'redirect_uri',
-        v_state.redirect_uri,
-
-        'code_verifier',
-        v_state.code_verifier,
-
-        'code_challenge_method',
-        v_state.code_challenge_method,
-
-        'expires_at',
-        v_state.expires_at,
-
-        'consumed_at',
-        v_state.consumed_at
-
-    );
+    return v_state;
 
 end;
 $$;
 
 
+comment on function public._integrations_resolve_oauth_state_internal(
+    text
+) is
+'Internal OAuth transaction-state resolver. 
+ Returns the complete integration_oauth_states row,
+ including PKCE code_verifier, exclusively for trusted server-side OAuth functions. 
+ Must not be exposed to tenant/browser clients.';
 -- =====================================================
+
 -- OAuth token exchange
 -- =====================================================
 
@@ -4119,7 +3496,7 @@ drop function if exists public.integrations_exchange_oauth_tokens(
 
 
 -- -----------------------------------------------------
--- 007 Integrations: Generic OAuth token exchange (SSOT)
+-- 006 Integrations: Generic OAuth token exchange (SSOT)
 -- -----------------------------------------------------
 --
 -- Responsibility:
@@ -4152,7 +3529,7 @@ security definer
 set search_path = ''
 as $$
 declare
-    v_state jsonb;
+    v_state public.integration_oauth_states;
     v_config record;
 
     v_tenant_id uuid;
@@ -4206,31 +3583,31 @@ begin
     -- =================================================
 
     v_state :=
-        public.integrations_resolve_oauth_state(
+        public._integrations_resolve_oauth_state_internal(
             trim(p_state_token)
         );
 
     v_tenant_id :=
-        (v_state->>'tenant_id')::uuid;
+    v_state.tenant_id;
 
     v_provider_code :=
-        lower(trim(v_state->>'provider_code'));
+        lower(trim(v_state.provider_code));
 
     v_redirect_uri :=
         nullif(
-            trim(v_state->>'redirect_uri'),
+            trim(v_state.redirect_uri),
             ''
         );
-
+    
     v_code_verifier :=
         nullif(
-            trim(v_state->>'code_verifier'),
+            trim(v_state.code_verifier),
             ''
         );
-
+    
     v_code_challenge_method :=
         nullif(
-            trim(v_state->>'code_challenge_method'),
+            trim(v_state.code_challenge_method),
             ''
         );
 
@@ -4560,7 +3937,7 @@ $$;
 
 
 -- =====================================================
--- 007 Integrations: provider access token resolution
+-- 006 Integrations: provider access token resolution
 -- =====================================================
 --
 -- Responsibility:
@@ -4690,8 +4067,6 @@ begin
 end;
 $$;
 
-
-
 -- =====================================================
 -- 20. RESOLVE OR RECONCILE PROVIDER DEVICE
 --
@@ -4703,7 +4078,7 @@ $$;
 -- 1. Current external_id
 -- 2. Stable hardware_id
 --
--- 007 owns provider identity.
+-- 006 owns provider identity.
 -- 004 remains device SSOT.
 -- =====================================================
 
@@ -4737,7 +4112,6 @@ begin
         raise exception 'external_id is required';
     end if;
 
-
     -- =================================================
     -- 1. CURRENT EXTERNAL ID
     -- =================================================
@@ -4750,13 +4124,9 @@ begin
       and dim.external_id = p_external_id
     limit 1;
 
-
     if v_device_id is not null then
-
         return v_device_id;
-
     end if;
-
 
     -- =================================================
     -- 2. STABLE HARDWARE ID
@@ -4768,9 +4138,7 @@ begin
         raise exception
             'Provider device % is unknown and no hardware identity was supplied',
             p_external_id;
-
     end if;
-
 
     select
         dim.id,
@@ -4785,16 +4153,13 @@ begin
     limit 1
     for update;
 
-
     if v_device_id is null then
 
         raise exception
             'No SmartHellas device mapping found for provider % and hardware identity %',
             p_provider_code,
             p_hardware_id;
-
     end if;
-
 
     -- =================================================
     -- 3. RECONCILE CURRENT EXTERNAL ID
@@ -4808,18 +4173,14 @@ begin
           and dim.external_id = p_external_id
           and dim.id <> v_map_id
     ) then
-
         raise exception
             'External provider identifier % already belongs to another device',
             p_external_id;
-
     end if;
-
 
     update public.device_integration_map
     set external_id = btrim(p_external_id)
     where id = v_map_id;
-
 
     perform platform.log_audit(
         'provider.device_identity_reconciled',
@@ -4839,63 +4200,44 @@ begin
             p_external_id
         )
     );
-
-
     return v_device_id;
-
 end;
 $$;
-
-
-revoke all on function public.resolve_or_reconcile_provider_device(
-    uuid,
-    text,
-    text,
-    text
-)
-from public, anon, authenticated;
-
-
-grant execute on function public.resolve_or_reconcile_provider_device(
-    uuid,
-    text,
-    text,
-    text
-)
-to service_role;
-
-
 
 -- =====================================================
 -- 21. INBOUND WEBHOOK PROCESSOR
 -- =====================================================
 
 -- =====================================================
--- 007 INTEGRATION ENGINE
+-- 006 INTEGRATION ENGINE
 -- INBOUND WEBHOOK PROCESSOR
 --
 -- Responsibility:
 -- - Resolve external webhook provider
--- - Resolve provider category
--- - Resolve device through integration mapping
--- - Resolve mapped values through mapping layer
--- - Route device-related input to 007 telemetry
+-- - Resolve provider event type
+-- - Resolve provider event ID
+-- - Resolve provider device identity
+-- - Resolve tenant
+-- - Resolve SmartHellas device
+-- - Resolve event timestamp
+-- - Route resolved telemetry to 007
 --
--- 007 MUST NOT:
--- - interpret provider-specific payload structure
+-- 006 MUST NOT:
+-- - interpret telemetry metrics
 -- - calculate device state
--- - calculate metrics
+-- - calculate derived metrics
 -- - make automation decisions
--- - modify platform webhook processing lifecycle
+-- - own device_telemetry_raw
+-- - modify platform webhook lifecycle
 --
 -- 000 owns:
 --   platform.external_webhooks
---   generic processing lifecycle
+--   webhook processing lifecycle
 --   retry handling
 --
 -- 007 owns:
 --   device_telemetry_raw
---   immutable raw device telemetry storage
+--   immutable raw telemetry storage
 --
 -- =====================================================
 
@@ -4904,7 +4246,7 @@ create or replace function public.process_integration_webhook(
     p_webhook_id uuid
 )
 returns jsonb
- n plpgsql
+language plpgsql
 security definer
 set search_path = ''
 as $$
@@ -4919,14 +4261,13 @@ declare
     v_device_id uuid;
 
     v_provider_event_id text;
+
     v_observed_at_text text;
-
     v_observed_at timestamptz;
-
-    v_inserted_id uuid;
 
     v_payload jsonb;
 
+    v_telemetry_result jsonb;
 begin
 
     -- =====================================================
@@ -4952,16 +4293,20 @@ begin
     end if;
 
 
-    v_provider_code := lower(trim(v_webhook.source));
+    v_provider_code :=
+        lower(trim(v_webhook.source));
 
-    v_event_type := v_webhook.event_type;
+    v_event_type :=
+        nullif(trim(v_webhook.event_type), '');
 
-    v_tenant_id := v_webhook.tenant_id;
+    v_tenant_id :=
+        v_webhook.tenant_id;
 
-    v_payload := coalesce(
-        v_webhook.payload,
-        '{}'::jsonb
-    );
+    v_payload :=
+        coalesce(
+            v_webhook.payload,
+            '{}'::jsonb
+        );
 
 
     -- =====================================================
@@ -4984,16 +4329,9 @@ begin
 
     -- =====================================================
     -- 3. EVENT TYPE
-    --
-    -- event_type may already have been determined by
-    -- the platform webhook receiver.
-    --
-    -- If not available, the integration mapping layer
-    -- cannot safely interpret the payload.
     -- =====================================================
 
-    if v_event_type is null
-       or length(trim(v_event_type)) = 0 then
+    if v_event_type is null then
 
         raise exception
             'event_type is required for integration webhook %',
@@ -5017,8 +4355,20 @@ begin
                 ),
                 ''
             ),
-            v_webhook.external_event_id
+            nullif(
+                trim(v_webhook.external_event_id),
+                ''
+            )
         );
+
+
+    if v_provider_event_id is null then
+
+        raise exception
+            'provider_event_id could not be resolved for webhook %',
+            p_webhook_id;
+
+    end if;
 
 
     -- =====================================================
@@ -5026,33 +4376,47 @@ begin
     -- =====================================================
 
     v_device_external_id :=
-        public.resolve_integration_webhook_mapping(
-            v_provider_code,
-            v_event_type,
-            'device_external_id',
-            v_payload
+        nullif(
+            trim(
+                public.resolve_integration_webhook_mapping(
+                    v_provider_code,
+                    v_event_type,
+                    'device_external_id',
+                    v_payload
+                )
+            ),
+            ''
         );
 
 
     -- =====================================================
     -- 6. TENANT RESOLUTION
     --
-    -- If tenant was already assigned by the platform
-    -- boundary, retain it.
+    -- Tenant must be authoritative.
     --
-    -- Otherwise the integration mapping must resolve it
-    -- through the tenant integration/device relationship.
+    -- If 000 already resolved the tenant, use it.
+    -- Otherwise a unique provider/device mapping must
+    -- resolve it.
+    --
+    -- NEVER use LIMIT 1 for ambiguous tenant resolution.
     -- =====================================================
 
     if v_tenant_id is null
        and v_device_external_id is not null then
 
-        select dim.tenant_id
+        select min(dim.tenant_id)
         into v_tenant_id
         from public.device_integration_map dim
         where dim.provider_code = v_provider_code
           and dim.external_id = v_device_external_id
-        limit 1;
+        having count(distinct dim.tenant_id) = 1;
+
+        if v_tenant_id is null then
+            raise exception
+                'Unable to deterministically resolve tenant for provider % and external device %',
+                v_provider_code,
+                v_device_external_id;
+        end if;
 
     end if;
 
@@ -5068,44 +4432,45 @@ begin
         from public.device_integration_map dim
         where dim.provider_code = v_provider_code
           and dim.external_id = v_device_external_id
-          and (
-                v_tenant_id is null
-                or dim.tenant_id = v_tenant_id
-              )
-        limit 1;
+          and dim.tenant_id = v_tenant_id;
+
+        if v_device_id is null then
+            raise exception
+                'No SmartHellas device mapping found for provider %, tenant %, external device %',
+                v_provider_code,
+                v_tenant_id,
+                v_device_external_id;
+        end if;
 
     end if;
 
 
     -- =====================================================
-    -- 8. TELEMETRY ROUTING
-    --
-    -- Only events for which the mapping layer explicitly
-    -- provides a device are written to 007.
-    --
-    -- 007 performs routing.
-    -- 007 performs raw telemetry storage.
+    -- 8. DEVICE TELEMETRY ROUTING
     -- =====================================================
 
     if v_device_id is not null then
 
         -- -------------------------------------------------
-        -- 8A. Resolve observed event timestamp
+        -- 8A. Resolve observed timestamp
         -- -------------------------------------------------
 
         v_observed_at_text :=
-            public.resolve_integration_webhook_mapping(
-                v_provider_code,
-                v_event_type,
-                'observed_at',
-                v_payload
+            nullif(
+                trim(
+                    public.resolve_integration_webhook_mapping(
+                        v_provider_code,
+                        v_event_type,
+                        'observed_at',
+                        v_payload
+                    )
+                ),
+                ''
             );
 
 
         -- -------------------------------------------------
-        -- 8B. Convert observed timestamp
-        --
-        -- Mapping itself determines the provider format.
+        -- 8B. Convert provider timestamp
         -- -------------------------------------------------
 
         if v_observed_at_text is not null then
@@ -5114,13 +4479,7 @@ begin
                 select 1
                 from public.integration_webhook_mappings m
                 where m.provider_code = v_provider_code
-                  and (
-                        m.event_type = v_event_type
-                        or (
-                            m.event_type like '%*'
-                            and v_event_type like replace(m.event_type, '*', '%')
-                        )
-                      )
+                  and m.event_type = v_event_type
                   and m.mapping_code = 'observed_at'
                   and m.is_active = true
                   and m.value_type = 'epoch_milliseconds'
@@ -5136,13 +4495,7 @@ begin
                 select 1
                 from public.integration_webhook_mappings m
                 where m.provider_code = v_provider_code
-                  and (
-                        m.event_type = v_event_type
-                        or (
-                            m.event_type like '%*'
-                            and v_event_type like replace(m.event_type, '*', '%')
-                        )
-                      )
+                  and m.event_type = v_event_type
                   and m.mapping_code = 'observed_at'
                   and m.is_active = true
                   and m.value_type = 'epoch_seconds'
@@ -5164,42 +4517,34 @@ begin
 
 
         -- -------------------------------------------------
-        -- 8C. Insert immutable raw telemetry
+        -- 8C. Send resolved raw event to 007
         -- -------------------------------------------------
 
-        insert into public.device_telemetry_raw (
-            tenant_id,
-            device_id,
-            source,
-            provider_event_id,
-            observed_at,
-            received_at,
-            raw_payload
-        )
-        values (
-            v_tenant_id,
-            v_device_id,
-            v_provider_code,
-            v_provider_event_id,
-            v_observed_at,
-            v_webhook.received_at,
-            v_payload
-        )
-        returning id
-        into v_inserted_id;
+        v_telemetry_result :=
+            public.ingest_device_telemetry_raw(
+                v_tenant_id,
+                v_device_id,
+                v_provider_code,
+                v_provider_event_id,
+                v_observed_at,
+                v_webhook.received_at,
+                v_payload
+            );
 
 
         return jsonb_build_object(
-            'processed', true,
+            'handled', true,
             'route', 'device_telemetry',
             'webhook_id', p_webhook_id,
             'provider_code', v_provider_code,
             'event_type', v_event_type,
             'tenant_id', v_tenant_id,
             'device_id', v_device_id,
-            'telemetry_id', v_inserted_id,
-            'observed_at', v_observed_at,
-            'received_at', v_webhook.received_at
+            'provider_event_id', v_provider_event_id,
+            'telemetry', coalesce(
+                v_telemetry_result,
+                '{}'::jsonb
+            )
         );
 
     end if;
@@ -5207,21 +4552,10 @@ begin
 
     -- =====================================================
     -- 9. NO DEVICE ROUTE
-    --
-    -- Not every integration webhook is telemetry.
-    --
-    -- Examples:
-    -- - Stripe payment
-    -- - OAuth callback
-    -- - PMS event
-    -- - Airbnb reservation
-    -- - messaging event
-    --
-    -- These must NOT be written into 007.
     -- =====================================================
 
     return jsonb_build_object(
-        'processed', true,
+        'handled', false,
         'route', 'unhandled_domain_event',
         'webhook_id', p_webhook_id,
         'provider_code', v_provider_code,
@@ -5233,6 +4567,14 @@ end;
 $$;
 
 
+comment on function public.process_integration_webhook(uuid)
+is
+'Integration Engine webhook processor. 
+ Resolves provider, event, tenant and device identity and routes 
+ resolved device telemetry to the Device Telemetry Raw module (007). 
+ Does not own raw telemetry storage or platform webhook lifecycle.';
+
+
 -- =====================================================
 -- 22. FUNCTION security HARDENING
 -- =====================================================
@@ -5240,61 +4582,12 @@ $$;
 alter function public.process_integration_webhook(uuid)
 set search_path = '';
 
-
-
 alter function public.integrations_resolve_oauth_state(text) set search_path = '';
-
-
--- =====================================================
--- 23. LEGACY / CROSS-MODULE security HARDENING
--- =====================================================
-
--- -----------------------------------------------------
--- 007 Logistics: close direct authenticated execute bypass on dispatch RPC
--- Idempotent: skip if function not yet created (050 re-applies lockdown)
--- -----------------------------------------------------
-
-do $block$
-declare
-    r record;
-
-
-begin
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public'
-          and p.proname = 'logistics_dispatch_fulfilment_order'
-    loop
-        execute format(
-            'revoke all on function %I.%I(%s) from public, authenticated',
-            r.nspname, r.proname, r.args
-        );
-
-
-        execute format(
-            'grant execute on function %I.%I(%s) to service_role',
-            r.nspname, r.proname, r.args
-        );
-
-
-    end loop;
-
-
-end;
-
-
-$block$;
-
 
 -- =====================================================
 -- 24. MIGRATION REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('007_integration_engine', 'REV22.INTEGRATION', false)
+values ('006_integration_engine', 'REV22.INTEGRATION', false)
 on conflict (version) do nothing;

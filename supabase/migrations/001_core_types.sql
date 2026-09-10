@@ -3,450 +3,50 @@
 -- REV22 greenfield baseline: 001_core_types.sql
 -- =====================================================
 -- =====================================================
+--
+-- CORE TYPE SSOT
+--
+-- This migration contains:
+--   - shared enum/type definitions
+--   - no tables
+--   - no data
+--   - no business logic
+--   - no RLS
+--   - no grants
+--   - no RPC/API contracts
+--
+-- 000_supabase_platform.sql MUST be applied before 001.
+--
+-- These types form the stable database/API vocabulary used
+-- by subsequent domain migrations and RPC contracts.
+--
+-- ENUM EXPANSION RULES (REV19 SSOT)
+--   1. Never remove or rename labels after baseline deploy.
+--   2. Append only:
+--        alter type ... add value if not exists 'label';
+--   3. Enum values are domain-local; never compare across
+--      different enum types.
+--   4. Platform execution states remain text in 000 unless
+--      explicitly bound here.
+--   5. Use domain-specific status enums; no global lifecycle enum.
+--
+-- =====================================================
 
 
 
-create type access_credential_status as enum (
-    'pending',
+-- =====================================================
+-- 1. TENANCY & PLATFORM CORE
+-- =====================================================
+
+create type public.tenant_status as enum (
     'active',
-    'revoked',
-    'expired',
-    'failed'
+    'suspended',
+    'deleted'
 );
 
 
 
-create type access_rule_type as enum (
-    'check_in_window',
-    'checkout_window',
-    'override',
-    'emergency_access'
-);
-
-
-
--- =====================================================
--- 7. ACCESS CONTROL TYPES
--- =====================================================
-
-create type access_type as enum (
-    'guest',
-    'owner',
-    'temporary',
-    'emergency',
-    'scheduled'
-);
-
-
-
-create type automation_action_type as enum (
-    'send_notification',
-    'update_device',
-    'generate_code',
-    'update_booking',
-    'run_optimization',
-    'trigger_webhook'
-);
-
-
-
-create type automation_run_status as enum (
-    'pending',
-    'running',
-    'completed',
-    'failed',
-    'cancelled'
-);
-
-
-
-create type automation_step_status as enum (
-    'pending',
-    'running',
-    'completed',
-    'failed',
-    'skipped'
-);
-
-
-
--- =====================================================
--- 9. AUTOMATION & WORKFLOW TYPES
--- =====================================================
-
-create type automation_trigger_type as enum (
-    'booking_created',
-    'booking_started',
-    'booking_ended',
-    'device_added',
-    'manual_trigger',
-    'schedule_based'
-);
-
-
-
--- =====================================================
--- 7B. BOOKING DOMAIN TYPES
--- =====================================================
-
-create type booking_status as enum (
-    'pending',
-    'confirmed',
-    'checked_in',
-    'checked_out',
-    'cancelled'
-);
-
-
-
-create type conversion_event_type as enum (
-    'view_proposal',
-    'add_item',
-    'remove_item',
-    'checkout_start',
-    'checkout_complete',
-    'upsell_clicked',
-    'proposal_accepted',
-    'proposal_rejected'
-);
-
-
-
-create type crm_campaign_status as enum (
-    'draft',
-    'active',
-    'paused',
-    'completed',
-    'cancelled'
-);
-
-
-
-create type crm_campaign_type as enum (
-    'google_ads',
-    'facebook',
-    'referral',
-    'partner',
-    'email',
-    'other'
-);
-
-
-
--- =====================================================
--- 14. CRM DOMAIN TYPES (015 CRM ENGINE)
--- =====================================================
-
-create type crm_contact_status as enum (
-    'active',
-    'inactive',
-    'archived',
-    'unqualified'
-);
-
-
-
-create type crm_custom_field_type as enum (
-    'text',
-    'number',
-    'boolean',
-    'date',
-    'datetime',
-    'select',
-    'multiselect'
-);
-
-
-
-create type crm_entity_type as enum (
-    'lead',
-    'opportunity',
-    'contact',
-    'company',
-    'tenant'
-);
-
-
-
-create type crm_interaction_type as enum (
-    'call',
-    'email',
-    'meeting',
-    'portal',
-    'sms',
-    'whatsapp',
-    'system'
-);
-
-
-
-create type crm_lead_status as enum (
-    'new',
-    'contacted',
-    'qualified',
-    'unqualified',
-    'converted',
-    'lost'
-);
-
-
-
-create type crm_lead_temperature as enum (
-    'cold',
-    'warm',
-    'hot'
-);
-
-
-
-create type crm_list_type as enum (
-    'static',
-    'dynamic'
-);
-
-
-
-create type crm_opportunity_status as enum (
-    'open',
-    'won',
-    'lost',
-    'abandoned'
-);
-
-
-
-create type crm_task_status as enum (
-    'pending',
-    'in_progress',
-    'completed',
-    'cancelled'
-);
-
-
-
-create type crm_task_target_type as enum (
-    'lead',
-    'opportunity',
-    'contact',
-    'company',
-    'tenant'
-);
-
-
-
-create type crm_terminal_outcome as enum (
-    'won',
-    'lost'
-);
-
-
-
--- =====================================================
--- 6. DEVICE PROTOCOL TYPES
--- =====================================================
-
-create type device_protocol as enum (
-    'zigbee',
-    'wifi',
-    'bluetooth',
-    'infrared',
-    'matter',
-    'thread',
-    'z_wave',
-    'ble',
-    'ethernet'
-);
-
-
-
-create type device_usage_score_category as enum (
-    'efficiency',
-    'usage',
-    'energy',
-    'reliability'
-);
-
-
-
-create type fulfilment_status as enum (
-    'draft',
-    'ready_to_ship',
-    'dispatched',
-    'delivered',
-    'cancelled'
-);
-
-
-
--- =====================================================
--- 10. INTEGRATION PROVIDER TYPES
--- =====================================================
--- Provider codes (aqara, stripe, …) live in 005 integration_providers catalog.
--- Domain tables reference provider_code text → integration_providers(code).
-
-create type integration_provider_category as enum (
-    'smarthome',
-    'lock',
-    'pms',
-    'payment',
-    'crm',
-    'ota',
-    'pricing',
-    'email',
-    'sms',
-    'messaging',
-    'notification',
-    'ai'
-);
-
-
-
-create type onboarding_lifecycle_state as enum (
-    'created',
-    'pre_onboarding',
-    'configured',
-    'devices_assigned',
-    'shipped',
-    'installed',
-    'verified',
-    'active'
-);
-
-
-
--- =====================================================
--- 8. ONBOARDING TYPES
--- =====================================================
-
-create type onboarding_status as enum (
-    'not_started',
-    'in_progress',
-    'waiting_user',
-    'completed',
-    'blocked'
-);
-
-
-
-create type onboarding_step_status as enum (
-    'pending',
-    'in_progress',
-    'completed',
-    'skipped',
-    'blocked'
-);
-
-
-
-create type onboarding_step_type as enum (
-    'wifi_setup',
-    'device_assignment',
-    'room_mapping',
-    'integration_link',
-    'testing',
-    'finalization'
-);
-
-
-
-create type operation_context_type as enum (
-    'booking_event',
-    'device_event',
-    'manual_trigger',
-    'system_event',
-    'integration_event',
-    'onboarding_event',
-    'optimization_event',
-    'monetization_event',
-    'support_event'
-);
-
--- =====================================================
---  operation enums (008)
--- =====================================================
-
-do $$
-begin
-    if not exists (select 1 from pg_type where typname = 'notification_channel') then
-        create type public.notification_channel as enum (
-            'email',
-            'sms',
-            'push',
-            'portal'
-        );
-    end if;
-
-    if not exists (select 1 from pg_type where typname = 'notification_delivery_status') then
-        create type public.notification_delivery_status as enum (
-            'queued',
-            'processing',
-            'sent',
-            'failed',
-            'cancelled'
-        );
-    end if;
-end $$;
-
-
-
--- =====================================================
--- 12. OPTIMIZATION TYPES
--- =====================================================
-
-create type optimization_category as enum (
-    'energy',
-    'security',
-    'cost',
-    'efficiency',
-    'performance',
-    'user_experience'
-);
-
-
-
-create type optimization_insight_type as enum (
-    'anomaly_detected',
-    'optimization_opportunity',
-    'usage_pattern'
-);
-
-
-
-create type optimization_recommendation_type as enum (
-    'reduce_energy',
-    'improve_security',
-    'optimize_devices',
-    'reduce_cost',
-    'improve_efficiency',
-    'improve_performance',
-    'improve_user_experience'
-);
-
-
-
-create type package_type as enum (
-    'hardware',
-    'service',
-    'hybrid'
-);
-
-
-
--- payment transaction lifecycle (commerce invoices / charges)
-create type payment_status as enum (
-    'pending',
-    'authorized',
-    'paid',
-    'failed',
-    'refunded',
-    'cancelled',
-    'partially_refunded',
-    'charged_back'
-);
-
-
-
-create type platform_event_type as enum (
+create type public.platform_event_type as enum (
     'onboarding.lifecycle.changed',
     'onboarding.step.updated',
     'device.provisioned',
@@ -471,7 +71,21 @@ create type platform_event_type as enum (
 
 
 
-create type priority_level as enum (
+create type public.operation_context_type as enum (
+    'booking_event',
+    'device_event',
+    'manual_trigger',
+    'system_event',
+    'integration_event',
+    'onboarding_event',
+    'optimization_event',
+    'monetization_event',
+    'support_event'
+);
+
+
+
+create type public.priority_level as enum (
     'low',
     'normal',
     'high',
@@ -482,10 +96,53 @@ create type priority_level as enum (
 
 
 -- =====================================================
--- 5. PROPERTY & STRUCTURE TYPES
+-- 2. USER & ACCESS ROLES
 -- =====================================================
 
-create type property_type as enum (
+create type public.user_role as enum (
+    'owner',
+    'admin',
+    'manager',
+    'support',
+    'viewer'
+);
+
+
+
+create type public.access_credential_status as enum (
+    'pending',
+    'active',
+    'revoked',
+    'expired',
+    'failed'
+);
+
+
+
+create type public.access_rule_type as enum (
+    'check_in_window',
+    'checkout_window',
+    'override',
+    'emergency_access'
+);
+
+
+
+create type public.access_type as enum (
+    'guest',
+    'owner',
+    'temporary',
+    'emergency',
+    'scheduled'
+);
+
+
+
+-- =====================================================
+-- 3. PROPERTY & STRUCTURE TYPES
+-- =====================================================
+
+create type public.property_type as enum (
     'apartment',
     'house',
     'villa',
@@ -499,43 +156,7 @@ create type property_type as enum (
 
 
 
-create type proposal_item_type as enum (
-    'device_package',
-    'subscription',
-    'service'
-);
-
-
-
-create type proposal_status as enum (
-    'draft',
-    'presented',
-    'accepted',
-    'rejected',
-    'expired'
-);
-
-
-
-create type recommendation_severity as enum (
-    'low',
-    'medium',
-    'high'
-);
-
-
-
-create type recommendation_status as enum (
-    'open',
-    'acknowledged',
-    'dismissed',
-    'converted_to_proposal',
-    'implemented'
-);
-
-
-
-create type room_type as enum (
+create type public.room_type as enum (
     'living_room',
     'bedroom',
     'bathroom',
@@ -552,7 +173,358 @@ create type room_type as enum (
 
 
 
-create type service_activation_status as enum (
+-- =====================================================
+-- 4. BOOKING DOMAIN TYPES
+-- =====================================================
+
+create type public.booking_status as enum (
+    'pending',
+    'confirmed',
+    'checked_in',
+    'checked_out',
+    'cancelled'
+);
+
+
+
+-- =====================================================
+-- 5. DEVICE PROTOCOL TYPES
+-- =====================================================
+
+create type public.device_protocol as enum (
+    'zigbee',
+    'wifi',
+    'bluetooth',
+    'infrared',
+    'matter',
+    'thread',
+    'z_wave',
+    'ethernet'
+);
+
+
+
+create type public.device_usage_score_category as enum (
+    'efficiency',
+    'usage',
+    'energy',
+    'reliability'
+);
+
+
+
+-- =====================================================
+-- 6. INTEGRATION PROVIDER TYPES
+-- =====================================================
+--
+-- Provider codes (aqara, stripe, …) live in the
+-- integration provider catalog in the integration domain.
+--
+-- 001 defines only the provider CATEGORY vocabulary.
+-- Provider records themselves are not defined here.
+-- =====================================================
+
+create type public.integration_provider_category as enum (
+    'smarthome',
+    'lock',
+    'pms',
+    'payment',
+    'crm',
+    'ota',
+    'pricing',
+    'email',
+    'sms',
+    'messaging',
+    'notification',
+    'ai'
+);
+
+
+
+-- =====================================================
+-- 7. AUTOMATION & WORKFLOW TYPES
+-- =====================================================
+
+create type public.automation_action_type as enum (
+    'send_notification',
+    'update_device',
+    'generate_code',
+    'update_booking',
+    'run_optimization',
+    'trigger_webhook'
+);
+
+
+
+create type public.automation_run_status as enum (
+    'pending',
+    'running',
+    'completed',
+    'failed',
+    'cancelled'
+);
+
+
+
+create type public.automation_step_status as enum (
+    'pending',
+    'running',
+    'completed',
+    'failed',
+    'skipped'
+);
+
+
+
+create type public.automation_trigger_type as enum (
+    'booking_created',
+    'booking_started',
+    'booking_ended',
+    'device_added',
+    'manual_trigger',
+    'schedule_based'
+);
+
+
+
+-- =====================================================
+-- 8. ONBOARDING TYPES
+-- =====================================================
+
+create type public.onboarding_lifecycle_state as enum (
+    'created',
+    'pre_onboarding',
+    'configured',
+    'devices_assigned',
+    'shipped',
+    'installed',
+    'verified',
+    'active'
+);
+
+
+
+create type public.onboarding_status as enum (
+    'not_started',
+    'in_progress',
+    'waiting_user',
+    'completed',
+    'blocked'
+);
+
+
+
+create type public.onboarding_step_status as enum (
+    'pending',
+    'in_progress',
+    'completed',
+    'skipped',
+    'blocked'
+);
+
+
+
+create type public.onboarding_step_type as enum (
+    'wifi_setup',
+    'device_assignment',
+    'room_mapping',
+    'integration_link',
+    'testing',
+    'finalization'
+);
+
+
+
+-- =====================================================
+-- 9. OPERATIONS / NOTIFICATION TYPES
+-- =====================================================
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_type
+        where typnamespace = 'public'::regnamespace
+          and typname = 'notification_channel'
+    ) then
+        create type public.notification_channel as enum (
+            'email',
+            'sms',
+            'push',
+            'portal'
+        );
+    end if;
+
+    if not exists (
+        select 1
+        from pg_type
+        where typnamespace = 'public'::regnamespace
+          and typname = 'notification_delivery_status'
+    ) then
+        create type public.notification_delivery_status as enum (
+            'queued',
+            'processing',
+            'sent',
+            'failed',
+            'cancelled'
+        );
+    end if;
+end $$;
+
+
+
+-- =====================================================
+-- 10. CRM DOMAIN TYPES
+-- =====================================================
+
+create type public.crm_campaign_status as enum (
+    'draft',
+    'active',
+    'paused',
+    'completed',
+    'cancelled'
+);
+
+
+
+create type public.crm_campaign_type as enum (
+    'google_ads',
+    'facebook',
+    'referral',
+    'partner',
+    'email',
+    'other'
+);
+
+
+
+create type public.crm_contact_status as enum (
+    'active',
+    'inactive',
+    'archived',
+    'unqualified'
+);
+
+
+
+create type public.crm_custom_field_type as enum (
+    'text',
+    'number',
+    'boolean',
+    'date',
+    'datetime',
+    'select',
+    'multiselect'
+);
+
+
+
+create type public.crm_entity_type as enum (
+    'lead',
+    'opportunity',
+    'contact',
+    'company',
+    'tenant'
+);
+
+
+
+create type public.crm_interaction_type as enum (
+    'call',
+    'email',
+    'meeting',
+    'portal',
+    'sms',
+    'whatsapp',
+    'system'
+);
+
+
+
+create type public.crm_lead_status as enum (
+    'new',
+    'contacted',
+    'qualified',
+    'unqualified',
+    'converted',
+    'lost'
+);
+
+
+
+create type public.crm_lead_temperature as enum (
+    'cold',
+    'warm',
+    'hot'
+);
+
+
+
+create type public.crm_list_type as enum (
+    'static',
+    'dynamic'
+);
+
+
+
+create type public.crm_opportunity_status as enum (
+    'open',
+    'won',
+    'lost',
+    'abandoned'
+);
+
+
+
+create type public.crm_task_status as enum (
+    'pending',
+    'in_progress',
+    'completed',
+    'cancelled'
+);
+
+
+
+create type public.crm_task_target_type as enum (
+    'lead',
+    'opportunity',
+    'contact',
+    'company',
+    'tenant'
+);
+
+
+
+create type public.crm_terminal_outcome as enum (
+    'won',
+    'lost'
+);
+
+
+
+-- =====================================================
+-- 11. SUPPORT / SERVICE STATES
+-- =====================================================
+
+create type public.support_sender_type as enum (
+    'user',
+    'support',
+    'system'
+);
+
+
+
+create type public.support_ticket_status as enum (
+    'open',
+    'in_progress',
+    'waiting_customer',
+    'resolved',
+    'closed'
+);
+
+
+
+create type public.service_activation_status as enum (
     'inactive',
     'pending',
     'active',
@@ -563,7 +535,7 @@ create type service_activation_status as enum (
 
 
 
-create type service_type as enum (
+create type public.service_type as enum (
     'managed_service',
     'auto_door_code',
     'energy_optimization',
@@ -573,10 +545,94 @@ create type service_type as enum (
 
 
 -- =====================================================
--- 4. SUBSCRIPTION / COMMERCE STATES
+-- 12. OPTIMIZATION TYPES
 -- =====================================================
 
-create type subscription_status as enum (
+create type public.optimization_category as enum (
+    'energy',
+    'security',
+    'cost',
+    'efficiency',
+    'performance',
+    'user_experience'
+);
+
+
+
+create type public.optimization_insight_type as enum (
+    'anomaly_detected',
+    'optimization_opportunity',
+    'usage_pattern'
+);
+
+
+
+create type public.optimization_recommendation_type as enum (
+    'reduce_energy',
+    'improve_security',
+    'optimize_devices',
+    'reduce_cost',
+    'improve_efficiency',
+    'improve_performance',
+    'improve_user_experience'
+);
+
+
+
+create type public.recommendation_severity as enum (
+    'low',
+    'medium',
+    'high'
+);
+
+
+
+create type public.recommendation_status as enum (
+    'open',
+    'acknowledged',
+    'dismissed',
+    'converted_to_proposal',
+    'implemented'
+);
+
+
+
+-- =====================================================
+-- 13. COMMERCE / SUBSCRIPTION TYPES
+-- =====================================================
+
+create type public.fulfilment_status as enum (
+    'draft',
+    'ready_to_ship',
+    'dispatched',
+    'delivered',
+    'cancelled'
+);
+
+
+
+create type public.package_type as enum (
+    'hardware',
+    'service',
+    'hybrid'
+);
+
+
+
+create type public.payment_status as enum (
+    'pending',
+    'authorized',
+    'paid',
+    'failed',
+    'refunded',
+    'cancelled',
+    'partially_refunded',
+    'charged_back'
+);
+
+
+
+create type public.subscription_status as enum (
     'trial',
     'pending',
     'active',
@@ -589,7 +645,7 @@ create type subscription_status as enum (
 
 
 
-create type subscription_tier as enum (
+create type public.subscription_tier as enum (
     'basic',
     'pro',
     'enterprise'
@@ -597,49 +653,51 @@ create type subscription_tier as enum (
 
 
 
-create type support_sender_type as enum (
-    'user',
-    'support',
-    'system'
+-- =====================================================
+-- 14. PROPOSAL / MONETIZATION TYPES
+-- =====================================================
+
+create type public.conversion_event_type as enum (
+    'view_proposal',
+    'add_item',
+    'remove_item',
+    'checkout_start',
+    'checkout_complete',
+    'upsell_clicked',
+    'proposal_accepted',
+    'proposal_rejected'
 );
 
 
 
-
--- =====================================================
--- 11. SUPPORT / SERVICE STATES
--- =====================================================
-
-create type support_ticket_status as enum (
-    'open',
-    'in_progress',
-    'waiting_customer',
-    'resolved',
-    'closed'
-);
-
-
--- =====================================================
--- 001 CORE TYPES (SINGLE SOURCE OF TRUTH)
--- SYSTEM-WIDE CONSISTENT TYPE LAYER
--- NO BUSINESS LOGIC / NO TABLES / NO STATE
--- =====================================================
-
--- =====================================================
--- 1. TENANCY & PLATFORM CORE
--- =====================================================
-
-create type tenant_status as enum (
-    'active',
-    'suspended',
-    'deleted'
+create type public.proposal_item_type as enum (
+    'device_package',
+    'subscription',
+    'service'
 );
 
 
 
--- Domain-local duplicate of upsell_package_trigger labels (013).
+create type public.proposal_status as enum (
+    'draft',
+    'presented',
+    'accepted',
+    'rejected',
+    'expired'
+);
+
+
+
+-- =====================================================
+-- 15. UPSELL / MONETIZATION TRIGGERS
+-- =====================================================
+--
+-- Domain-local duplicate of upsell_package_trigger labels
+-- (013).
 -- Do not compare or cast across these enum types.
-create type upsell_package_trigger as enum (
+-- =====================================================
+
+create type public.upsell_package_trigger as enum (
     'onboarding_completed',
     'device_added',
     'booking_created',
@@ -649,11 +707,7 @@ create type upsell_package_trigger as enum (
 
 
 
--- =====================================================
--- 13. MONETIZATION TYPES
--- =====================================================
-
-create type upsell_plan_trigger as enum (
+create type public.upsell_plan_trigger as enum (
     'onboarding_completed',
     'device_added',
     'booking_created',
@@ -661,46 +715,40 @@ create type upsell_plan_trigger as enum (
     'manual_review'
 );
 
-
-
 -- =====================================================
--- 2. USER & ACCESS ROLES
+-- PLATFORM ENUM BINDS
 -- =====================================================
-
-create type user_role as enum (
-    'owner',
-    'admin',
-    'manager',
-    'support',
-    'viewer'
-);
-
-
-
--- =====================================================
--- ENUM EXPANSION RULES (REV19 SSOT)
--- =====================================================
--- 1. never remove or rename labels after baseline deploy
--- 2. append only: alter type ... add value if not exists 'label';
-
-
--- 3. enum values are domain-local — never compare across enum types
--- 4. platform execution states remain text in 000 unless bound here
--- 5. use domain-specific status enums; no global lifecycle enum
-
--- =====================================================
--- PLATFORM ENUM BINDS (001 SSOT → 000 platform columns)
--- Bind helpers live in 000; invoked here once enums exist.
--- payment_status → platform.payment_intents bound in 009 (needs 005 catalog).
+--
+-- 000_supabase_platform.sql MUST exist before this call.
+--
+-- This binds the newly-created core enum to the existing
+-- platform operation-context column contract.
+--
+-- No new business logic is introduced here.
 -- =====================================================
 
 select platform.bind_operation_context_type_column();
 
 
+
+-- =====================================================
+-- MIGRATION REGISTRATION
+-- =====================================================
+
+insert into platform.schema_migrations (
+    migration_name,
+    version,
+    rollback_available
+)
+values (
+    '001_core_types',
+    'REV22.CORE.TYPES',
+    false
+)
+on conflict (version) do nothing;
+
+
+
 -- =====================================================
 -- END 001 CORE TYPES (SSOT COMPLETE)
 -- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('001_core_types', 'REV22.CORE.TYPES', false)
-on conflict (version) do nothing;

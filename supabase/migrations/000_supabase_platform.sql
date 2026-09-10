@@ -4,6 +4,13 @@
 create schema if not exists platform;
 create extension if not exists pgcrypto;
 create extension if not exists citext;
+create extension if not exists pg_trgm;
+create extension if not exists btree_gin;
+create extension if not exists btree_gist;
+create extension if not exists pg_stat_statements;
+
+-- Supabase ecosystem extensions (wired in Part 5 cron workers + Part 11 stubs)
+create extension if not exists pg_net;
 
 -- =====================================================
 -- 000.04 AUDIT LOG (IMMUTABLE COMPLIANCE LAYER)
@@ -764,6 +771,146 @@ create table if not exists platform.queue_processor_logs (
 );
 
 
+-- =====================================================
+-- 00? SECURITY CONTROL PLANE REGISTRY - 
+-- preparing table for RLs
+-- =====================================================
+--
+-- This registry is platform metadata only.
+--
+-- PURPOSE
+-- -------
+-- Central registry for tables that are subject to the
+-- portal security boundary enforced by 018.
+--
+-- SECURITY MODEL
+-- --------------
+-- PORTAL
+--   |
+--   v
+-- API / RPC
+--   |
+--   v
+-- AUTHORIZATION
+--   |
+--   v
+-- DOMAIN / BACKEND
+--   |
+--   v
+-- TABLE
+--
+-- No portal-facing table in this registry receives direct
+-- authenticated table access.
+--
+-- 018 uses this registry for:
+--   - RLS enablement
+--   - FORCE RLS
+--   - removal of legacy direct-table policies
+--   - security classification validation
+--
+-- 019 uses this registry as security metadata for the
+-- final GRANT / REVOKE / privilege matrix.
+-- =====================================================
+
+
+-- =====================================================
+-- 000.SECURITY.01 TABLE SECURITY REGISTRY
+-- =====================================================
+
+create table if not exists platform.security_table_registry (
+
+    table_schema text not null,
+
+    table_name text not null,
+
+    security_class text not null,
+
+    portal_access text not null,
+
+    direct_authenticated_access boolean not null default false,
+
+    rls_required boolean not null default true,
+
+    force_rls_required boolean not null default true,
+
+    is_active boolean not null default true,
+
+    description text,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    primary key (table_schema, table_name),
+
+    constraint chk_security_table_registry_class
+        check (
+            security_class in (
+                'business',
+                'backend_only'
+            )
+        ),
+
+    constraint chk_security_table_registry_portal_access
+        check (
+            portal_access in (
+                'none',
+                'rpc'
+            )
+        ),
+
+    constraint chk_security_table_registry_no_direct_authenticated
+        check (
+            direct_authenticated_access = false
+        ),
+
+    constraint chk_security_table_registry_backend_access
+        check (
+            security_class <> 'backend_only'
+            or portal_access = 'none'
+        ),
+
+    constraint chk_security_table_registry_business_access
+        check (
+            security_class <> 'business'
+            or portal_access = 'rpc'
+        )
+);
+
+
+comment on table platform.security_table_registry is
+'Security control-plane registry for tables governed by the portal API/RPC-only security boundary. Registry metadata is enforced by 018 and consumed by 019.';
+
+
+comment on column platform.security_table_registry.security_class is
+'Security classification: business or backend_only.';
+
+
+comment on column platform.security_table_registry.portal_access is
+'Portal access contract: none for backend-only tables, rpc for business tables.';
+
+
+comment on column platform.security_table_registry.direct_authenticated_access is
+'Must always be false. Portal users do not receive direct authenticated table access.';
+
+
+comment on column platform.security_table_registry.rls_required is
+'Whether 018 must require RLS on this table.';
+
+
+comment on column platform.security_table_registry.force_rls_required is
+'Whether 018 must require FORCE RLS on this table.';
+
+
+create index if not exists idx_security_table_registry_active
+on platform.security_table_registry (
+    is_active,
+    table_schema,
+    table_name
+);
+
+
+
 
 -- =====================================================
 -- 8. REALTIME STREAM CONFIG (DECLARATIVE ONLY)
@@ -1079,11 +1226,9 @@ create table if not exists platform.webhook_provider_tenant_map (
 -- 000.00 PLATFORM SCHEMA
 -- =====================================================
 
-create schema if not exists platform;
 
 
 
-comment on schema platform is 'REV19 Platform Layer - infrastructure only (no business logic allowed)';
 
 
 
@@ -1091,27 +1236,8 @@ comment on schema platform is 'REV19 Platform Layer - infrastructure only (no bu
 -- 000.01 REQUIRED EXTENSIONS (SUPABASE SAFE)
 -- =====================================================
 
-create extension if not exists pgcrypto;
 
 
-create extension if not exists citext;
-
-
-create extension if not exists pg_trgm;
-
-
-create extension if not exists btree_gin;
-
-
-create extension if not exists btree_gist;
-
-
-create extension if not exists pg_stat_statements;
-
-
-
--- Supabase ecosystem extensions (wired in Part 5 cron workers + Part 11 stubs)
-create extension if not exists pg_net;
 
 
 
@@ -5774,7 +5900,7 @@ for each row execute function platform.set_updated_at();
 
 insert into platform.constants (key, value, description)
 values
-('platform_name', '"REV19_SAAS"', 'Platform identifier'),
+('platform_name', '"REV22_SAAS"', 'Platform identifier'),
 ('max_tenants_baseline', '10000', 'Target scale baseline'),
 ('default_timezone', '"UTC"', 'System timezone contract')
 on conflict (key) do nothing;

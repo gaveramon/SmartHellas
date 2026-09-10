@@ -1,12 +1,44 @@
 -- REV22 greenfield baseline: 004_property_device_engine.sql
 -- Consolidated from migrations_archive_rev19 (000-053)
+--
+-- OWNER:
+--   Property & Device Engine
+--
+-- SSOT:
+--   properties
+--   rooms
+--   devices
+--   device_assignments
+--   device_configurations
+--   device_categories
+--
+-- ARCHITECTURAL BOUNDARIES:
+--   004 owns the SmartHellas device/domain registry.
+--   004 does NOT own provider identity.
+--   004 does NOT own telemetry.
+--   004 does NOT own runtime device state.
+--   004 does NOT contain provider-specific integration logic.
+--
+-- SECURITY BOUNDARY:
+--   018 = security hardening
+--   019 = EXECUTE/API grant boundary
+--
+-- PUBLIC API:
+--   public.devices_api(text,jsonb)
+--
+-- INTERNAL DOMAIN API:
+--   public.devices_domain(text,jsonb)
+--
+-- IMPORTANT:
+--   devices_domain remains an internal SECURITY DEFINER domain function.
+--   devices_api is the authenticated-facing API contract expected by 019.
 
 
 -- =====================================================
 -- 1. PROPERTIES (AIRBNB UNITS)
 -- =====================================================
 
-create table if not exists properties (
+create table if not exists public.properties (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -15,7 +47,7 @@ create table if not exists properties (
 
     address text,
 
-    property_type property_type not null,
+    property_type public.property_type not null,
 
     timezone text default 'UTC',
 
@@ -30,14 +62,16 @@ create table if not exists properties (
 -- 2. ROOMS (LOGICAL STRUCTURE INSIDE PROPERTY)
 -- =====================================================
 
-create table if not exists rooms (
+create table if not exists public.rooms (
     id uuid primary key default gen_random_uuid(),
 
-    property_id uuid not null references properties(id) on delete cascade,
+    property_id uuid not null
+        references public.properties(id)
+        on delete cascade,
 
     name text not null,
 
-    room_type room_type not null,
+    room_type public.room_type not null,
 
     floor int,
 
@@ -52,12 +86,19 @@ create table if not exists rooms (
 
 create table if not exists public.device_categories (
     code text primary key,
+
     name text not null,
+
     description text,
+
     is_gateway boolean not null default false,
+
     is_lock boolean not null default false,
+
     is_active boolean not null default true,
+
     sort_order int not null default 0,
+
     created_at timestamptz not null default now()
 );
 
@@ -65,27 +106,40 @@ create table if not exists public.device_categories (
 
 -- =====================================================
 -- 4. DEVICES (MASTER DEVICE REGISTRY)
--- parent_device_id → gateway hub (Aqara, Matter bridge, etc.)
+--
+-- parent_device_id = local device hierarchy.
+--
+-- Examples:
+--   Aqara M3 gateway
+--       ├── temperature sensor
+--       ├── motion sensor
+--       └── smart plug
+--
+-- 004 owns the local device relationship only.
+-- Provider-side identity belongs to the Integration Engine.
 -- =====================================================
 
-create table if not exists devices (
+create table if not exists public.devices (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
 
-    parent_device_id uuid references devices(id) on delete set null,
+    parent_device_id uuid
+        references public.devices(id)
+        on delete set null,
 
     device_name text not null,
 
-    category_code text not null references public.device_categories(code),
+    category_code text not null
+        references public.device_categories(code),
 
-    protocol device_protocol not null,
+    protocol public.device_protocol not null,
 
     model text,
 
     manufacturer text,
 
-    is_active boolean default true,
+    is_active boolean not null default true,
 
     created_at timestamptz default now()
 );
@@ -96,12 +150,16 @@ create table if not exists devices (
 -- 5. DEVICE ASSIGNMENT (DEVICE ↔ ROOM LINK)
 -- =====================================================
 
-create table if not exists device_assignments (
+create table if not exists public.device_assignments (
     id uuid primary key default gen_random_uuid(),
 
-    device_id uuid not null references devices(id) on delete cascade,
+    device_id uuid not null
+        references public.devices(id)
+        on delete cascade,
 
-    room_id uuid not null references rooms(id) on delete cascade,
+    room_id uuid not null
+        references public.rooms(id)
+        on delete cascade,
 
     assigned_at timestamptz default now(),
 
@@ -114,10 +172,12 @@ create table if not exists device_assignments (
 -- 6. DEVICE CONFIGURATION (STATIC SETUP ONLY)
 -- =====================================================
 
-create table if not exists device_configurations (
+create table if not exists public.device_configurations (
     id uuid primary key default gen_random_uuid(),
 
-    device_id uuid not null references devices(id) on delete cascade,
+    device_id uuid not null
+        references public.devices(id)
+        on delete cascade,
 
     config jsonb not null,
 
@@ -135,76 +195,86 @@ create table if not exists device_configurations (
 -- =====================================================
 
 create index if not exists idx_properties_tenant
-on properties (tenant_id);
-
+on public.properties (tenant_id);
 
 
 create index if not exists idx_properties_tenant_created
-on properties (tenant_id, created_at desc);
-
+on public.properties (tenant_id, created_at desc);
 
 
 create index if not exists idx_rooms_property
-on rooms (property_id);
-
-
-
-comment on table public.device_categories is
-    'Hardware device taxonomy. code is the stable FK target for category_code columns. Seed: 004 (015 re-upserts).';
-
+on public.rooms (property_id);
 
 
 create index if not exists idx_devices_tenant
-on devices (tenant_id);
-
+on public.devices (tenant_id);
 
 
 create index if not exists idx_devices_tenant_created
-on devices (tenant_id, created_at desc);
-
+on public.devices (tenant_id, created_at desc);
 
 
 create index if not exists idx_devices_category
-on devices (category_code);
-
+on public.devices (category_code);
 
 
 create index if not exists idx_devices_parent
-on devices (parent_device_id)
+on public.devices (parent_device_id)
 where parent_device_id is not null;
 
 
+create index if not exists idx_devices_tenant_parent
+on public.devices (tenant_id, parent_device_id)
+where parent_device_id is not null;
+
 
 create index if not exists idx_device_assignments_room
-on device_assignments (room_id);
-
+on public.device_assignments (room_id);
 
 
 create index if not exists idx_device_assignments_device_assigned
-on device_assignments (device_id, assigned_at desc);
-
+on public.device_assignments (device_id, assigned_at desc);
 
 
 create index if not exists idx_device_configurations_device_created
-on device_configurations (device_id, created_at desc);
+on public.device_configurations (device_id, created_at desc);
 
+
+
+-- =====================================================
+-- 8. COMMENTS / SSOT DECLARATIONS
+-- =====================================================
+
+comment on table public.device_categories is
+    'Hardware device taxonomy. code is the stable FK target for category_code columns. Seed: 004.';
+
+
+comment on table public.devices is
+    'SmartHellas device registry SSOT. Provider identity belongs to the Integration Engine. Runtime telemetry/state belongs outside 004.';
 
 
 comment on table public.device_configurations is
-    'Static provisioning config only — do not store runtime telemetry or live state.';
+    'Static provisioning configuration only. Do not store runtime telemetry, live state, provider identity, or provider webhook data.';
+
+
+comment on column public.devices.parent_device_id is
+    'Local device hierarchy only. Provider-side device identity is owned by the Integration Engine.';
 
 
 
 -- =====================================================
--- 8. PLATFORM EXECUTION BINDING + TENANT FKs
--- Links domain registry to platform.device_commands (000)
+-- 9. PLATFORM EXECUTION BINDING + TENANT FKs
 -- =====================================================
 
 do $$
 begin
+
     alter table public.properties
         add constraint fk_properties_tenant
-        foreign key (tenant_id) references public.tenants(id) on delete cascade;
+        foreign key (tenant_id)
+        references public.tenants(id)
+        on delete cascade;
+
 exception
     when duplicate_object then null;
 end $$;
@@ -213,9 +283,13 @@ end $$;
 
 do $$
 begin
+
     alter table public.devices
         add constraint fk_devices_tenant
-        foreign key (tenant_id) references public.tenants(id) on delete cascade;
+        foreign key (tenant_id)
+        references public.tenants(id)
+        on delete cascade;
+
 exception
     when duplicate_object then null;
 end $$;
@@ -224,127 +298,202 @@ end $$;
 
 do $$
 begin
+
     alter table platform.device_commands
         add constraint fk_device_commands_device
-        foreign key (device_id) references public.devices(id) on delete restrict;
+        foreign key (device_id)
+        references public.devices(id)
+        on delete restrict;
+
 exception
     when duplicate_object then null;
 end $$;
 
 
 
-comment on constraint fk_device_commands_device on platform.device_commands is
+comment on constraint fk_device_commands_device
+on platform.device_commands is
     'Domain device registry (004) is SSOT; restrict delete while commands may exist.';
 
 
 
 -- =====================================================
--- 9. RLS
+-- 10. TENANT ID IMMUTABILITY
+--
+-- tenant_id is part of the security identity of the
+-- domain object and may never be moved between tenants.
+--
+-- This does NOT affect normal create/update operations.
+-- Existing domain APIs never modify tenant_id.
 -- =====================================================
 
--- 9A. GLOBAL CATALOG (device_categories)
-alter table public.device_categories enable row level security;
+create or replace function public.prevent_tenant_id_change()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
 
+    if tg_op = 'UPDATE'
+       and new.tenant_id is distinct from old.tenant_id then
 
+        raise exception 'tenant_id is immutable';
 
-drop policy if exists device_categories_select on public.device_categories;
+    end if;
 
+    return new;
 
-drop policy if exists device_categories_write on public.device_categories;
+end;
+$$;
 
 
 
--- 9B. TENANT-TABLE RLS (properties, devices)
-alter table public.properties enable row level security;
+drop trigger if exists trg_properties_tenant_immutable
+on public.properties;
 
 
+create trigger trg_properties_tenant_immutable
+before update on public.properties
+for each row
+execute function public.prevent_tenant_id_change();
 
-drop policy if exists properties_select on public.properties;
 
 
-drop policy if exists properties_insert on public.properties;
+drop trigger if exists trg_devices_tenant_immutable
+on public.devices;
 
 
-drop policy if exists properties_update on public.properties;
-
-
-drop policy if exists properties_delete on public.properties;
-
-
-
-alter table public.devices enable row level security;
-
-
-
-drop policy if exists devices_select on public.devices;
-
-
-drop policy if exists devices_insert on public.devices;
-
-
-drop policy if exists devices_update on public.devices;
-
-
-drop policy if exists devices_delete on public.devices;
-
-
-
--- 9C. CHILD-TABLE RLS (NO tenant_id COLUMN — EXPLICIT POLICIES)
--- =====================================================
-
-alter table public.rooms enable row level security;
-
-
-
-drop policy if exists rooms_select on public.rooms;
-
-
-drop policy if exists rooms_insert on public.rooms;
-
-
-drop policy if exists rooms_update on public.rooms;
-
-
-drop policy if exists rooms_delete on public.rooms;
-
-
-
-alter table public.device_assignments enable row level security;
-
-
-
-drop policy if exists device_assignments_select on public.device_assignments;
-
-
-drop policy if exists device_assignments_insert on public.device_assignments;
-
-
-drop policy if exists device_assignments_update on public.device_assignments;
-
-
-drop policy if exists device_assignments_delete on public.device_assignments;
-
-
-
-alter table public.device_configurations enable row level security;
-
-
-
-drop policy if exists device_configurations_select on public.device_configurations;
-
-
-drop policy if exists device_configurations_insert on public.device_configurations;
-
-
-drop policy if exists device_configurations_update on public.device_configurations;
-
-
-drop policy if exists device_configurations_delete on public.device_configurations;
+create trigger trg_devices_tenant_immutable
+before update on public.devices
+for each row
+execute function public.prevent_tenant_id_change();
 
 
 
 -- =====================================================
--- 10. DEVICE OVERVIEW
+-- 11. RLS
+-- =====================================================
+
+alter table public.device_categories
+enable row level security;
+
+
+drop policy if exists device_categories_select
+on public.device_categories;
+
+
+drop policy if exists device_categories_write
+on public.device_categories;
+
+
+
+alter table public.properties
+enable row level security;
+
+
+drop policy if exists properties_select
+on public.properties;
+
+
+drop policy if exists properties_insert
+on public.properties;
+
+
+drop policy if exists properties_update
+on public.properties;
+
+
+drop policy if exists properties_delete
+on public.properties;
+
+
+
+alter table public.devices
+enable row level security;
+
+
+drop policy if exists devices_select
+on public.devices;
+
+
+drop policy if exists devices_insert
+on public.devices;
+
+
+drop policy if exists devices_update
+on public.devices;
+
+
+drop policy if exists devices_delete
+on public.devices;
+
+
+
+alter table public.rooms
+enable row level security;
+
+
+drop policy if exists rooms_select
+on public.rooms;
+
+
+drop policy if exists rooms_insert
+on public.rooms;
+
+
+drop policy if exists rooms_update
+on public.rooms;
+
+
+drop policy if exists rooms_delete
+on public.rooms;
+
+
+
+alter table public.device_assignments
+enable row level security;
+
+
+drop policy if exists device_assignments_select
+on public.device_assignments;
+
+
+drop policy if exists device_assignments_insert
+on public.device_assignments;
+
+
+drop policy if exists device_assignments_update
+on public.device_assignments;
+
+
+drop policy if exists device_assignments_delete
+on public.device_assignments;
+
+
+
+alter table public.device_configurations
+enable row level security;
+
+
+drop policy if exists device_configurations_select
+on public.device_configurations;
+
+
+drop policy if exists device_configurations_insert
+on public.device_configurations;
+
+
+drop policy if exists device_configurations_update
+on public.device_configurations;
+
+
+drop policy if exists device_configurations_delete
+on public.device_configurations;
+
+
+
+-- =====================================================
+-- 12. DEVICE OVERVIEW
 -- =====================================================
 
 create or replace view public.v_devices_overview
@@ -366,20 +515,20 @@ select
     p.name as property_name,
     d.created_at
 from public.devices d
-left join public.device_categories dc on dc.code = d.category_code
-left join public.device_assignments da on da.device_id = d.id
-left join public.rooms r on r.id = da.room_id
-left join public.properties p on p.id = r.property_id;
+left join public.device_categories dc
+    on dc.code = d.category_code
+left join public.device_assignments da
+    on da.device_id = d.id
+left join public.rooms r
+    on r.id = da.room_id
+left join public.properties p
+    on p.id = r.property_id;
 
 
 
 -- =====================================================
--- 11. DEVICE ASSIGNMENT WORKFLOW
+-- 13. DEVICE ASSIGNMENT WORKFLOW
 -- =====================================================
-
--- -----------------------------------------------------
--- Standalone device workflow (004 SSOT)
--- -----------------------------------------------------
 
 create or replace function public.devices_assign_device_to_room(
     p_device_id uuid,
@@ -395,9 +544,15 @@ declare
     v_row record;
     v_existing uuid;
 begin
+
     perform public.edge_require_manager();
+
     v_tid := platform.current_tenant_id();
-    if v_tid is null then raise exception 'no active tenant'; end if;
+
+    if v_tid is null then
+        raise exception 'no active tenant';
+    end if;
+
 
     if not exists (
         select 1
@@ -408,45 +563,72 @@ begin
         raise exception 'Device not found';
     end if;
 
+
     if not exists (
         select 1
         from public.rooms r
-        join public.properties p on p.id = r.property_id
+        join public.properties p
+          on p.id = r.property_id
         where r.id = p_room_id
           and p.tenant_id = v_tid
     ) then
         raise exception 'Room not found';
     end if;
 
-    select da.id into v_existing
+
+    select da.id
+    into v_existing
     from public.device_assignments da
     where da.device_id = p_device_id;
 
+
     if found then
+
         update public.device_assignments
         set room_id = p_room_id
         where device_id = p_device_id
         returning device_id, room_id, assigned_at
         into v_row;
+
     else
-        insert into public.device_assignments (device_id, room_id)
-        values (p_device_id, p_room_id)
+
+        insert into public.device_assignments
+        (
+            device_id,
+            room_id
+        )
+        values
+        (
+            p_device_id,
+            p_room_id
+        )
         returning device_id, room_id, assigned_at
         into v_row;
+
     end if;
+
 
     return jsonb_build_object(
         'device_id', v_row.device_id,
         'room_id', v_row.room_id,
         'assigned_at', v_row.assigned_at
     );
+
 end;
 $$;
 
 
 
 -- =====================================================
--- 12. DEVICES DOMAIN API
+-- 14. DEVICES DOMAIN API
+--
+-- INTERNAL DOMAIN FUNCTION.
+--
+-- 019 deliberately revokes authenticated EXECUTE
+-- from *_domain functions.
+--
+-- public.devices_api() below is the approved external
+-- API boundary.
 -- =====================================================
 
 create or replace function public.devices_domain(
@@ -464,384 +646,1209 @@ declare
     v_row record;
     v_device_id uuid;
 begin
-    p_payload := coalesce(p_payload, '{}'::jsonb);
+
+    p_payload := coalesce(
+        p_payload,
+        '{}'::jsonb
+    );
+
 
     case p_op
+
+
+    -- =================================================
+    -- PROPERTIES
+    -- =================================================
+
     when 'list_properties' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb)
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        select coalesce(
+            jsonb_agg(
+                to_jsonb(t)
+                order by t.created_at
+            ),
+            '[]'::jsonb
+        )
         into v_result
-        from (
-            select p.id, p.tenant_id, p.name, p.address, p.property_type, p.timezone, p.created_at, p.updated_at
+        from
+        (
+            select
+                p.id,
+                p.tenant_id,
+                p.name,
+                p.address,
+                p.property_type,
+                p.timezone,
+                p.created_at,
+                p.updated_at
             from public.properties p
             where p.tenant_id = v_tid
         ) t;
 
+
+
     when 'get_property' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        select to_jsonb(t) into v_result
-        from (
-            select p.id, p.tenant_id, p.name, p.address, p.property_type, p.timezone, p.created_at, p.updated_at
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        select to_jsonb(t)
+        into v_result
+        from
+        (
+            select
+                p.id,
+                p.tenant_id,
+                p.name,
+                p.address,
+                p.property_type,
+                p.timezone,
+                p.created_at,
+                p.updated_at
             from public.properties p
             where p.id = (p_payload->>'id')::uuid
               and p.tenant_id = v_tid
         ) t;
-        if v_result is null then raise exception 'Property not found'; end if;
+
+
+        if v_result is null then
+            raise exception 'Property not found';
+        end if;
+
+
 
     when 'create_property' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        insert into public.properties (tenant_id, name, address, property_type, timezone)
-        values (
-            v_tid, p_payload->>'name', p_payload->>'address',
-            (p_payload->>'property_type')::public.property_type,
-            coalesce(p_payload->>'timezone', 'UTC')
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        insert into public.properties
+        (
+            tenant_id,
+            name,
+            address,
+            property_type,
+            timezone
         )
-        returning id, tenant_id, name, address, property_type, timezone, created_at, updated_at into v_row;
+        values
+        (
+            v_tid,
+            p_payload->>'name',
+            p_payload->>'address',
+            (p_payload->>'property_type')::public.property_type,
+            coalesce(
+                p_payload->>'timezone',
+                'UTC'
+            )
+        )
+        returning
+            id,
+            tenant_id,
+            name,
+            address,
+            property_type,
+            timezone,
+            created_at,
+            updated_at
+        into v_row;
+
+
         v_result := to_jsonb(v_row);
+
+
 
     when 'update_property' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        update public.properties p set
-            name = case when p_payload ? 'name' then p_payload->>'name' else p.name end,
-            address = case when p_payload ? 'address' then p_payload->>'address' else p.address end,
-            property_type = case when p_payload ? 'property_type' then (p_payload->>'property_type')::public.property_type else p.property_type end,
-            timezone = case when p_payload ? 'timezone' then p_payload->>'timezone' else p.timezone end
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        update public.properties p
+        set
+            name =
+                case
+                    when p_payload ? 'name'
+                    then p_payload->>'name'
+                    else p.name
+                end,
+
+            address =
+                case
+                    when p_payload ? 'address'
+                    then p_payload->>'address'
+                    else p.address
+                end,
+
+            property_type =
+                case
+                    when p_payload ? 'property_type'
+                    then
+                        (p_payload->>'property_type')
+                        ::public.property_type
+                    else p.property_type
+                end,
+
+            timezone =
+                case
+                    when p_payload ? 'timezone'
+                    then p_payload->>'timezone'
+                    else p.timezone
+                end
+
         where p.id = (p_payload->>'id')::uuid
           and p.tenant_id = v_tid
-        returning p.id, p.tenant_id, p.name, p.address, p.property_type, p.timezone, p.created_at, p.updated_at into v_row;
-        if not found then raise exception 'Property not found'; end if;
+
+        returning
+            p.id,
+            p.tenant_id,
+            p.name,
+            p.address,
+            p.property_type,
+            p.timezone,
+            p.created_at,
+            p.updated_at
+        into v_row;
+
+
+        if not found then
+            raise exception 'Property not found';
+        end if;
+
+
         v_result := to_jsonb(v_row);
 
+
+
     when 'delete_property' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         delete from public.properties p
         where p.id = (p_payload->>'id')::uuid
           and p.tenant_id = v_tid;
-        if not found then raise exception 'Property not found'; end if;
-        v_result := jsonb_build_object('deleted', true, 'id', p_payload->>'id');
+
+
+        if not found then
+            raise exception 'Property not found';
+        end if;
+
+
+        v_result := jsonb_build_object(
+            'deleted',
+            true,
+            'id',
+            p_payload->>'id'
+        );
+
+
+
+    -- =================================================
+    -- ROOMS
+    -- =================================================
 
     when 'list_rooms' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         if p_payload ? 'property_id' then
+
             if not exists (
                 select 1
                 from public.properties p
-                where p.id = (p_payload->>'property_id')::uuid
+                where p.id =
+                    (p_payload->>'property_id')::uuid
                   and p.tenant_id = v_tid
             ) then
                 raise exception 'Property not found';
             end if;
-            select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb) into v_result
-            from (
-                select r.id, r.property_id, r.name, r.room_type, r.floor, r.created_at
+
+
+            select coalesce(
+                jsonb_agg(
+                    to_jsonb(t)
+                    order by t.created_at
+                ),
+                '[]'::jsonb
+            )
+            into v_result
+            from
+            (
+                select
+                    r.id,
+                    r.property_id,
+                    r.name,
+                    r.room_type,
+                    r.floor,
+                    r.created_at
                 from public.rooms r
-                join public.properties p on p.id = r.property_id
-                where r.property_id = (p_payload->>'property_id')::uuid
+                join public.properties p
+                  on p.id = r.property_id
+                where r.property_id =
+                    (p_payload->>'property_id')::uuid
                   and p.tenant_id = v_tid
             ) t;
+
+
         else
-            select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb) into v_result
-            from (
-                select r.id, r.property_id, r.name, r.room_type, r.floor, r.created_at
+
+            select coalesce(
+                jsonb_agg(
+                    to_jsonb(t)
+                    order by t.created_at
+                ),
+                '[]'::jsonb
+            )
+            into v_result
+            from
+            (
+                select
+                    r.id,
+                    r.property_id,
+                    r.name,
+                    r.room_type,
+                    r.floor,
+                    r.created_at
                 from public.rooms r
-                join public.properties p on p.id = r.property_id
+                join public.properties p
+                  on p.id = r.property_id
                 where p.tenant_id = v_tid
             ) t;
+
         end if;
 
+
+
     when 'get_room' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        select to_jsonb(t) into v_result
-        from (
-            select r.id, r.property_id, r.name, r.room_type, r.floor, r.created_at
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        select to_jsonb(t)
+        into v_result
+        from
+        (
+            select
+                r.id,
+                r.property_id,
+                r.name,
+                r.room_type,
+                r.floor,
+                r.created_at
             from public.rooms r
-            join public.properties p on p.id = r.property_id
+            join public.properties p
+              on p.id = r.property_id
             where r.id = (p_payload->>'id')::uuid
               and p.tenant_id = v_tid
         ) t;
-        if v_result is null then raise exception 'Room not found'; end if;
+
+
+        if v_result is null then
+            raise exception 'Room not found';
+        end if;
+
+
 
     when 'create_room' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         if not exists (
             select 1
             from public.properties p
-            where p.id = (p_payload->>'property_id')::uuid
+            where p.id =
+                (p_payload->>'property_id')::uuid
               and p.tenant_id = v_tid
         ) then
             raise exception 'Property not found';
         end if;
-        insert into public.rooms (property_id, name, room_type, floor)
-        values (
-            (p_payload->>'property_id')::uuid, p_payload->>'name',
-            (p_payload->>'room_type')::public.room_type,
-            case when p_payload ? 'floor' and p_payload->>'floor' is not null then (p_payload->>'floor')::int else null end
+
+
+        insert into public.rooms
+        (
+            property_id,
+            name,
+            room_type,
+            floor
         )
-        returning id, property_id, name, room_type, floor, created_at into v_row;
+        values
+        (
+            (p_payload->>'property_id')::uuid,
+            p_payload->>'name',
+            (p_payload->>'room_type')::public.room_type,
+            case
+                when p_payload ? 'floor'
+                 and p_payload->>'floor' is not null
+                then (p_payload->>'floor')::int
+                else null
+            end
+        )
+        returning
+            id,
+            property_id,
+            name,
+            room_type,
+            floor,
+            created_at
+        into v_row;
+
+
         v_result := to_jsonb(v_row);
 
+
+
     when 'update_room' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        update public.rooms r set
-            name = case when p_payload ? 'name' then p_payload->>'name' else r.name end,
-            room_type = case when p_payload ? 'room_type' then (p_payload->>'room_type')::public.room_type else r.room_type end,
-            floor = case when p_payload ? 'floor' then case when p_payload->>'floor' is null then null else (p_payload->>'floor')::int end else r.floor end
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        update public.rooms r
+        set
+            name =
+                case
+                    when p_payload ? 'name'
+                    then p_payload->>'name'
+                    else r.name
+                end,
+
+            room_type =
+                case
+                    when p_payload ? 'room_type'
+                    then
+                        (p_payload->>'room_type')
+                        ::public.room_type
+                    else r.room_type
+                end,
+
+            floor =
+                case
+                    when p_payload ? 'floor'
+                    then
+                        case
+                            when p_payload->>'floor' is null
+                            then null
+                            else
+                                (p_payload->>'floor')::int
+                        end
+                    else r.floor
+                end
+
         from public.properties p
+
         where r.id = (p_payload->>'id')::uuid
           and p.id = r.property_id
           and p.tenant_id = v_tid
-        returning r.id, r.property_id, r.name, r.room_type, r.floor, r.created_at into v_row;
-        if not found then raise exception 'Room not found'; end if;
+
+        returning
+            r.id,
+            r.property_id,
+            r.name,
+            r.room_type,
+            r.floor,
+            r.created_at
+        into v_row;
+
+
+        if not found then
+            raise exception 'Room not found';
+        end if;
+
+
         v_result := to_jsonb(v_row);
 
+
+
     when 'delete_room' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         delete from public.rooms r
         using public.properties p
         where r.id = (p_payload->>'id')::uuid
           and p.id = r.property_id
           and p.tenant_id = v_tid;
-        if not found then raise exception 'Room not found'; end if;
-        v_result := jsonb_build_object('deleted', true, 'id', p_payload->>'id');
+
+
+        if not found then
+            raise exception 'Room not found';
+        end if;
+
+
+        v_result := jsonb_build_object(
+            'deleted',
+            true,
+            'id',
+            p_payload->>'id'
+        );
+
+
+
+    -- =================================================
+    -- DEVICE CATEGORIES
+    -- =================================================
 
     when 'list_device_categories' then
-        select coalesce(jsonb_agg(to_jsonb(t) order by t.sort_order), '[]'::jsonb) into v_result
-        from (
-            select dc.code, dc.name, dc.description, dc.is_gateway, dc.is_lock, dc.is_active, dc.sort_order
-            from public.device_categories dc where dc.is_active = true
+
+        select coalesce(
+            jsonb_agg(
+                to_jsonb(t)
+                order by t.sort_order
+            ),
+            '[]'::jsonb
+        )
+        into v_result
+        from
+        (
+            select
+                dc.code,
+                dc.name,
+                dc.description,
+                dc.is_gateway,
+                dc.is_lock,
+                dc.is_active,
+                dc.sort_order
+            from public.device_categories dc
+            where dc.is_active = true
         ) t;
 
+
+
+    -- =================================================
+    -- DEVICES
+    -- =================================================
+
     when 'list_devices' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         if p_payload ? 'room_id' then
+
             if not exists (
                 select 1
                 from public.rooms r
-                join public.properties p on p.id = r.property_id
-                where r.id = (p_payload->>'room_id')::uuid
+                join public.properties p
+                  on p.id = r.property_id
+                where r.id =
+                    (p_payload->>'room_id')::uuid
                   and p.tenant_id = v_tid
             ) then
                 raise exception 'Room not found';
             end if;
-            select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb) into v_result
-            from (
-                select d.id, d.tenant_id, d.parent_device_id, d.device_name, d.category_code, d.protocol, d.model, d.manufacturer, d.is_active, d.created_at
+
+
+            select coalesce(
+                jsonb_agg(
+                    to_jsonb(t)
+                    order by t.created_at
+                ),
+                '[]'::jsonb
+            )
+            into v_result
+            from
+            (
+                select
+                    d.id,
+                    d.tenant_id,
+                    d.parent_device_id,
+                    d.device_name,
+                    d.category_code,
+                    d.protocol,
+                    d.model,
+                    d.manufacturer,
+                    d.is_active,
+                    d.created_at
                 from public.devices d
                 where d.tenant_id = v_tid
-                  and d.id in (
+                  and d.id in
+                  (
                       select da.device_id
                       from public.device_assignments da
-                      where da.room_id = (p_payload->>'room_id')::uuid
+                      where da.room_id =
+                          (p_payload->>'room_id')::uuid
                   )
             ) t;
+
+
         elsif p_payload ? 'property_id' then
+
             if not exists (
                 select 1
                 from public.properties p
-                where p.id = (p_payload->>'property_id')::uuid
+                where p.id =
+                    (p_payload->>'property_id')::uuid
                   and p.tenant_id = v_tid
             ) then
                 raise exception 'Property not found';
             end if;
-            select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb) into v_result
-            from (
-                select d.id, d.tenant_id, d.parent_device_id, d.device_name, d.category_code, d.protocol, d.model, d.manufacturer, d.is_active, d.created_at
+
+
+            select coalesce(
+                jsonb_agg(
+                    to_jsonb(t)
+                    order by t.created_at
+                ),
+                '[]'::jsonb
+            )
+            into v_result
+            from
+            (
+                select
+                    d.id,
+                    d.tenant_id,
+                    d.parent_device_id,
+                    d.device_name,
+                    d.category_code,
+                    d.protocol,
+                    d.model,
+                    d.manufacturer,
+                    d.is_active,
+                    d.created_at
                 from public.devices d
                 where d.tenant_id = v_tid
-                  and d.id in (
+                  and d.id in
+                  (
                       select da.device_id
                       from public.device_assignments da
-                      where da.room_id in (
+                      where da.room_id in
+                      (
                           select r.id
                           from public.rooms r
-                          join public.properties p on p.id = r.property_id
-                          where r.property_id = (p_payload->>'property_id')::uuid
+                          join public.properties p
+                            on p.id = r.property_id
+                          where r.property_id =
+                              (p_payload->>'property_id')::uuid
                             and p.tenant_id = v_tid
                       )
                   )
             ) t;
+
+
         else
-            select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at), '[]'::jsonb) into v_result
-            from (
-                select d.id, d.tenant_id, d.parent_device_id, d.device_name, d.category_code, d.protocol, d.model, d.manufacturer, d.is_active, d.created_at
+
+            select coalesce(
+                jsonb_agg(
+                    to_jsonb(t)
+                    order by t.created_at
+                ),
+                '[]'::jsonb
+            )
+            into v_result
+            from
+            (
+                select
+                    d.id,
+                    d.tenant_id,
+                    d.parent_device_id,
+                    d.device_name,
+                    d.category_code,
+                    d.protocol,
+                    d.model,
+                    d.manufacturer,
+                    d.is_active,
+                    d.created_at
                 from public.devices d
                 where d.tenant_id = v_tid
             ) t;
+
         end if;
+
+
 
     when 'get_device' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        v_device_id := (p_payload->>'id')::uuid;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        v_device_id :=
+            (p_payload->>'id')::uuid;
+
+
         select jsonb_build_object(
-            'id', d.id, 'tenant_id', d.tenant_id, 'parent_device_id', d.parent_device_id,
-            'device_name', d.device_name, 'category_code', d.category_code, 'protocol', d.protocol,
-            'model', d.model, 'manufacturer', d.manufacturer, 'is_active', d.is_active, 'created_at', d.created_at,
-            'assignment', case when da.device_id is not null then jsonb_build_object(
-                'room_id', da.room_id, 'assigned_at', da.assigned_at,
-                'room', case when rm.id is not null then jsonb_build_object('id', rm.id, 'name', rm.name, 'property_id', rm.property_id) else null end
-            ) else null end,
-            'config', dc.config
-        ) into v_result
+
+            'id',
+            d.id,
+
+            'tenant_id',
+            d.tenant_id,
+
+            'parent_device_id',
+            d.parent_device_id,
+
+            'device_name',
+            d.device_name,
+
+            'category_code',
+            d.category_code,
+
+            'protocol',
+            d.protocol,
+
+            'model',
+            d.model,
+
+            'manufacturer',
+            d.manufacturer,
+
+            'is_active',
+            d.is_active,
+
+            'created_at',
+            d.created_at,
+
+            'assignment',
+            case
+                when da.device_id is not null
+                then jsonb_build_object(
+
+                    'room_id',
+                    da.room_id,
+
+                    'assigned_at',
+                    da.assigned_at,
+
+                    'room',
+                    case
+                        when rm.id is not null
+                        then jsonb_build_object(
+                            'id',
+                            rm.id,
+                            'name',
+                            rm.name,
+                            'property_id',
+                            rm.property_id
+                        )
+                        else null
+                    end
+                )
+                else null
+            end,
+
+            'config',
+            dc.config
+
+        )
+        into v_result
+
         from public.devices d
-        left join public.device_assignments da on da.device_id = d.id
-        left join public.rooms rm on rm.id = da.room_id
-        left join public.device_configurations dc on dc.device_id = d.id
+
+        left join public.device_assignments da
+            on da.device_id = d.id
+
+        left join public.rooms rm
+            on rm.id = da.room_id
+
+        left join public.device_configurations dc
+            on dc.device_id = d.id
+
         where d.id = v_device_id
           and d.tenant_id = v_tid;
-        if v_result is null then raise exception 'Device not found'; end if;
+
+
+        if v_result is null then
+            raise exception 'Device not found';
+        end if;
+
+
 
     when 'create_device' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        if p_payload ? 'parent_device_id' and p_payload->>'parent_device_id' is not null then
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        if p_payload ? 'parent_device_id'
+           and p_payload->>'parent_device_id' is not null
+        then
+
             if not exists (
                 select 1
                 from public.devices pd
-                where pd.id = (p_payload->>'parent_device_id')::uuid
+                where pd.id =
+                    (p_payload->>'parent_device_id')::uuid
                   and pd.tenant_id = v_tid
             ) then
                 raise exception 'Parent device not found';
             end if;
+
         end if;
-        insert into public.devices (tenant_id, device_name, category_code, protocol, parent_device_id, model, manufacturer, is_active)
-        values (
-            v_tid, p_payload->>'device_name', p_payload->>'category_code',
-            (p_payload->>'protocol')::public.device_protocol,
-            case when p_payload ? 'parent_device_id' and p_payload->>'parent_device_id' is not null then (p_payload->>'parent_device_id')::uuid else null end,
-            p_payload->>'model', p_payload->>'manufacturer',
-            coalesce((p_payload->>'is_active')::boolean, true)
+
+
+        insert into public.devices
+        (
+            tenant_id,
+            device_name,
+            category_code,
+            protocol,
+            parent_device_id,
+            model,
+            manufacturer,
+            is_active
         )
-        returning id, tenant_id, parent_device_id, device_name, category_code, protocol, model, manufacturer, is_active, created_at into v_row;
+        values
+        (
+            v_tid,
+            p_payload->>'device_name',
+            p_payload->>'category_code',
+            (p_payload->>'protocol')::public.device_protocol,
+
+            case
+                when p_payload ? 'parent_device_id'
+                 and p_payload->>'parent_device_id' is not null
+                then
+                    (p_payload->>'parent_device_id')::uuid
+                else null
+            end,
+
+            p_payload->>'model',
+
+            p_payload->>'manufacturer',
+
+            coalesce(
+                (p_payload->>'is_active')::boolean,
+                true
+            )
+        )
+        returning
+            id,
+            tenant_id,
+            parent_device_id,
+            device_name,
+            category_code,
+            protocol,
+            model,
+            manufacturer,
+            is_active,
+            created_at
+        into v_row;
+
+
         v_result := to_jsonb(v_row);
+
+
 
     when 'update_device' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        if p_payload ? 'parent_device_id' and p_payload->>'parent_device_id' is not null then
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        if p_payload ? 'parent_device_id'
+           and p_payload->>'parent_device_id' is not null
+        then
+
             if not exists (
                 select 1
                 from public.devices pd
-                where pd.id = (p_payload->>'parent_device_id')::uuid
+                where pd.id =
+                    (p_payload->>'parent_device_id')::uuid
                   and pd.tenant_id = v_tid
             ) then
                 raise exception 'Parent device not found';
             end if;
+
         end if;
-        update public.devices d set
-            device_name = case when p_payload ? 'device_name' then p_payload->>'device_name' else d.device_name end,
-            category_code = case when p_payload ? 'category_code' then p_payload->>'category_code' else d.category_code end,
-            protocol = case when p_payload ? 'protocol' then (p_payload->>'protocol')::public.device_protocol else d.protocol end,
-            parent_device_id = case when p_payload ? 'parent_device_id' then case when p_payload->>'parent_device_id' is null then null else (p_payload->>'parent_device_id')::uuid end else d.parent_device_id end,
-            model = case when p_payload ? 'model' then p_payload->>'model' else d.model end,
-            manufacturer = case when p_payload ? 'manufacturer' then p_payload->>'manufacturer' else d.manufacturer end,
-            is_active = case when p_payload ? 'is_active' then (p_payload->>'is_active')::boolean else d.is_active end
+
+
+        update public.devices d
+        set
+
+            device_name =
+                case
+                    when p_payload ? 'device_name'
+                    then p_payload->>'device_name'
+                    else d.device_name
+                end,
+
+            category_code =
+                case
+                    when p_payload ? 'category_code'
+                    then p_payload->>'category_code'
+                    else d.category_code
+                end,
+
+            protocol =
+                case
+                    when p_payload ? 'protocol'
+                    then
+                        (p_payload->>'protocol')
+                        ::public.device_protocol
+                    else d.protocol
+                end,
+
+            parent_device_id =
+                case
+                    when p_payload ? 'parent_device_id'
+                    then
+                        case
+                            when p_payload->>'parent_device_id' is null
+                            then null
+                            else
+                                (p_payload->>'parent_device_id')::uuid
+                        end
+                    else d.parent_device_id
+                end,
+
+            model =
+                case
+                    when p_payload ? 'model'
+                    then p_payload->>'model'
+                    else d.model
+                end,
+
+            manufacturer =
+                case
+                    when p_payload ? 'manufacturer'
+                    then p_payload->>'manufacturer'
+                    else d.manufacturer
+                end,
+
+            is_active =
+                case
+                    when p_payload ? 'is_active'
+                    then (p_payload->>'is_active')::boolean
+                    else d.is_active
+                end
+
         where d.id = (p_payload->>'id')::uuid
           and d.tenant_id = v_tid
-        returning d.id, d.tenant_id, d.parent_device_id, d.device_name, d.category_code, d.protocol, d.model, d.manufacturer, d.is_active, d.created_at into v_row;
-        if not found then raise exception 'Device not found'; end if;
+
+        returning
+            d.id,
+            d.tenant_id,
+            d.parent_device_id,
+            d.device_name,
+            d.category_code,
+            d.protocol,
+            d.model,
+            d.manufacturer,
+            d.is_active,
+            d.created_at
+        into v_row;
+
+
+        if not found then
+            raise exception 'Device not found';
+        end if;
+
+
         v_result := to_jsonb(v_row);
 
+
+
     when 'delete_device' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         delete from public.devices d
         where d.id = (p_payload->>'id')::uuid
           and d.tenant_id = v_tid;
-        if not found then raise exception 'Device not found'; end if;
-        v_result := jsonb_build_object('deleted', true, 'id', p_payload->>'id');
+
+
+        if not found then
+            raise exception 'Device not found';
+        end if;
+
+
+        v_result := jsonb_build_object(
+            'deleted',
+            true,
+            'id',
+            p_payload->>'id'
+        );
+
+
 
     when 'assign_device' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
-        v_result := public.devices_assign_device_to_room((p_payload->>'device_id')::uuid, (p_payload->>'room_id')::uuid);
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
+        v_result :=
+            public.devices_assign_device_to_room(
+                (p_payload->>'device_id')::uuid,
+                (p_payload->>'room_id')::uuid
+            );
+
+
 
     when 'unassign_device' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         if not exists (
             select 1
             from public.devices d
-            where d.id = (p_payload->>'device_id')::uuid
+            where d.id =
+                (p_payload->>'device_id')::uuid
               and d.tenant_id = v_tid
         ) then
             raise exception 'Device not found';
         end if;
+
+
         delete from public.device_assignments da
-        where da.device_id = (p_payload->>'device_id')::uuid;
-        v_result := jsonb_build_object('unassigned', true, 'device_id', p_payload->>'device_id');
+        where da.device_id =
+            (p_payload->>'device_id')::uuid;
+
+
+        v_result := jsonb_build_object(
+            'unassigned',
+            true,
+            'device_id',
+            p_payload->>'device_id'
+        );
+
+
 
     when 'get_device_config' then
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         if not exists (
             select 1
             from public.devices d
-            where d.id = (p_payload->>'device_id')::uuid
+            where d.id =
+                (p_payload->>'device_id')::uuid
               and d.tenant_id = v_tid
         ) then
             raise exception 'Device not found';
         end if;
-        select to_jsonb(t) into v_result
-        from (
-            select dc.id, dc.device_id, dc.config, dc.created_at, dc.updated_at
+
+
+        select to_jsonb(t)
+        into v_result
+        from
+        (
+            select
+                dc.id,
+                dc.device_id,
+                dc.config,
+                dc.created_at,
+                dc.updated_at
             from public.device_configurations dc
-            where dc.device_id = (p_payload->>'device_id')::uuid
+            where dc.device_id =
+                (p_payload->>'device_id')::uuid
         ) t;
-        if v_result is null then v_result := 'null'::jsonb; end if;
+
+
+        if v_result is null then
+            v_result := 'null'::jsonb;
+        end if;
+
+
 
     when 'upsert_device_config' then
+
         perform public.edge_require_manager();
+
         v_tid := platform.current_tenant_id();
-        if v_tid is null then raise exception 'no active tenant'; end if;
+
+        if v_tid is null then
+            raise exception 'no active tenant';
+        end if;
+
+
         if not exists (
             select 1
             from public.devices d
-            where d.id = (p_payload->>'device_id')::uuid
+            where d.id =
+                (p_payload->>'device_id')::uuid
               and d.tenant_id = v_tid
         ) then
             raise exception 'Device not found';
         end if;
-        insert into public.device_configurations (device_id, config)
-        values ((p_payload->>'device_id')::uuid, coalesce(p_payload->'config', '{}'::jsonb))
-        on conflict (device_id) do update set config = excluded.config
-        returning id, device_id, config, created_at, updated_at into v_row;
+
+
+        insert into public.device_configurations
+        (
+            device_id,
+            config
+        )
+        values
+        (
+            (p_payload->>'device_id')::uuid,
+            coalesce(
+                p_payload->'config',
+                '{}'::jsonb
+            )
+        )
+
+        on conflict (device_id)
+        do update
+        set
+            config = excluded.config
+
+        returning
+            id,
+            device_id,
+            config,
+            created_at,
+            updated_at
+        into v_row;
+
+
         v_result := to_jsonb(v_row);
 
+
+
     else
-        raise exception 'unknown devices_api operation: %', p_op;
+
+        raise exception
+            'unknown devices_api operation: %',
+            p_op;
+
     end case;
 
+
     return v_result;
+
 end;
 $$;
 
 
 
 -- =====================================================
--- 13. DEVICE ASSIGNMENT TENANT CONSISTENCY
+-- 15. APPROVED PUBLIC DEVICE API BOUNDARY
+--
+-- 019 grants authenticated EXECUTE to this function.
+--
+-- devices_domain remains internal.
+--
+-- This wrapper intentionally preserves the existing
+-- devices_domain contract and therefore does not break
+-- existing internal callers.
+-- =====================================================
+
+create or replace function public.devices_api(
+    p_op text,
+    p_payload jsonb default '{}'::jsonb
+)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+    select public.devices_domain(
+        p_op,
+        coalesce(p_payload, '{}'::jsonb)
+    );
+$$;
+
+
+
+comment on function public.devices_api(text, jsonb) is
+    'Approved authenticated API boundary for the Property & Device Engine. Delegates to internal devices_domain().';
+
+
+
+comment on function public.devices_domain(text, jsonb) is
+    'Internal Property & Device domain function. Not an authenticated API surface. EXECUTE boundary controlled by 019.';
+
+
+
+-- =====================================================
+-- 16. DEVICE ASSIGNMENT TENANT CONSISTENCY
 -- =====================================================
 
 create or replace function public.enforce_device_assignment_tenant_consistency()
@@ -853,37 +1860,46 @@ declare
     v_device_tenant uuid;
     v_room_tenant uuid;
 begin
+
     select d.tenant_id
     into v_device_tenant
     from public.devices d
     where d.id = new.device_id;
 
+
     if not found then
         raise exception 'device not found';
     end if;
 
+
     select p.tenant_id
     into v_room_tenant
     from public.rooms r
-    join public.properties p on p.id = r.property_id
+    join public.properties p
+      on p.id = r.property_id
     where r.id = new.room_id;
+
 
     if not found then
         raise exception 'room not found';
     end if;
 
-    if v_device_tenant <> v_room_tenant then
-        raise exception 'device and room must belong to the same tenant';
+
+    if v_device_tenant is distinct from v_room_tenant then
+        raise exception
+            'device and room must belong to the same tenant';
     end if;
 
+
     return new;
+
 end;
 $$;
 
 
 
 -- =====================================================
--- 14. DEVICE HIERARCHY INVARIANT
+-- 17. DEVICE HIERARCHY INVARIANT
 -- =====================================================
 
 create or replace function public.enforce_device_hierarchy()
@@ -892,388 +1908,604 @@ language plpgsql
 set search_path = ''
 as $$
 declare
-    v_new_category record;
-    v_parent record;
+    v_new_is_gateway boolean;
+    v_parent_tenant uuid;
+    v_parent_is_gateway boolean;
 begin
+
     select dc.is_gateway
-    into v_new_category
+    into v_new_is_gateway
     from public.device_categories dc
     where dc.code = new.category_code;
+
 
     if not found then
         raise exception 'device category not found';
     end if;
 
-    if v_new_category.is_gateway and new.parent_device_id is not null then
-        raise exception 'gateway devices cannot have a parent device';
+
+    /*
+     * Gateways are root devices.
+     */
+    if v_new_is_gateway
+       and new.parent_device_id is not null
+    then
+        raise exception
+            'gateway devices cannot have a parent device';
     end if;
 
+
+    /*
+     * A device can never be its own parent.
+     */
+    if new.parent_device_id = new.id then
+        raise exception
+            'device cannot be its own parent';
+    end if;
+
+
+    /*
+     * Root device.
+     */
     if new.parent_device_id is null then
+
+        /*
+         * A gateway category is valid as root.
+         */
         return new;
+
     end if;
 
-    if tg_op = 'UPDATE' and new.parent_device_id = new.id then
-        raise exception 'device cannot be its own parent';
-    end if;
 
-    select d.tenant_id, dc.is_gateway
-    into v_parent
+    /*
+     * Parent must exist.
+     */
+    select
+        d.tenant_id,
+        dc.is_gateway
+    into
+        v_parent_tenant,
+        v_parent_is_gateway
     from public.devices d
-    join public.device_categories dc on dc.code = d.category_code
+    join public.device_categories dc
+      on dc.code = d.category_code
     where d.id = new.parent_device_id;
 
+
     if not found then
-        raise exception 'parent device not found';
+        raise exception
+            'parent device not found';
     end if;
 
-    if not v_parent.is_gateway then
-        raise exception 'parent device must be a gateway';
+
+    /*
+     * Parent must be a gateway.
+     */
+    if not v_parent_is_gateway then
+        raise exception
+            'parent device must be a gateway';
     end if;
 
-    if v_parent.tenant_id <> new.tenant_id then
-        raise exception 'parent device must belong to the same tenant';
+
+    /*
+     * Parent and child must belong to the same tenant.
+     */
+    if v_parent_tenant is distinct from new.tenant_id then
+        raise exception
+            'parent device must belong to the same tenant';
     end if;
+
 
     return new;
+
 end;
 $$;
 
 
 
 -- =====================================================
--- 15. DEVICE CATEGORY POLICIES
+-- 18. DEVICE HIERARCHY CHILD INVARIANT
+--
+-- Prevent a gateway from being converted into a
+-- non-gateway while child devices still reference it.
+--
+-- Without this invariant:
+--
+-- gateway
+--    └── sensor
+--
+-- could become:
+--
+-- sensor
+--    └── sensor
+--
+-- which violates the hierarchy contract.
 -- =====================================================
 
-create policy device_categories_select on public.device_categories
-    for select to authenticated
-    using (true);
+create or replace function public.prevent_gateway_demotion_with_children()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    v_old_is_gateway boolean;
+    v_new_is_gateway boolean;
+begin
+
+    if tg_op <> 'UPDATE' then
+        return new;
+    end if;
 
 
-
-create policy device_categories_write on public.device_categories
-    for all to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
+    select dc.is_gateway
+    into v_old_is_gateway
+    from public.device_categories dc
+    where dc.code = old.category_code;
 
 
--- =====================================================
--- 16. DEVICE POLICIES
--- =====================================================
-
-create policy devices_delete on public.devices
-    for delete to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
+    select dc.is_gateway
+    into v_new_is_gateway
+    from public.device_categories dc
+    where dc.code = new.category_code;
 
 
+    if coalesce(v_old_is_gateway, false)
+       and not coalesce(v_new_is_gateway, false)
+    then
 
-create policy devices_insert on public.devices
-    for insert to authenticated
-    with check (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy devices_select on public.devices
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy devices_update on public.devices
-    for update to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id))
-    with check (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
--- =====================================================
--- 17. PROPERTY POLICIES
--- =====================================================
-
-create policy properties_delete on public.properties
-    for delete to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy properties_insert on public.properties
-    for insert to authenticated
-    with check (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy properties_select on public.properties
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
-create policy properties_update on public.properties
-    for update to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id))
-    with check (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-
--- =====================================================
--- 18. ROOM POLICIES
--- =====================================================
-
-create policy rooms_delete on public.rooms
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
+        if exists (
             select 1
-            from public.properties p
-            where p.id = rooms.property_id
-              and public.has_tenant_access(p.tenant_id)
-        )
-    );
+            from public.devices child
+            where child.parent_device_id = new.id
+        ) then
+
+            raise exception
+                'gateway cannot be demoted while child devices exist';
+
+        end if;
+
+    end if;
+
+
+    return new;
+
+end;
+$$;
 
 
 
-create policy rooms_insert on public.rooms
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.properties p
-            where p.id = rooms.property_id
-              and public.has_tenant_access(p.tenant_id)
-        )
-    );
+-- =====================================================
+-- 19. DEVICE CATEGORY POLICIES
+-- =====================================================
+
+create policy device_categories_select
+on public.device_categories
+for select
+to authenticated
+using (true);
+
+
+create policy device_categories_write
+on public.device_categories
+for all
+to authenticated
+using (
+    platform.is_platform_admin()
+)
+with check (
+    platform.is_platform_admin()
+);
 
 
 
-create policy rooms_select on public.rooms
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.properties p
-            where p.id = rooms.property_id
-              and public.has_tenant_access(p.tenant_id)
-        )
-    );
+-- =====================================================
+-- 20. DEVICE POLICIES
+-- =====================================================
+
+create policy devices_delete
+on public.devices
+for delete
+to authenticated
+using (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+create policy devices_insert
+on public.devices
+for insert
+to authenticated
+with check (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+create policy devices_select
+on public.devices
+for select
+to authenticated
+using (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+create policy devices_update
+on public.devices
+for update
+to authenticated
+using (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+)
+with check (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
 
 
 
-create policy rooms_update on public.rooms
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.properties p
-            where p.id = rooms.property_id
-              and public.has_tenant_access(p.tenant_id)
-        )
+-- =====================================================
+-- 21. PROPERTY POLICIES
+-- =====================================================
+
+create policy properties_delete
+on public.properties
+for delete
+to authenticated
+using (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+create policy properties_insert
+on public.properties
+for insert
+to authenticated
+with check (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+create policy properties_select
+on public.properties
+for select
+to authenticated
+using (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+create policy properties_update
+on public.properties
+for update
+to authenticated
+using (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+)
+with check (
+    platform.is_platform_admin()
+    or public.has_tenant_access(tenant_id)
+);
+
+
+
+-- =====================================================
+-- 22. ROOM POLICIES
+-- =====================================================
+
+create policy rooms_delete
+on public.rooms
+for delete
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.properties p
+        where p.id = rooms.property_id
+          and public.has_tenant_access(p.tenant_id)
     )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.properties p
-            where p.id = rooms.property_id
-              and public.has_tenant_access(p.tenant_id)
-        )
-    );
+);
 
 
-
--- =====================================================
--- 19. DEVICE ASSIGNMENT POLICIES
--- =====================================================
-
-create policy device_assignments_delete on public.device_assignments
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_assignments_insert on public.device_assignments
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_assignments_select on public.device_assignments
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_assignments_update on public.device_assignments
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
+create policy rooms_insert
+on public.rooms
+for insert
+to authenticated
+with check (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.properties p
+        where p.id = rooms.property_id
+          and public.has_tenant_access(p.tenant_id)
     )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_assignments.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
+);
 
 
-
--- =====================================================
--- 20. DEVICE CONFIGURATION POLICIES
--- =====================================================
-
-create policy device_configurations_delete on public.device_configurations
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_configurations_insert on public.device_configurations
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_configurations_select on public.device_configurations
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
-
-
-
-create policy device_configurations_update on public.device_configurations
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
+create policy rooms_select
+on public.rooms
+for select
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.properties p
+        where p.id = rooms.property_id
+          and public.has_tenant_access(p.tenant_id)
     )
-    with check (
-        platform.is_platform_admin()
-        or exists (
-            select 1
-            from public.devices d
-            where d.id = device_configurations.device_id
-              and public.has_tenant_access(d.tenant_id)
-        )
-    );
+);
+
+
+create policy rooms_update
+on public.rooms
+for update
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.properties p
+        where p.id = rooms.property_id
+          and public.has_tenant_access(p.tenant_id)
+    )
+)
+with check (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.properties p
+        where p.id = rooms.property_id
+          and public.has_tenant_access(p.tenant_id)
+    )
+);
 
 
 
 -- =====================================================
--- 21. TRIGGERS
+-- 23. DEVICE ASSIGNMENT POLICIES
 -- =====================================================
+
+create policy device_assignments_delete
+on public.device_assignments
+for delete
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_assignments.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+create policy device_assignments_insert
+on public.device_assignments
+for insert
+to authenticated
+with check (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_assignments.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+create policy device_assignments_select
+on public.device_assignments
+for select
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_assignments.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+create policy device_assignments_update
+on public.device_assignments
+for update
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_assignments.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+)
+with check (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_assignments.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+
+-- =====================================================
+-- 24. DEVICE CONFIGURATION POLICIES
+-- =====================================================
+
+create policy device_configurations_delete
+on public.device_configurations
+for delete
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_configurations.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+create policy device_configurations_insert
+on public.device_configurations
+for insert
+to authenticated
+with check (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_configurations.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+create policy device_configurations_select
+on public.device_configurations
+for select
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_configurations.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+create policy device_configurations_update
+on public.device_configurations
+for update
+to authenticated
+using (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_configurations.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+)
+with check (
+    platform.is_platform_admin()
+    or exists (
+        select 1
+        from public.devices d
+        where d.id = device_configurations.device_id
+          and public.has_tenant_access(d.tenant_id)
+    )
+);
+
+
+
+-- =====================================================
+-- 25. TRIGGERS
+-- =====================================================
+
+drop trigger if exists trg_properties_updated_at
+on public.properties;
+
 
 create trigger trg_properties_updated_at
-before update on properties
-for each row execute function platform.set_updated_at();
+before update on public.properties
+for each row
+execute function platform.set_updated_at();
 
+
+
+drop trigger if exists trg_devices_hierarchy
+on public.devices;
 
 
 create trigger trg_devices_hierarchy
-before insert or update on public.devices
-for each row execute function public.enforce_device_hierarchy();
+before insert or update
+on public.devices
+for each row
+execute function public.enforce_device_hierarchy();
 
+
+
+drop trigger if exists trg_devices_gateway_demotion
+on public.devices;
+
+
+create trigger trg_devices_gateway_demotion
+before update
+on public.devices
+for each row
+execute function public.prevent_gateway_demotion_with_children();
+
+
+
+drop trigger if exists trg_device_assignment_tenant_consistency
+on public.device_assignments;
 
 
 create trigger trg_device_assignment_tenant_consistency
-before insert or update on public.device_assignments
-for each row execute function public.enforce_device_assignment_tenant_consistency();
+before insert or update
+on public.device_assignments
+for each row
+execute function public.enforce_device_assignment_tenant_consistency();
 
+
+
+drop trigger if exists trg_device_configurations_updated_at
+on public.device_configurations;
 
 
 create trigger trg_device_configurations_updated_at
-before update on device_configurations
-for each row execute function platform.set_updated_at();
+before update
+on public.device_configurations
+for each row
+execute function platform.set_updated_at();
+
+
+
 
 
 
 -- =====================================================
--- 22. DEVICE CATEGORY SEED
+-- 27. MIGRATION REGISTRATION
 -- =====================================================
 
-insert into public.device_categories (code, name, is_gateway, is_lock, sort_order)
+insert into platform.schema_migrations
+(
+    migration_name,
+    version,
+    rollback_available
+)
 values
-    ('sensor', 'Sensor', false, false, 10),
-    ('switch', 'Switch', false, false, 20),
-    ('lock', 'Lock', false, true, 30),
-    ('thermostat', 'Thermostat', false, false, 40),
-    ('ir_controller', 'IR Controller', false, false, 50),
-    ('gateway', 'Gateway', true, false, 60),
-    ('other', 'Other', false, false, 99)
-on conflict (code) do update set
-    name = excluded.name,
-    is_gateway = excluded.is_gateway,
-    is_lock = excluded.is_lock,
-    sort_order = excluded.sort_order;
+(
+    '004_property_device_engine',
+    'REV22.PROPERTY.DEVICE',
+    false
+)
+
+on conflict (version)
+do nothing;
+
 
 
 -- =====================================================
--- END 004 PROPERTY & DEVICE ENGINE (CLEAN DOMAIN ONLY)
+-- END 004 PROPERTY & DEVICE ENGINE
 -- =====================================================
-
-insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('004_property_device_engine', 'REV22.PROPERTY.DEVICE', false)
-on conflict (version) do nothing;
