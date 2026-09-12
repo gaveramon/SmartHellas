@@ -8,6 +8,11 @@ create extension if not exists pg_trgm;
 create extension if not exists btree_gin;
 create extension if not exists btree_gist;
 create extension if not exists pg_stat_statements;
+create extension if not exists pg_partman;
+with schema extensions;
+
+create extension if not exists pg_cron
+with schema pg_catalog;
 
 -- Supabase ecosystem extensions (wired in Part 5 cron workers + Part 11 stubs)
 create extension if not exists pg_net;
@@ -265,21 +270,17 @@ create table if not exists platform.execution_supervisor (
 
 create table if not exists platform.external_webhooks (
     id uuid primary key default gen_random_uuid(),
-
     source text not null, -- external provider
-
     external_event_id text not null,
-
     event_type text,
-
     tenant_id uuid,
-
+    processing_status text not null default 'pending',
+    processed_at timestamptz,
+    last_error jsonb,
+    retry_count int not null default 0,
     payload jsonb default '{}'::jsonb,
-
     received_at timestamptz default now()
 );
-
-
 
 -- =====================================================
 -- 2. INDEX USAGE TRACKER (IMPROVED LOOKUP MODEL)
@@ -287,14 +288,11 @@ create table if not exists platform.external_webhooks (
 
 create table if not exists platform.index_usage_stats (
     id uuid primary key default gen_random_uuid(),
-
     table_name text not null,
     index_name text not null,
-
     scans bigint default 0,
     tuples_read bigint default 0,
     tuples_fetched bigint default 0,
-
     last_updated timestamptz default now()
 );
 
@@ -306,26 +304,18 @@ create table if not exists platform.index_usage_stats (
 
 create table if not exists platform.integration_queue (
     id uuid primary key default gen_random_uuid(),
-
     tenant_id uuid,
-
     integration_type text,
     event_type text,
-
     payload jsonb,
-
     status text default 'pending',
     -- pending | processing | sent | failed | retrying | dead_letter
 
     retry_count int default 0,
     max_retries int default 5,
-
     next_retry_at timestamptz,
-
     last_error jsonb,
-
     delivered_at timestamptz,
-
     created_at timestamptz default now()
 );
 
@@ -827,6 +817,8 @@ create table if not exists platform.security_table_registry (
 
     portal_access text not null,
 
+    platform_admin_access boolean not null default false,
+   
     direct_authenticated_access boolean not null default false,
 
     rls_required boolean not null default true,
@@ -1216,30 +1208,9 @@ create table if not exists platform.webhook_provider_tenant_map (
     unique (source, external_account_id)
 );
 
-
--- =====================================================
--- REV19 SUPABASE PLATFORM LAYER
--- PART 1 - FINAL PRODUCTION FOUNDATION
--- =====================================================
-
--- =====================================================
--- 000.00 PLATFORM SCHEMA
--- =====================================================
-
-
-
-
-
-
-
 -- =====================================================
 -- 000.01 REQUIRED EXTENSIONS (SUPABASE SAFE)
 -- =====================================================
-
-
-
-
-
 
 do $$
 begin
@@ -1250,8 +1221,6 @@ exception
     when others then
         raise notice 'vault extension not available; skipping';
 end $$;
-
-
 
 do $$
 begin
@@ -1446,6 +1415,7 @@ $$;
 comment on function platform.rls_allow() is
     'Legacy no-arg helper; prefer platform.rls_allow(uuid) in policies.';
 
+
 -- =====================================================
 -- 000.02.07 ARCHITECTURE GUARANTEES
 -- =====================================================
@@ -1484,52 +1454,32 @@ REV19 TENANT + RBAC RULES:
 create index if not exists idx_event_tenant_time
 on platform.event_log (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_event_tenant_type_time
 on platform.event_log (tenant_id, event_type, created_at desc);
-
-
 
 create index if not exists idx_event_correlation
 on platform.event_log (correlation_id);
 
-
-
 create index if not exists idx_event_device
 on platform.event_log (device_id);
-
-
 
 create index if not exists idx_audit_tenant_time
 on platform.audit_log (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_op_tenant_time
 on platform.operation_log (tenant_id, started_at desc);
-
-
 
 create index if not exists idx_op_corr
 on platform.operation_log (correlation_id);
 
-
-
 create index if not exists idx_op_status
 on platform.operation_log (tenant_id, status, started_at desc);
-
-
 
 create index if not exists idx_error_tenant_time
 on platform.error_log (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_soft_delete_tenant
 on platform.soft_delete_log (tenant_id, deleted_at desc);
-
-
 
 -- =====================================================
 -- RETENTION POLICY CONTRACT (IMPORTANT)
@@ -1547,8 +1497,6 @@ REV19 OBSERVABILITY RULES:
 7. correlation_id is mandatory for traceability
 ';
 
-
-
 -- =====================================================
 -- IDEMPOTENCY SAFETY
 -- =====================================================
@@ -1557,8 +1505,6 @@ create unique index if not exists uq_device_commands_idempotency
 on platform.device_commands (tenant_id, idempotency_key)
 where idempotency_key is not null;
 
-
-
 -- =====================================================
 -- INDEXES (SUPPORT + SCALE OPTIMIZED)
 -- =====================================================
@@ -1566,75 +1512,47 @@ where idempotency_key is not null;
 create index if not exists idx_commands_queue
 on platform.device_commands (tenant_id, status, priority, scheduled_at);
 
-
-
 create index if not exists idx_commands_retry
 on platform.device_commands (tenant_id, next_retry_at);
 
-
-
 create index if not exists idx_commands_corr
 on platform.device_commands (correlation_id);
-
-
 
 create index if not exists idx_commands_worker_queue
 on platform.device_commands (priority, scheduled_at)
 where status in ('queued', 'retrying');
 
-
-
 create index if not exists idx_commands_processing_watchdog
 on platform.device_commands (started_at)
 where status = 'processing';
 
-
-
 create index if not exists idx_commands_device
 on platform.device_commands (device_id);
-
-
 
 create index if not exists idx_integration_queue_pending
 on platform.integration_queue (status, next_retry_at)
 where status in ('pending', 'failed', 'retrying');
 
-
-
 create index if not exists idx_shipment_dispatch_pending
 on platform.shipment_dispatch_queue (tenant_id, status, created_at);
-
-
 
 create index if not exists idx_shipment_dispatch_fulfilment
 on platform.shipment_dispatch_queue (fulfilment_order_id);
 
-
-
 comment on table platform.shipment_dispatch_queue is
     'Carrier label/dispatch execution queue. Domain intent lives in public.fulfilment_orders (010).';
-
-
 
 comment on column platform.shipment_dispatch_queue.label_artifact_ref is
     'Storage or vault reference to generated label PDF/ZPL — never inline binary.';
 
-
-
 create index if not exists idx_shipment_tracking_fulfilment
 on platform.shipment_tracking_events (fulfilment_order_id, occurred_at desc);
-
-
 
 create index if not exists idx_shipment_tracking_tenant
 on platform.shipment_tracking_events (tenant_id, received_at desc);
 
-
-
 comment on table platform.shipment_tracking_events is
     'Idempotent carrier tracking ingest. Updates public.fulfilment_orders status via worker, not trigger.';
-
-
 
 -- =====================================================
 -- ARCHITECTURE GUARANTEE
@@ -1653,99 +1571,60 @@ REV19 EXECUTION RULES FINAL:
 8. Integration layer MUST support retry + delay
 ';
 
-
-
 create index if not exists idx_internal_events_lookup
 on platform.internal_events (tenant_id, status, created_at);
-
-
 
 create index if not exists idx_operation_contexts_pending
 on platform.operation_contexts (tenant_id, status, created_at);
 
-
-
 comment on table platform.operation_contexts is
     'Transient workflow trigger input staging. Workers consume rows; definitions live in 008.';
-
-
-
-
-
 
 -- HARD IDEMPOTENCY GUARANTEE
 create unique index if not exists uq_external_webhooks_dedup
 on platform.external_webhooks (source, external_event_id);
 
 
-
 create index if not exists idx_webhook_tenant_map_tenant
 on platform.webhook_provider_tenant_map (tenant_id);
-
 
 
 create index if not exists idx_payment_intents_tenant_created
 on platform.payment_intents (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_payment_intents_status
 on platform.payment_intents (tenant_id, status, created_at desc);
-
-
 
 create index if not exists idx_payment_intents_target
 on platform.payment_intents (target_type, target_id);
 
-
-
 comment on table platform.payment_intents is
     'Durable payment/checkout state. Workers update via apply_payment_status(); never store secrets here.';
-
-
 
 create unique index if not exists uq_payment_events_external_dedup
 on platform.payment_events (payment_intent_id, external_event_id)
 where external_event_id is not null;
 
-
-
 create index if not exists idx_payment_events_intent
 on platform.payment_events (payment_intent_id, created_at desc);
-
-
 
 create index if not exists idx_payment_events_tenant_created
 on platform.payment_events (tenant_id, created_at desc);
 
-
-
 comment on table platform.payment_events is
     'Append-only payment lifecycle log. Idempotent on external_event_id when present.';
-
-
 
 create index if not exists idx_payment_provider_refs_lookup
 on platform.payment_provider_refs (provider, external_id);
 
-
-
 comment on table platform.payment_provider_refs is
     'Provider ID map for catalog rows (011 plan_pricing / product_plans). Not a business catalog.';
-
-
-
-
 
 create index if not exists idx_retry_tasks_schedule
 on platform.retry_tasks (status, next_retry_at);
 
-
-
 create index if not exists idx_event_outbox_pending
 on platform.event_outbox (processed, created_at);
-
-
 
 -- =====================================================
 -- ARCHITECTURE GUARANTEE (FINAL PLATFORM CONTRACT)
@@ -1766,57 +1645,35 @@ comment on schema platform is '
 10. system must remain fully reusable across SaaS products
 ';
 
-
-
 create unique index if not exists uq_system_nodes
 on platform.system_nodes (node_type, node_identifier);
-
-
 
 create index if not exists idx_system_nodes_status
 on platform.system_nodes (status, last_seen);
 
-
-
 create index if not exists idx_node_heartbeats_time
 on platform.node_heartbeats (node_id, recorded_at);
-
-
 
 create index if not exists idx_scheduled_jobs_next_run
 on platform.scheduled_jobs (is_active, next_run);
 
-
-
 create index if not exists idx_job_executions_job
 on platform.job_executions (job_id, started_at);
-
-
 
 create index if not exists idx_job_executions_correlation
 on platform.job_executions (correlation_id);
 
-
-
 create index if not exists idx_queue_logs_time
 on platform.queue_processor_logs (queue_name, created_at);
-
-
 
 create index if not exists idx_system_metrics_time
 on platform.system_metrics (metric_name, recorded_at);
 
-
-
 create index if not exists idx_event_lag_time
 on platform.event_lag_monitor (queue_name, recorded_at);
 
-
-
 create unique index if not exists uq_realtime_streams
 on platform.realtime_streams (stream_name);
-
-
 
 -- =====================================================
 -- ARCHITECTURE GUARANTEE (FINAL v3 RULES)
@@ -1841,42 +1698,26 @@ comment on schema platform is '
 create index if not exists idx_query_perf_time
 on platform.query_performance_log (execution_time_ms, created_at);
 
-
-
 create index if not exists idx_query_perf_hash
 on platform.query_performance_log (query_hash);
-
-
 
 create index if not exists idx_index_usage_table
 on platform.index_usage_stats (table_name, index_name);
 
-
-
 create index if not exists idx_slow_query_severity
 on platform.slow_query_flags (severity, last_seen);
-
-
 
 create unique index if not exists uq_schema_migration_version
 on platform.schema_migrations (version);
 
-
-
 create index if not exists idx_migration_exec_time
 on platform.migration_execution_log (executed_at);
-
-
 
 create index if not exists idx_schema_changes_time
 on platform.schema_change_log (object_name, created_at);
 
-
-
 create index if not exists idx_perf_snapshots_time
 on platform.performance_snapshots (recorded_at);
-
-
 
 -- =====================================================
 -- ARCHITECTURE GUARANTEE (FINAL v3 HARDENED RULES)
@@ -1896,94 +1737,6 @@ comment on schema platform is '
 9. no business logic allowed anywhere in this layer
 10. this is a production-grade Supabase database OS kernel
 ';
-
-
-
--- =====================================================
--- END CHAPTER 8 FINAL v3
--- =====================================================
-
--- =====================================================
--- PART 8,5 RLS POLICY FACTORIES
--- =====================================================
-
-create or replace function platform._apply_tenant_rls(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_schema text;
-    v_table text;
-begin
-    select n.nspname, c.relname
-    into v_schema, v_table
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where c.oid = p_table;
-
-    execute format('alter table %I.%I enable row level security', v_schema, v_table);
-    execute format('alter table %I.%I force row level security', v_schema, v_table);
-
-    execute format('drop policy if exists %I on %I.%I', v_table || '_select', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_insert', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_update', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_delete', v_schema, v_table);
-
-    execute format(
-        'create policy %I on %I.%I for select to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_select', v_schema, v_table
-    );
-    execute format(
-        'create policy %I on %I.%I for insert to authenticated with check (platform.rls_allow(tenant_id))',
-        v_table || '_insert', v_schema, v_table
-    );
-    execute format(
-        'create policy %I on %I.%I for update to authenticated using (platform.rls_allow(tenant_id)) with check (platform.rls_allow(tenant_id))',
-        v_table || '_update', v_schema, v_table
-    );
-    execute format(
-        'create policy %I on %I.%I for delete to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_delete', v_schema, v_table
-    );
-end;
-$$;
-
-
-
-create or replace function platform._apply_tenant_rls_select_only(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_schema text;
-    v_table text;
-begin
-    select n.nspname, c.relname
-    into v_schema, v_table
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where c.oid = p_table;
-
-    execute format('alter table %I.%I enable row level security', v_schema, v_table);
-    execute format('alter table %I.%I force row level security', v_schema, v_table);
-
-    execute format('drop policy if exists %I on %I.%I', v_table || '_select', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_insert', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_update', v_schema, v_table);
-    execute format('drop policy if exists %I on %I.%I', v_table || '_delete', v_schema, v_table);
-
-    execute format(
-        'create policy %I on %I.%I for select to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_select', v_schema, v_table
-    );
-end;
-$$;
-
-
 
 create or replace function platform.apply_payment_status(
     p_intent_id uuid,
@@ -2053,273 +1806,8 @@ begin
 end;
 $$;
 
-create or replace function platform._apply_platform_admin_rls(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_schema text;
-    v_table text;
-begin
-    select n.nspname, c.relname
-    into v_schema, v_table
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where c.oid = p_table;
-
-    execute format('alter table %I.%I enable row level security', v_schema, v_table);
-    execute format('alter table %I.%I force row level security', v_schema, v_table);
-
-    execute format('drop policy if exists %I on %I.%I', v_table || '_admin_all', v_schema, v_table);
-
-    execute format(
-        'create policy %I on %I.%I for all to authenticated using (platform.is_platform_admin()) with check (platform.is_platform_admin())',
-        v_table || '_admin_all', v_schema, v_table
-    );
-end;
-$$;
-
-
-
--- =====================================================
--- PART 9 - PLATFORM RLS BOOTSTRAP
--- (Public domain RLS loop deferred to 020_platform_bootstrap_finale_rev19.sql)
--- =====================================================
-
-alter table platform.profiles enable row level security;
-
-
-alter table platform.profiles force row level security;
-
-
-
-drop policy if exists profiles_select on platform.profiles;
-
-
-drop policy if exists profiles_update on platform.profiles;
-
-
-
-alter table platform.platform_admins enable row level security;
-
-
-revoke all on table platform.platform_admins from authenticated, anon;
-
-
-grant all on table platform.platform_admins to service_role;
-
-
-
-select platform._apply_tenant_rls_select_only('platform.device_commands'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.device_commands_dlq'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.integration_queue'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.shipment_dispatch_queue'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.shipment_tracking_events'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.internal_events'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.operation_contexts'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.external_webhooks'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.webhook_provider_tenant_map'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.payment_intents'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.payment_events'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.retry_tasks'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.dead_letter_archive'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.event_outbox'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.event_log'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.audit_log'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.operation_log'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.error_log'::regclass);
-
-
-select platform._apply_tenant_rls_select_only('platform.soft_delete_log'::regclass);
-
-
-
-select platform._apply_platform_admin_rls('platform.constants'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.table_contracts'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.schema_migrations'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.migration_execution_log'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.schema_change_log'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.utility_function_registry'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.system_nodes'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.node_heartbeats'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.scheduled_jobs'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.job_executions'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.queue_processor_logs'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.system_metrics'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.system_metrics_aggregated'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.event_lag_monitor'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.realtime_streams'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.query_performance_log'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.index_usage_stats'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.slow_query_flags'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.performance_snapshots'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.execution_supervisor'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.platform_admins'::regclass);
-
-
-select platform._apply_platform_admin_rls('platform.payment_provider_refs'::regclass);
-
-
-
 -- deferred enum binds (001 SSOT); no-op until 001 has run
 select platform.bind_operation_context_type_column();
-
-
-
-grant usage on schema platform to service_role;
-
-
-
-do $$
-declare
-    v_row record;
-begin
-    for v_row in
-        select c.relname as table_name
-        from pg_class c
-        join pg_namespace n on n.oid = c.relnamespace
-        where n.nspname = 'platform'
-          and c.relkind = 'r'
-          and c.relname <> 'platform_admins'
-        order by c.relname
-    loop
-        execute format(
-            'revoke all on table platform.%I from authenticated, anon',
-            v_row.table_name
-        );
-        execute format(
-            'grant all on table platform.%I to service_role',
-            v_row.table_name
-        );
-    end loop;
-end $$;
-
-
-
-
-
-
-
-
-
-
--- tenant-assets: private tenant-scoped files
-drop policy if exists tenant_assets_select on storage.objects;
-
-
-drop policy if exists tenant_assets_insert on storage.objects;
-
-
-drop policy if exists tenant_assets_update on storage.objects;
-
-
-drop policy if exists tenant_assets_delete on storage.objects;
-
-
-
--- avatars: user-owned public read
-drop policy if exists avatars_select on storage.objects;
-
-
-drop policy if exists avatars_insert on storage.objects;
-
-
-drop policy if exists avatars_update on storage.objects;
-
-
-drop policy if exists avatars_delete on storage.objects;
-
-
-
--- onboarding-docs: tenant-scoped private uploads
-drop policy if exists onboarding_docs_select on storage.objects;
-
-
-drop policy if exists onboarding_docs_insert on storage.objects;
-
-
-drop policy if exists onboarding_docs_update on storage.objects;
-
-
-drop policy if exists onboarding_docs_delete on storage.objects;
-
-
 
 comment on schema platform is '
 000 PART 10-11 RULES:
@@ -2333,12 +1821,9 @@ comment on schema platform is '
 7. shipment_dispatch_queue + shipment_tracking_events = carrier execution (010 domain link)
 ';
 
-
 -- =====================================================
 -- END PART 10-11 - STORAGE + VAULT + PG_NET
 -- =====================================================
-
-
 
 -- =====================================================
 -- 1. TENANT EVENT STREAM VIEW (read-only)
@@ -2346,53 +1831,21 @@ comment on schema platform is '
 -- =====================================================
 
 drop view if exists public.v_tenant_events;
-
-
 drop view if exists public.v_tenant_audit;
-
-
 drop function if exists public.integrations_complete_oauth(uuid, text, text);
-
-
 drop function if exists public.integrations_oauth_complete(uuid, text, text);
-
-
 
 -- =====================================================
 -- 1. PROCESSING STATE (additive to 000 external_webhooks)
 -- =====================================================
 
 alter table platform.external_webhooks
-    add column if not exists processing_status text not null default 'pending';
-
-
-
-alter table platform.external_webhooks
-    add column if not exists processed_at timestamptz;
-
-
-
-alter table platform.external_webhooks
-    add column if not exists last_error jsonb;
-
-
-
-alter table platform.external_webhooks
-    add column if not exists retry_count int not null default 0;
-
-
-
-alter table platform.external_webhooks
     add constraint chk_external_webhooks_processing_status
     check (processing_status in ('pending', 'processing', 'processed', 'failed', 'skipped'));
-
-
 
 create index if not exists idx_external_webhooks_pending
 on platform.external_webhooks (processing_status, received_at)
 where processing_status in ('pending', 'failed');
-
-
 
 -- =====================================================
 -- 2. INGEST RETURNS ID (extends 000 pipeline)
@@ -2400,197 +1853,6 @@ where processing_status in ('pending', 'failed');
 -- =====================================================
 
 drop function if exists platform.ingest_external_webhook(text, text, text, jsonb, uuid, text);
-
-
-
--- -----------------------------------------------------
--- Revoke direct *_domain execute from authenticated
--- (API layer required)
--- Idempotent: only functions that exist at apply time
--- -----------------------------------------------------
-
-do $block$
-declare
-    r record;
-begin
-
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n
-            on n.oid = p.pronamespace
-        where n.nspname = 'public'
-          and p.proname like '%\_domain'
-          escape '\'
-    loop
-
-        execute format(
-            'revoke execute on function %I.%I(%s) from authenticated',
-            r.nspname,
-            r.proname,
-            r.args
-        );
-
-        execute format(
-            'grant execute on function %I.%I(%s) to service_role',
-            r.nspname,
-            r.proname,
-            r.args
-        );
-
-    end loop;
-
-end;
-$block$;
-
-
--- =====================================================
--- GRANT LOCKDOWN
--- Authenticated role: *_api entrypoints + infrastructure guards only
--- =====================================================
-
-
--- Revoke authenticated execute on non-API exposure surface (idempotent)
-
-do $block$
-declare
-    r record;
-
-
-begin
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where (n.nspname = 'platform' and p.proname = 'has_tenant_membership')
-           or (n.nspname = 'public' and p.proname = any (array[
-            'auth_resolve_tenant_switch',
-            'auth_switch_tenant',
-            'auth_invite_member',
-            'auth_domain',
-            'auth_domain_ext',
-            'auth_domain_ext_031',
-            'integrations_oauth_url_encode',
-            'integrations_start_oauth',
-            'integrations_domain',
-            'integrations_domain_ext',
-            'booking_compute_access_window',
-            'booking_calculate_access_window',
-            'booking_generate_booking_access',
-            'booking_regenerate_booking_access',
-            'booking_create_booking_access',
-            'booking_domain',
-            'locks_domain',
-            'get_onboarding_lifecycle',
-            'list_onboarding_lifecycle_transitions',
-            'onboarding_lifecycle_transition',
-            'create_property',
-            'assign_device',
-            'generate_lock_code',
-            'create_booking',
-            'onboarding_step_update',
-            'create_subscription',
-            'log_event',
-            'calculate_optimization_score',
-            'generate_monetization_proposal',
-            'insert_event',
-            'assign_device_to_room',
-            'change_subscription_plan',
-            'dispatch_fulfilment_order',
-            'edge_soft_delete_row',
-            'automation_domain',
-            'automation_domain_ext',
-            'automation_cancel_run',
-            'automation_start_run',
-            'automation_dispatch_event',
-            'automation_enqueue_notification',
-            'commerce_domain',
-            'logistics_domain',
-            'crm_domain',
-            'portal_domain',
-            'onboarding_domain',
-            'optimization_domain',
-            'monetization_domain',
-            'operations_domain',
-            'preconfig_domain',
-            'notification_domain',
-            'payment_domain',
-            'devices_domain',
-            'devices_assign_device_to_room',
-            'crm_soft_delete_row',
-            'commerce_change_subscription_plan',
-            'commerce_create_subscription',
-            'logistics_dispatch_fulfilment_order',
-            'payment_transition_status'
-        ]))
-    loop
-        execute format(
-            'revoke all on function %I.%I(%s) from public, authenticated',
-            r.nspname, r.proname, r.args
-        );
-
-    end loop;
-
-end;
-$block$;
-
-
-
-
--- Re-affirm infrastructure / RLS helper entrypoints (idempotent)
-
-do $block$
-declare
-    r record;
-
-
-begin
-    for r in
-        select
-            n.nspname,
-            p.proname,
-            pg_get_function_identity_arguments(p.oid) as args
-        from pg_proc p
-        join pg_namespace n on n.oid = p.pronamespace
-        where (n.nspname = 'public' and p.proname = any (array[
-            'has_tenant_access',
-            'is_platform_admin',
-            'edge_require_tenant',
-            'edge_require_manager',
-            'edge_require_admin'
-        ]))
-           or (n.nspname = 'platform' and p.proname = any (array[
-            'current_tenant_id',
-            'current_role',
-            'has_tenant_access',
-            'has_role',
-            'is_owner',
-            'is_admin',
-            'is_support',
-            'has_permission',
-            'is_platform_admin',
-            'storage_tenant_from_path',
-            'storage_user_from_path'
-        ]))
-    loop
-        execute format(
-            'revoke all on function %I.%I(%s) from public',
-            r.nspname, r.proname, r.args
-        );
-
-    end loop;
-
-end;
-$block$;
-
-
-
 
 create or replace view public.v_tenant_audit_overview
 with (security_invoker = true)
@@ -2606,8 +1868,6 @@ select
     a.created_at
 from platform.audit_log a
 where a.tenant_id is not null;
-
-
 
 create or replace view public.v_tenant_events_overview
 with (security_invoker = true)
@@ -5625,48 +4885,6 @@ begin
 end;
 $$;
 
-
-
-create or replace function public._apply_public_tenant_rls(p_table regclass)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-    v_table text;
-begin
-    select c.relname into v_table
-    from pg_class c
-    where c.oid = p_table;
-
-    execute format('alter table public.%I enable row level security', v_table);
-    execute format('alter table public.%I force row level security', v_table);
-
-    execute format('drop policy if exists %I on public.%I', v_table || '_select', v_table);
-    execute format('drop policy if exists %I on public.%I', v_table || '_insert', v_table);
-    execute format('drop policy if exists %I on public.%I', v_table || '_update', v_table);
-    execute format('drop policy if exists %I on public.%I', v_table || '_delete', v_table);
-
-    execute format(
-        'create policy %I on public.%I for select to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_select', v_table
-    );
-    execute format(
-        'create policy %I on public.%I for insert to authenticated with check (platform.rls_allow(tenant_id))',
-        v_table || '_insert', v_table
-    );
-    execute format(
-        'create policy %I on public.%I for update to authenticated using (platform.rls_allow(tenant_id)) with check (platform.rls_allow(tenant_id))',
-        v_table || '_update', v_table
-    );
-    execute format(
-        'create policy %I on public.%I for delete to authenticated using (platform.rls_allow(tenant_id))',
-        v_table || '_delete', v_table
-    );
-end;
-$$;
-
 -- =====================================================
 -- Platform Vault: secret existence check
 -- =====================================================
@@ -5922,11 +5140,7 @@ on conflict (table_name) do nothing;
 
 
 
--- authenticated platform grants: 020 bootstrap finale (after full domain stack)
 
--- =====================================================
--- END PART 9 - PLATFORM RLS BOOTSTRAP
--- =====================================================
 
 -- =====================================================
 -- PART 10 - STORAGE KERNEL
@@ -5958,7 +5172,6 @@ values
         null
     )
 on conflict (id) do nothing;
-
 
 -- =====================================================
 -- END 000 SUPABASE PLATFORM

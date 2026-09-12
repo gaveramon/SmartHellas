@@ -139,3 +139,63 @@ values
 on conflict (provider_code, capability_code)
 do nothing;
 
+
+-- =====================================================
+-- INTEGRATION WEBHOOK MAPPINGS SEED
+-- =====================================================
+
+insert into public.integration_webhook_mappings (
+    provider_code,
+    event_type,
+    mapping_code,
+    value_path,
+    value_type,
+    is_active
+)
+values
+    -- Aqara
+    ('aqara', 'device.status', 'provider_event_id', '<PROVIDER_EVENT_ID_PATH>', 'text', true),
+    ('aqara', 'device.status', 'device_external_id', '<DEVICE_EXTERNAL_ID_PATH>', 'text', true),
+    ('aqara', 'device.status', 'observed_at', '<OBSERVED_AT_PATH>', 'epoch_milliseconds', true),
+
+    -- TTLock
+    ('ttlock', 'device.status', 'provider_event_id', '<PROVIDER_EVENT_ID_PATH>', 'text', true),
+    ('ttlock', 'device.status', 'device_external_id', '<DEVICE_EXTERNAL_ID_PATH>', 'text', true),
+    ('ttlock', 'device.status', 'observed_at', '<OBSERVED_AT_PATH>', 'epoch_milliseconds', true),
+
+    -- Shelly
+    ('shelly', 'device.status', 'provider_event_id', '<PROVIDER_EVENT_ID_PATH>', 'text', true),
+    ('shelly', 'device.status', 'device_external_id', '<DEVICE_EXTERNAL_ID_PATH>', 'text', true),
+    ('shelly', 'device.status', 'observed_at', '<OBSERVED_AT_PATH>', 'epoch_milliseconds', true)
+on conflict do nothing;
+
+-- =====================================================
+-- INTEGRATION OAUTH CONFIGURATION SEED
+-- =====================================================
+
+insert into public.integration_oauth_configs (
+    provider_code,
+    authorization_url,
+    token_url,
+    scopes,
+    use_pkce,
+    is_active
+)
+values
+    (
+        'aqara',
+        '<AQARA_AUTHORIZATION_URL>',
+        '<AQARA_TOKEN_URL>',
+        '<AQARA_SCOPES>',
+        true,
+        true
+    ),
+    (
+        'ttlock',
+        '<TTLOCK_AUTHORIZATION_URL>',
+        '<TTLOCK_TOKEN_URL>',
+        '<TTLOCK_SCOPES>',
+        true,
+        true
+    )
+on conflict do nothing;

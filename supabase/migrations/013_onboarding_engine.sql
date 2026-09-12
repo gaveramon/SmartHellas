@@ -240,51 +240,39 @@ create table if not exists onboarding_lifecycle_transitions (
 create index if not exists idx_onboarding_sessions_tenant_created
 on onboarding_sessions (tenant_id, created_at desc);
 
-
 create index if not exists idx_onboarding_sessions_property
 on onboarding_sessions (property_id);
-
 
 create unique index if not exists uq_onboarding_sessions_property_active
 on onboarding_sessions (property_id)
 where status in ('not_started', 'in_progress', 'waiting_user');
 
-
 create index if not exists idx_onboarding_step_state_session
 on onboarding_step_state (session_id);
-
 
 create index if not exists idx_onboarding_step_state_tenant
 on onboarding_step_state (tenant_id);
 
-
 create index if not exists idx_onboarding_room_mapping_session
 on onboarding_room_mapping (session_id);
-
 
 create index if not exists idx_onboarding_room_mapping_tenant_created
 on onboarding_room_mapping (tenant_id, created_at desc);
 
-
 create index if not exists idx_onboarding_device_mapping_session
 on onboarding_device_mapping (session_id);
-
 
 create index if not exists idx_onboarding_device_mapping_tenant_created
 on onboarding_device_mapping (tenant_id, created_at desc);
 
-
 create index if not exists idx_onboarding_checklist_session
 on onboarding_checklist (session_id);
-
 
 create index if not exists idx_onboarding_checklist_tenant
 on onboarding_checklist (tenant_id);
 
-
 create index if not exists idx_onboarding_notes_session
 on onboarding_notes (session_id);
-
 
 create index if not exists idx_onboarding_notes_tenant_created
 on onboarding_notes (tenant_id, created_at desc);
@@ -1277,121 +1265,6 @@ left join public.onboarding_lifecycle ol on ol.property_id = p.id
 group by p.id, ol.current_state;
 
 
--- =====================================================
--- 20. RLS ENABLEMENT
--- =====================================================
-
-alter table public.onboarding_sessions enable row level security;
-
-
-do $$
-declare
-    v_table text;
-begin
-    foreach v_table in array array[
-        'onboarding_step_state',
-        'onboarding_room_mapping',
-        'onboarding_device_mapping',
-        'onboarding_checklist',
-        'onboarding_notes'
-    ] loop
-        execute format('alter table public.%I enable row level security', v_table);
-        execute format('drop policy if exists %1$s_select on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_insert on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_update on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_delete on public.%1$I', v_table);
-        execute format(
-            'create policy %1$s_select on public.%1$I for select to authenticated using (platform.is_platform_admin() or public.has_tenant_access(tenant_id))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_insert on public.%1$I for insert to authenticated with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_update on public.%1$I for update to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager'')))) with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_delete on public.%1$I for delete to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-    end loop;
-end $$;
-
-
-alter table public.onboarding_lifecycle enable row level security;
-
-
-alter table public.onboarding_lifecycle_transitions enable row level security;
-
-
-select public._apply_public_tenant_rls('public.onboarding_lifecycle'::regclass);
-
-
-select public._apply_public_tenant_rls('public.onboarding_lifecycle_transitions'::regclass);
-
-
--- =====================================================
--- 21. ONBOARDING SESSION RLS POLICIES
--- =====================================================
-
-drop policy if exists onboarding_sessions_select on public.onboarding_sessions;
-
-
-drop policy if exists onboarding_sessions_insert on public.onboarding_sessions;
-
-
-drop policy if exists onboarding_sessions_update on public.onboarding_sessions;
-
-
-drop policy if exists onboarding_sessions_delete on public.onboarding_sessions;
-
-
-create policy onboarding_sessions_delete on public.onboarding_sessions
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy onboarding_sessions_insert on public.onboarding_sessions
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy onboarding_sessions_select on public.onboarding_sessions
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-create policy onboarding_sessions_update on public.onboarding_sessions
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
 
 -- =====================================================
 -- 22. TIMESTAMP + DOMAIN CONSISTENCY TRIGGERS
@@ -1401,73 +1274,59 @@ create trigger trg_onboarding_sessions_updated_at
 before update on onboarding_sessions
 for each row execute function platform.set_updated_at();
 
-
 create trigger trg_onboarding_checklist_updated_at
 before update on onboarding_checklist
 for each row execute function platform.set_updated_at();
 
-
-create trigger trg_onboarding_lifecycle_updated_at
+lcreate trigger trg_onboarding_lifecycle_updated_at
 before update on onboarding_lifecycle
 for each row execute function platform.set_updated_at();
-
 
 create trigger trg_onboarding_sessions_tenant_consistency
 before insert or update on public.onboarding_sessions
 for each row execute function public.enforce_onboarding_session_tenant_consistency();
 
-
 create trigger trg_onboarding_sessions_blueprint_trace
 before insert or update on public.onboarding_sessions
 for each row execute function public.enforce_onboarding_session_blueprint_trace();
 
-
-create trigger trg_onboarding_step_state_tenant_consistency
+lcreate trigger trg_onboarding_step_state_tenant_consistency
 before insert or update on public.onboarding_step_state
 for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
 
 create trigger trg_onboarding_room_mapping_consistency
 before insert or update on public.onboarding_room_mapping
 for each row execute function public.enforce_onboarding_room_mapping_consistency();
 
-
 create trigger trg_onboarding_room_mapping_tenant_consistency
 before insert or update on public.onboarding_room_mapping
 for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
 
 create trigger trg_onboarding_device_mapping_consistency
 before insert or update on public.onboarding_device_mapping
 for each row execute function public.enforce_onboarding_device_mapping_consistency();
 
-
 create trigger trg_onboarding_device_mapping_tenant_consistency
 before insert or update on public.onboarding_device_mapping
 for each row execute function public.enforce_onboarding_child_tenant_consistency();
-
 
 create trigger trg_onboarding_checklist_tenant_consistency
 before insert or update on public.onboarding_checklist
 for each row execute function public.enforce_onboarding_child_tenant_consistency();
 
-
 create trigger trg_onboarding_notes_tenant_consistency
 before insert or update on public.onboarding_notes
 for each row execute function public.enforce_onboarding_child_tenant_consistency();
 
-
-create trigger trg_onboarding_lifecycle_tenant_consistency
+lcreate trigger trg_onboarding_lifecycle_tenant_consistency
 before insert or update on public.onboarding_lifecycle
 for each row execute function public.enforce_onboarding_lifecycle_tenant_consistency();
-
 
 create trigger trg_onboarding_lifecycle_transitions_consistency
 before insert or update on public.onboarding_lifecycle_transitions
 for each row execute function public.enforce_onboarding_lifecycle_transitions_consistency();
 
-
--- =====================================================
+l-- =====================================================
 -- 23. LEGACY / EXTENSION TRIGGER CLEANUP
 -- =====================================================
 

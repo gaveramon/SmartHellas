@@ -1277,60 +1277,6 @@ end $$;
 
 
 
--- =====================================================
--- 22. RLS (EXPLICIT TENANT POLICIES — REQUIRED AFTER 014)
--- =====================================================
-
-do $$
-declare
-    v_table text;
-begin
-    foreach v_table in array array[
-        'crm_pipelines',
-        'crm_pipeline_stages',
-        'crm_campaigns',
-        'crm_tags',
-        'crm_companies',
-        'crm_contacts',
-        'crm_leads',
-        'crm_contact_company',
-        'crm_company_tenants',
-        'crm_contact_tenants',
-        'crm_opportunities',
-        'crm_tasks',
-        'crm_interactions',
-        'crm_notes',
-        'crm_tag_assignments',
-        'crm_lists',
-        'crm_list_members',
-        'crm_custom_fields',
-        'crm_custom_field_values'
-    ] loop
-        execute format('alter table public.%I enable row level security', v_table);
-        execute format('drop policy if exists %1$s_select on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_insert on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_update on public.%1$I', v_table);
-        execute format('drop policy if exists %1$s_delete on public.%1$I', v_table);
-        execute format(
-            'create policy %1$s_select on public.%1$I for select to authenticated using (platform.is_platform_admin() or public.has_tenant_access(tenant_id))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_insert on public.%1$I for insert to authenticated with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_update on public.%1$I for update to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager'')))) with check (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format(
-            'create policy %1$s_delete on public.%1$I for delete to authenticated using (platform.is_platform_admin() or (public.has_tenant_access(tenant_id) and (platform.is_admin() or platform.has_role(''manager''))))',
-            v_table
-        );
-        execute format('alter table public.%I force row level security', v_table);
-    end loop;
-end $$;
-
 
 
 drop trigger if exists trg_crm_contacts_consent_timestamps on public.crm_contacts;
