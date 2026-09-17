@@ -1,11 +1,11 @@
 -- =====================================================
--- REV22 greenfield baseline: 018_security_classification.sql
+-- REV22 greenfield baseline: 019_security_classification.sql
 -- =====================================================
 -- SECURITY REGISTRY INPUT
 -- =====================================================
 --
 --
--- 018b OWNS
+-- 020 OWNS
 -- ---------
 -- - INPUT FOR API, SECURITY HARDENING AND GRANTS/REVOKES
 
@@ -17,7 +17,7 @@ begin;
 -- 1. REGISTER TABLE SECURITY CLASSIFICATIONS
 -- =====================================================
 --
--- 18a CONTAINS ONLY MANUAL TWO INSERTS
+-- 19 CONTAINS ONLY MANUAL TWO INSERTS
 --
 -- When a new governed table is introduced:
 --
@@ -1216,7 +1216,7 @@ values
     ),
 
     -- =================================================
-    -- 007a DEVICE TELEMETRY RAW
+    -- 007 DEVICE TELEMETRY RAW
     -- =================================================
 
     (
@@ -1233,17 +1233,17 @@ values
     ),
 
     -- =================================================
-    -- 007b DEVICE TELEMETRY PROCESSING
+    -- 008 DEVICE TELEMETRY PROCESSING
     -- =================================================
     --
-    -- No additional 007b telemetry-processing tables were
+    -- No additional 008 telemetry-processing tables were
     -- present in the supplied registry input. Do not invent
     -- table names here; they must be added from migration
-    -- 007b once its authoritative table list is available.
+    -- 008 once its authoritative table list is available.
     -- =================================================
 
     -- =================================================
-    -- 008 OPERATIONS ENGINE
+    -- 009 OPERATIONS ENGINE
     -- =================================================
 
     (
@@ -1377,7 +1377,7 @@ values
     ),
 
     -- =================================================
-    -- 009 PRECONFIG ENGINE
+    -- 010 PRECONFIG ENGINE
     -- =================================================
 
     (
@@ -1459,7 +1459,7 @@ values
     ),
 
     -- =================================================
-    -- 010 LOGISTICS — BUSINESS
+    -- 011 LOGISTICS — BUSINESS
     -- =================================================
 
     (
@@ -1554,7 +1554,7 @@ values
     ),
 
     -- =================================================
-    -- 011 COMMERCE ENGINE
+    -- 012 COMMERCE ENGINE
     -- =================================================
 
     (
@@ -1610,7 +1610,7 @@ values
     ),
 
     -- =================================================
-    -- 012 SERVICE & PORTAL ENGINE
+    -- 013 SERVICE & PORTAL ENGINE
     -- =================================================
 
     (
@@ -1666,7 +1666,7 @@ values
     ),
 
     -- =================================================
-    -- 013 ONBOARDING ENGINE
+    -- 014 ONBOARDING ENGINE
     -- =================================================
 
     (
@@ -1994,7 +1994,9 @@ do update set
     updated_at = now();
 
 -- =====================================================
+-- =====================================================
 -- 2. SECURITY VIEW REGISTRY
+-- =====================================================
 -- =====================================================
 
 create table if not exists platform.security_view_registry (
@@ -2016,9 +2018,12 @@ create table if not exists platform.security_view_registry (
     primary key (view_schema, view_name)
 );
 
+
+-- =====================================================
 -- =====================================================
 -- 3. REGISTER VIEW SECURITY CLASSIFICATIONS
 -- FOR EVERY VIEW AVAILABLE, AN ENTRY SHOULD BE ADDED
+-- =====================================================
 -- =====================================================
 
 insert into platform.security_view_registry (
@@ -2127,7 +2132,7 @@ values
 ),
 
 -- =====================================================
--- 011 COMMERCE ENGINE
+-- 012 COMMERCE ENGINE
 -- =====================================================
 
 (
@@ -2183,7 +2188,7 @@ values
 ),
 
 -- =====================================================
--- 016 AUTOMATION
+-- 017 AUTOMATION
 -- =====================================================
 
 (
@@ -2210,7 +2215,64 @@ do update set
 
 
 -- =====================================================
--- 3. MIGRATION REGISTRATION
+-- =====================================================
+-- 5. SECURITY REVIEW REGISTRY 
+-- THIS IS TO ALLOW TABLES WITH 
+-- SECURITY DEFINER + EXECUTE COMBINATION
+-- =====================================================
+-- =====================================================
+
+create table if not exists platform.security_dynamic_sql_review (
+    function_schema text not null,
+    function_name text not null,
+    identity_arguments text not null,
+
+    review_status text not null
+        check (review_status in (
+            'approved',
+            'rejected'
+        )),
+
+    reviewed_reason text not null,
+
+    reviewed_at timestamptz not null default now(),
+
+    primary key (
+        function_schema,
+        function_name,
+        identity_arguments
+    )
+);
+
+-- =====================================================
+-- =====================================================
+-- 6. SECURITY REVIEW REGISTRY SEED
+-- =====================================================
+-- =====================================================
+
+insert into platform.security_dynamic_sql_review (
+    function_schema,
+    function_name,
+    identity_arguments,
+    review_status,
+    reviewed_reason
+)
+values (
+    'platform',
+    'enable_realtime',
+    'p_table regclass',
+    'approved',
+    'Dynamic identifier is supplied as regclass and used only for controlled realtime configuration.'
+)
+on conflict (
+    function_schema,
+    function_name,
+    identity_arguments
+) do nothing;
+
+
+-- =====================================================
+-- 7. MIGRATION REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (
@@ -2219,7 +2281,7 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '018_a_security_classification',
+    '019_security_classification',
     'REV22.SECURITY.CLASSIFICATION',
     false
 )

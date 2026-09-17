@@ -1,6 +1,6 @@
 -- =====================================================
 -- REV22 GREENFIELD BASELINE
--- 019b_grant_matrix.sql
+-- 022_grant_matrix.sql
 -- =====================================================
 --
 -- ENTERPRISE SECURITY GRANT BOUNDARY
@@ -23,13 +23,13 @@
 -- TABLES
 --
 --
--- 019a OWNS
+-- 021 OWNS
 -- ----------
 -- platform.security_actor
 -- platform.security_table_actor
 --
 --
--- 019b OWNS
+-- 022 OWNS
 -- ----------
 -- PostgreSQL privilege boundary
 -- schema privileges
@@ -42,7 +42,7 @@
 -- final grant validation
 --
 --
--- 019b DOES NOT OWN
+-- 022 DOES NOT OWN
 -- -----------------
 -- RLS creation
 -- RLS policies
@@ -50,7 +50,7 @@
 -- SECURITY DEFINER creation
 -- search_path hardening
 --
--- Those belong to 018b.
+-- Those belong to 020.
 --
 --
 -- GRANT MODEL
@@ -118,22 +118,22 @@ begin
 
     if to_regclass('platform.security_actor') is null then
         raise exception
-            '019b prerequisite missing: platform.security_actor';
+            '022 prerequisite missing: platform.security_actor';
     end if;
 
     if to_regclass('platform.security_table_actor') is null then
         raise exception
-            '019b prerequisite missing: platform.security_table_actor';
+            '022 prerequisite missing: platform.security_table_actor';
     end if;
 
     if to_regclass('platform.security_table_registry') is null then
         raise exception
-            '019b prerequisite missing: platform.security_table_registry';
+            '022 prerequisite missing: platform.security_table_registry';
     end if;
 
     if to_regclass('platform.security_view_registry') is null then
         raise exception
-            '019b prerequisite missing: platform.security_view_registry';
+            '022 prerequisite missing: platform.security_view_registry';
     end if;
 
 end
@@ -160,7 +160,7 @@ begin
         )
     ) then
         raise exception
-            '019b validation failed: invalid actor privilege_profile';
+            '022 validation failed: invalid actor privilege_profile';
     end if;
 
 end
@@ -189,7 +189,7 @@ begin
           and privilege_profile not in ('none', 'api_only')
     ) then
         raise exception
-            '019b validation failed: authenticated actor has direct table privilege profile';
+            '022 validation failed: authenticated actor has direct table privilege profile';
     end if;
 
 end
@@ -381,7 +381,7 @@ begin
           and security_class not in ('business', 'backend')
     ) then
         raise exception
-            '019b validation failed: invalid security_class';
+            '022 validation failed: invalid security_class';
     end if;
 
 
@@ -393,7 +393,7 @@ begin
           and portal_access <> 'rpc'
     ) then
         raise exception
-            '019b validation failed: business table without rpc portal_access';
+            '022 validation failed: business table without rpc portal_access';
     end if;
 
 
@@ -405,7 +405,7 @@ begin
           and portal_access <> 'none'
     ) then
         raise exception
-            '019b validation failed: backend table with portal access';
+            '022 validation failed: backend table with portal access';
     end if;
 
 
@@ -416,7 +416,7 @@ begin
           and direct_authenticated_access
     ) then
         raise exception
-            '019b validation failed: direct authenticated table access is prohibited';
+            '022 validation failed: direct authenticated table access is prohibited';
     end if;
 
 end
@@ -445,7 +445,7 @@ begin
         ) is null then
 
             raise exception
-                '019b validation failed: registered table %.% does not exist',
+                '022 validation failed: registered table %.% does not exist',
                 r.table_schema,
                 r.table_name;
 
@@ -496,7 +496,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: active table %.% has no active actor assignment',
+                '022 validation failed: active table %.% has no active actor assignment',
                 r.table_schema,
                 r.table_name;
 
@@ -527,7 +527,7 @@ begin
           )
     ) then
         raise exception
-            '019b validation failed: active table actor references inactive/missing actor';
+            '022 validation failed: active table actor references inactive/missing actor';
     end if;
 
 end
@@ -560,7 +560,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: portal actor has direct table privilege profile';
+            '022 validation failed: portal actor has direct table privilege profile';
 
     end if;
 
@@ -579,7 +579,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: authenticated actor has direct table privilege profile';
+            '022 validation failed: authenticated actor has direct table privilege profile';
 
     end if;
 
@@ -770,7 +770,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: security_view_registry contains direct portal/authenticated access';
+            '022 validation failed: security_view_registry contains direct portal/authenticated access';
 
     end if;
 
@@ -803,7 +803,7 @@ begin
         ) is null then
 
             raise exception
-                '019b validation failed: registered view %.% does not exist',
+                '022 validation failed: registered view %.% does not exist',
                 r.view_schema,
                 r.view_name;
 
@@ -1034,7 +1034,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: anon has direct table access on %.%',
+                '022 validation failed: anon has direct table access on %.%',
                 r.schemaname,
                 r.tablename;
 
@@ -1085,7 +1085,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: authenticated has direct table access on %.%',
+                '022 validation failed: authenticated has direct table access on %.%',
                 r.schemaname,
                 r.tablename;
 
@@ -1129,7 +1129,7 @@ begin
 
         if to_regprocedure(required_function) is null then
             raise exception
-                '019b validation failed: approved API function missing: %',
+                '022 validation failed: approved API function missing: %',
                 required_function;
         end if;
 
@@ -1176,7 +1176,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: authenticated lacks EXECUTE on %',
+                '022 validation failed: authenticated lacks EXECUTE on %',
                 required_function;
 
         end if;
@@ -1265,7 +1265,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: unapproved authenticated EXECUTE privilege on %.%(%)',
+                '022 validation failed: unapproved authenticated EXECUTE privilege on %.%(%)',
                 r.schema_name,
                 r.function_name,
                 r.args;
@@ -1331,7 +1331,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: service_role missing SELECT on %.%',
+                '022 validation failed: service_role missing SELECT on %.%',
                 r.table_schema,
                 r.table_name;
 
@@ -1354,7 +1354,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: service_role missing INSERT on %.%',
+                '022 validation failed: service_role missing INSERT on %.%',
                 r.table_schema,
                 r.table_name;
 
@@ -1376,7 +1376,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: service_role missing UPDATE on %.%',
+                '022 validation failed: service_role missing UPDATE on %.%',
                 r.table_schema,
                 r.table_name;
 
@@ -1395,7 +1395,7 @@ begin
         ) then
 
             raise exception
-                '019b validation failed: service_role missing DELETE on %.%',
+                '022 validation failed: service_role missing DELETE on %.%',
                 r.table_schema,
                 r.table_name;
 
@@ -1426,7 +1426,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: business table violates API/RPC-only boundary';
+            '022 validation failed: business table violates API/RPC-only boundary';
 
     end if;
 
@@ -1450,7 +1450,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: backend table is portal accessible';
+            '022 validation failed: backend table is portal accessible';
 
     end if;
 
@@ -1462,9 +1462,9 @@ $$;
 -- 32. VALIDATE RLS / FORCE RLS AGAINST REGISTRY
 -- =====================================================
 --
--- 018b owns the actual RLS implementation.
+-- 020 owns the actual RLS implementation.
 --
--- 019b only validates that PostgreSQL state matches
+-- 022 only validates that PostgreSQL state matches
 -- security_table_registry.
 --
 -- =====================================================
@@ -1494,7 +1494,7 @@ begin
         if r.rls_required <> r.relrowsecurity then
 
             raise exception
-                '019b validation failed: RLS mismatch on %.% expected %, actual %',
+                '022 validation failed: RLS mismatch on %.% expected %, actual %',
                 r.table_schema,
                 r.table_name,
                 r.rls_required,
@@ -1506,7 +1506,7 @@ begin
         if r.force_rls_required <> r.relforcerowsecurity then
 
             raise exception
-                '019b validation failed: FORCE RLS mismatch on %.% expected %, actual %',
+                '022 validation failed: FORCE RLS mismatch on %.% expected %, actual %',
                 r.table_schema,
                 r.table_name,
                 r.force_rls_required,
@@ -1534,7 +1534,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: service_role lacks USAGE on public schema';
+            '022 validation failed: service_role lacks USAGE on public schema';
 
     end if;
 
@@ -1546,7 +1546,7 @@ begin
     ) then
 
         raise exception
-            '019b validation failed: service_role lacks USAGE on platform schema';
+            '022 validation failed: service_role lacks USAGE on platform schema';
 
     end if;
 
@@ -1567,7 +1567,7 @@ values (
     'security.grant_boundary.applied',
     'rev22_migration',
     jsonb_build_object(
-        'version', 'REV22.GRANT.MATRIX.019B',
+        'version', 'REV22.GRANT.MATRIX.022',
         'model', 'actor_registry_driven',
         'privilege_source', 'security_actor.privilege_profile',
         'table_assignment_source', 'security_table_actor',
@@ -1583,7 +1583,7 @@ values (
             'write',
             'full'
         ),
-        'rls_owned_by', '018b'
+        'rls_owned_by', '020'
     )
 );
 
@@ -1598,8 +1598,8 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '019b_grant_matrix',
-    'REV22.GRANT.MATRIX.019B',
+    '022_grant_matrix',
+    'REV22.GRANT.MATRIX',
     false
 )
 on conflict (version)

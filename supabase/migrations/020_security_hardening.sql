@@ -1,5 +1,5 @@
 -- =====================================================
--- REV22 greenfield baseline: 018b_security_hardening.sql
+-- REV22 greenfield baseline: 020_security_hardening.sql
 -- =====================================================
 -- SECURITY HARDENING
 --
@@ -21,7 +21,7 @@
 -- TABLES
 --
 --
--- 018b OWNS
+-- 020 OWNS
 -- ---------
 -- - security table registry population
 -- - RLS
@@ -35,7 +35,7 @@
 -- - security validation
 --
 --
--- 019 OWNS
+-- 022 OWNS
 -- --------
 -- - GRANT
 -- - REVOKE
@@ -49,7 +49,7 @@
 --
 -- IMPORTANT
 -- ---------
--- 018b deliberately contains NO GRANT / REVOKE statements.
+-- 020 deliberately contains NO GRANT / REVOKE statements.
 --
 -- security_class:
 --   business = business/domain ownership
@@ -152,7 +152,7 @@ begin
         ) is null then
 
             raise exception
-                '018b security hardening failed: registered table %.% does not exist',
+                '020 security hardening failed: registered table %.% does not exist',
                 r.table_schema,
                 r.table_name;
 
@@ -176,7 +176,7 @@ begin
     loop
 
         raise exception
-            '018b security hardening failed: duplicate active registry entries for %.% (% rows)',
+            '020 security hardening failed: duplicate active registry entries for %.% (% rows)',
             r.table_schema,
             r.table_name,
             r.row_count;
@@ -217,7 +217,7 @@ begin
         if r.security_class not in ('business', 'backend') then
 
             raise exception
-                '018b security hardening failed: %.% has invalid security_class=%; expected business or backend',
+                '020 security hardening failed: %.% has invalid security_class=%; expected business or backend',
                 r.table_schema,
                 r.table_name,
                 r.security_class;
@@ -232,7 +232,7 @@ begin
         if r.portal_access not in ('rpc', 'none') then
 
             raise exception
-                '018b security hardening failed: %.% has invalid portal_access=%; expected rpc or none',
+                '020 security hardening failed: %.% has invalid portal_access=%; expected rpc or none',
                 r.table_schema,
                 r.table_name,
                 r.portal_access;
@@ -247,7 +247,7 @@ begin
         if r.direct_authenticated_access is distinct from false then
 
             raise exception
-                '018b security hardening failed: %.% permits direct authenticated access',
+                '020 security hardening failed: %.% permits direct authenticated access',
                 r.table_schema,
                 r.table_name;
 
@@ -263,7 +263,7 @@ begin
            and r.platform_admin_access is null then
 
             raise exception
-                '018b security hardening failed: backend-owned portal-exposed table %.% must explicitly define platform_admin_access',
+                '020 security hardening failed: backend-owned portal-exposed table %.% must explicitly define platform_admin_access',
                 r.table_schema,
                 r.table_name;
 
@@ -277,7 +277,7 @@ begin
         if r.rls_required is distinct from true then
 
             raise exception
-                '018b security hardening failed: registered table %.% must require RLS',
+                '020 security hardening failed: registered table %.% must require RLS',
                 r.table_schema,
                 r.table_name;
 
@@ -287,7 +287,7 @@ begin
         if r.force_rls_required is distinct from true then
 
             raise exception
-                '018b security hardening failed: registered table %.% must require FORCE RLS',
+                '020 security hardening failed: registered table %.% must require FORCE RLS',
                 r.table_schema,
                 r.table_name;
 
@@ -423,7 +423,7 @@ begin
     loop
 
         raise exception
-            '018b security hardening failed: direct anon/authenticated policy remains on %.%: %',
+            '020 security hardening failed: direct anon/authenticated policy remains on %.%: %',
             r.schemaname,
             r.tablename,
             r.policyname;
@@ -472,7 +472,7 @@ begin
         if not found then
 
             raise exception
-                '018b security hardening failed: table %.% not found in pg_class',
+                '020 security hardening failed: table %.% not found in pg_class',
                 r.table_schema,
                 r.table_name;
 
@@ -483,7 +483,7 @@ begin
            and v_relrowsecurity is distinct from true then
 
             raise exception
-                '018b security hardening failed: RLS not enabled on %.%',
+                '020 security hardening failed: RLS not enabled on %.%',
                 r.table_schema,
                 r.table_name;
 
@@ -494,7 +494,7 @@ begin
            and v_relforcerowsecurity is distinct from true then
 
             raise exception
-                '018b security hardening failed: FORCE RLS not enabled on %.%',
+                '020 security hardening failed: FORCE RLS not enabled on %.%',
                 r.table_schema,
                 r.table_name;
 
@@ -621,7 +621,7 @@ begin
             ) then
 
                 raise exception
-                    '018b security hardening failed: SECURITY DEFINER %.%(%s) depends on non-approved relation %.%',
+                    '020 security hardening failed: SECURITY DEFINER %.%(%s) depends on non-approved relation %.%',
                     r.schema_name,
                     r.function_name,
                     r.arguments,
@@ -656,7 +656,7 @@ begin
             ) then
 
                 raise exception
-                    '018b security hardening failed: SECURITY DEFINER %.%(%s) depends on non-approved function %.%(%)',
+                    '020 security hardening failed: SECURITY DEFINER %.%(%s) depends on non-approved function %.%(%)',
                     r.schema_name,
                     r.function_name,
                     r.arguments,
@@ -708,11 +708,22 @@ begin
 
         if r.definition ~* '\mEXECUTE\M' then
 
-            raise exception
-                '018b security hardening failed: SECURITY DEFINER %.%(%s) contains dynamic SQL and requires explicit security review',
-                r.schema_name,
-                r.function_name,
-                r.arguments;
+            if not exists (
+                select 1
+                from platform.security_dynamic_sql_review s
+                where s.function_schema = r.schema_name
+                  and s.function_name = r.function_name
+                  and s.identity_arguments = r.arguments
+                  and s.review_status = 'approved'
+            ) then
+
+                raise exception
+                    '018b security hardening failed: SECURITY DEFINER %.%(%s) contains dynamic SQL without approved security review',
+                    r.schema_name,
+                    r.function_name,
+                    r.arguments;
+
+            end if;
 
         end if;
 
@@ -720,7 +731,6 @@ begin
 
 end;
 $$;
-
 
 -- =====================================================
 -- 12. FINAL SECURITY DEFINER SEARCH_PATH VALIDATION
@@ -759,7 +769,7 @@ begin
         ) then
 
             raise exception
-                '018b security hardening failed: SECURITY DEFINER %.%(%s) does not have search_path = ''''',
+                '020 security hardening failed: SECURITY DEFINER %.%(%s) does not have search_path = ''''',
                 r.schema_name,
                 r.function_name,
                 r.arguments;
@@ -794,7 +804,7 @@ begin
     if v_function_count = 0 then
 
         raise exception
-            '018b security hardening failed: public.resolve_active_tenant(uuid) not found';
+            '020 security hardening failed: public.resolve_active_tenant(uuid) not found';
 
     end if;
 
@@ -848,7 +858,7 @@ begin
         if not found then
 
             raise exception
-                '018b security hardening failed: registry table %.% disappeared',
+                '020 security hardening failed: registry table %.% disappeared',
                 r.table_schema,
                 r.table_name;
 
@@ -858,7 +868,7 @@ begin
         if v_rls is distinct from true then
 
             raise exception
-                '018b security hardening failed: registry table %.% has RLS disabled',
+                '020 security hardening failed: registry table %.% has RLS disabled',
                 r.table_schema,
                 r.table_name;
 
@@ -868,7 +878,7 @@ begin
         if v_force_rls is distinct from true then
 
             raise exception
-                '018b security hardening failed: registry table %.% has FORCE RLS disabled',
+                '020 security hardening failed: registry table %.% has FORCE RLS disabled',
                 r.table_schema,
                 r.table_name;
 
@@ -878,7 +888,7 @@ begin
         if r.direct_authenticated_access is distinct from false then
 
             raise exception
-                '018b security hardening failed: registry table %.% permits direct authenticated access',
+                '020 security hardening failed: registry table %.% permits direct authenticated access',
                 r.table_schema,
                 r.table_name;
 
@@ -899,7 +909,7 @@ begin
         if v_policy_count > 0 then
 
             raise exception
-                '018b security hardening failed: registry table %.% still has anon/authenticated policies',
+                '020 security hardening failed: registry table %.% still has anon/authenticated policies',
                 r.table_schema,
                 r.table_name;
 
@@ -916,7 +926,7 @@ $$;
 -- =====================================================
 
 comment on table platform.security_table_registry is
-'Central security classification for governed tables. security_class identifies business versus backend ownership. portal_access defines whether controlled portal access exists through approved API/RPC contracts. Direct authenticated table access is prohibited. 018b enforces RLS/FORCE RLS and removes legacy direct-table policies. 019 owns all privileges and grants/revokes.';
+'Central security classification for governed tables. security_class identifies business versus backend ownership. portal_access defines whether controlled portal access exists through approved API/RPC contracts. Direct authenticated table access is prohibited. 020 enforces RLS/FORCE RLS and removes legacy direct-table policies. 022 owns all privileges and grants/revokes.';
 
 
 -- =====================================================
@@ -929,7 +939,7 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '018_b_security_hardening',
+    '020_security_hardening',
     'REV22.SECURITY.HARDENING',
     false
 )

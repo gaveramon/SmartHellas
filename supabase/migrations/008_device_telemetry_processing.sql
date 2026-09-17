@@ -15,7 +15,7 @@ insert into platform.schema_migrations (
 )
 values (
     '007_b_device_telemetry_processing',
-    'REV22.DEVICE.TELEMETRY.PROCESSING',
+    'REV22.DEVICE.TELEMETRY.PROCESSING\\',
     false
 )
 on conflict (version) do nothing;

@@ -1,6 +1,6 @@
 -- =====================================================
 -- REV22 GREENFIELD BASELINE
--- 019_GRANT_MATRIX.SQL
+-- 021_GRANT_MATRIX.SQL
 --
 -- Enterprise Security Grant Boundary
 --
@@ -52,7 +52,7 @@
 --   - search_path hardening
 --   - policy removal
 --
--- 019b owns:
+-- 021 owns:
 --   - GRANT
 --   - REVOKE
 --   - EXECUTE privileges
@@ -64,7 +64,7 @@
 -- The platform.security_table_registry is the authority
 -- for registered table security classification.
 --
--- 019 deliberately contains NO RLS policy creation.
+-- 021 deliberately contains NO RLS policy creation.
 -- =====================================================
 
 
@@ -2264,13 +2264,13 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '019_a_grant_matrix_actors',
-    'REV22.GRANT.MATRIX.ACTORS.019A
+    '021_grant_matrix_actors',
+    'REV22.GRANT.MATRIX.ACTORS
     false
 )
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 019a GRANT MATRIX
+-- END 021 GRANT MATRIX
 -- =====================================================

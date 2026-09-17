@@ -1,6 +1,6 @@
 -- =====================================================
 -- REV22 GREENFIELD BASELINE
--- 021_PRODUCTION_FINALIZE.SQL
+-- 024_PRODUCTION_FINALIZE.SQL
 --
 -- Purpose:
 -- Production readiness verification gate
@@ -20,23 +20,23 @@
 -- 004_property_device_engine.sql
 -- 005_booking_lock_engine.sql
 -- 006_integration_engine.sql
--- 007_a_device_telemetry_raw.sql
--- 007_b_device_telemetry_processing.sql
--- 008_operations_engine.sql
--- 009_preconfig_engine.sql
--- 010_logistics_engine.sql
--- 011_commerce_engine.sql
--- 012_service_portal_engine.sql
--- 013_onboarding_engine.sql
--- 014_optimization_engine.sql
--- 015_customer_proposal_monetization.sql
--- 016_automation_engine.sql
--- 017_edge_rpc_foundation.sql
--- 018_a_security_classification.sql
--- 018_b_security_hardening.sql
--- 019_a_grant_matrix_actors.sql
--- 019_b_grant_matrix.sql
--- 020_platform_bootstrap.sql
+-- 007_device_telemetry_raw.sql
+-- 008_device_telemetry_processing.sql
+-- 009_operations_engine.sql
+-- 010_preconfig_engine.sql
+-- 011_logistics_engine.sql
+-- 012_commerce_engine.sql
+-- 013_service_portal_engine.sql
+-- 014_onboarding_engine.sql
+-- 015_optimization_engine.sql
+-- 016_customer_proposal_monetization.sql
+-- 017_automation_engine.sql
+-- 018_edge_rpc_foundation.sql
+-- 019_security_classification.sql
+-- 020_security_hardening.sql
+-- 021_grant_matrix_actors.sql
+-- 022_grant_matrix.sql
+-- 023_platform_bootstrap.sql
 --
 -- Auditor mapping:
 --
@@ -76,23 +76,23 @@ values
 ('004_property_device_engine'),
 ('005_booking_lock_engine'),
 ('006_integration_engine'),
-('007_a_device_telemetry_raw'),
-('007_b_device_telemetry_processing'),
-('008_operations_engine'),
-('009_preconfig_engine'),
-('010_logistics_engine'),
-('011_commerce_engine'),
-('012_service_portal_engine'),
-('013_onboarding_engine'),
-('014_optimization_engine'),
-('015_customer_proposal_monetization'),
-('016_automation_engine'),
-('017_edge_rpc_foundation'),
-('018_a_security_classification'),
-('018_b_security_hardening'),
-('019_a_grant_matrix_actors'),
-('019_b_grant_matrix'),
-('020_platform_bootstrap')
+('007_device_telemetry_raw'),
+('008_device_telemetry_processing'),
+('009_operations_engine'),
+('010_preconfig_engine'),
+('011_logistics_engine'),
+('012_commerce_engine'),
+('013_service_portal_engine'),
+('014_onboarding_engine'),
+('015_optimization_engine'),
+('016_customer_proposal_monetization'),
+('017_automation_engine'),
+('018_edge_rpc_foundation'),
+('019_security_classification'),
+('020_security_hardening'),
+('021_grant_matrix_actors'),
+('022_grant_matrix'),
+('023_platform_bootstrap')
 )
 required(version)
 
@@ -211,8 +211,9 @@ end $$;
 -- ROW-LEVEL SECURITY BOUNDARY
 --
 -- Reference:
--- 017_edge_rpc_foundation.sql
--- 018b_security_hardening.sql
+-- 018_edge_rpc_foundation.sql
+-- 019_security_classification.sql
+-- 020_security_hardening.sql
 -- =====================================================
 
 
@@ -250,7 +251,7 @@ end $$;
 -- PERMISSION BOUNDARY
 --
 -- Reference:
--- 019_grant_matrix.sql
+-- 022_grant_matrix.sql
 --
 -- No anonymous execution allowed
 -- =====================================================
@@ -369,7 +370,7 @@ end $$;
 -- CRON INFRASTRUCTURE
 --
 -- Reference:
--- 014_platform_bootstrap.sql
+-- 023_platform_bootstrap.sql
 -- =====================================================
 
 
@@ -397,7 +398,7 @@ values
 jsonb_build_object
 (
 'revision','REV22',
-'migration','021',
+'migration','024',
 'status','PASSED',
 'human_approval_required',true
 )
@@ -412,7 +413,7 @@ jsonb_build_object
 
 
 insert into platform.schema_migrations( migration_name, version, rollback_available)
-values( '021_production_finalize', 'REV22.PRODUCTION.FINALIZE', false)
+values( '024_production_finalize', 'REV22.PRODUCTION.FINALIZE', false)
 on conflict(version) do nothing;
 
 commit;
