@@ -1,9 +1,7 @@
 .temp/
-supabase/.temp/
-supabase/node_modules/
 node_modules/
+supabase/
 backup migrations 12-9/
-supabase/.branches/
 .branches/
 .continue/
 .git/
