@@ -1,5 +1,7 @@
--- REV22 greenfield baseline: 004_property_device_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
+-- =====================================================
+-- REV1 GREENFIELD BASELINE
+-- 004_PROPERTY_DEVICE_ENGINE.SQL
+-- =====================================================
 --
 -- OWNER:
 --   Property & Device Engine
@@ -20,8 +22,8 @@
 --   004 does NOT contain provider-specific integration logic.
 --
 -- SECURITY BOUNDARY:
---   018b = security hardening
---   019 = EXECUTE/API grant boundary
+--   020 = security hardening
+--   022 = EXECUTE/API grant boundary
 --
 -- PUBLIC API:
 --   public.devices_api(text,jsonb)
@@ -31,7 +33,7 @@
 --
 -- IMPORTANT:
 --   devices_domain remains an internal SECURITY DEFINER domain function.
---   devices_api is the authenticated-facing API contract expected by 019.
+--   devices_api is the authenticated-facing API contract expected by 022.
 
 
 -- =====================================================
@@ -57,7 +59,6 @@ create table if not exists public.properties (
 );
 
 
-
 -- =====================================================
 -- 2. ROOMS (LOGICAL STRUCTURE INSIDE PROPERTY)
 -- =====================================================
@@ -77,7 +78,6 @@ create table if not exists public.rooms (
 
     created_at timestamptz default now()
 );
-
 
 
 -- =====================================================
@@ -101,7 +101,6 @@ create table if not exists public.device_categories (
 
     created_at timestamptz not null default now()
 );
-
 
 
 -- =====================================================
@@ -145,7 +144,6 @@ create table if not exists public.devices (
 );
 
 
-
 -- =====================================================
 -- 5. DEVICE ASSIGNMENT (DEVICE ↔ ROOM LINK)
 -- =====================================================
@@ -165,7 +163,6 @@ create table if not exists public.device_assignments (
 
     unique (device_id)
 );
-
 
 
 -- =====================================================
@@ -189,7 +186,6 @@ create table if not exists public.device_configurations (
 );
 
 
-
 -- =====================================================
 -- 7. INDEXES
 -- =====================================================
@@ -197,48 +193,37 @@ create table if not exists public.device_configurations (
 create index if not exists idx_properties_tenant
 on public.properties (tenant_id);
 
-
 create index if not exists idx_properties_tenant_created
 on public.properties (tenant_id, created_at desc);
-
 
 create index if not exists idx_rooms_property
 on public.rooms (property_id);
 
-
 create index if not exists idx_devices_tenant
 on public.devices (tenant_id);
-
 
 create index if not exists idx_devices_tenant_created
 on public.devices (tenant_id, created_at desc);
 
-
 create index if not exists idx_devices_category
 on public.devices (category_code);
-
 
 create index if not exists idx_devices_parent
 on public.devices (parent_device_id)
 where parent_device_id is not null;
 
-
 create index if not exists idx_devices_tenant_parent
 on public.devices (tenant_id, parent_device_id)
 where parent_device_id is not null;
 
-
 create index if not exists idx_device_assignments_room
 on public.device_assignments (room_id);
-
 
 create index if not exists idx_device_assignments_device_assigned
 on public.device_assignments (device_id, assigned_at desc);
 
-
 create index if not exists idx_device_configurations_device_created
 on public.device_configurations (device_id, created_at desc);
-
 
 
 -- =====================================================
@@ -248,18 +233,14 @@ on public.device_configurations (device_id, created_at desc);
 comment on table public.device_categories is
     'Hardware device taxonomy. code is the stable FK target for category_code columns. Seed: 004.';
 
-
 comment on table public.devices is
     'SmartHellas device registry SSOT. Provider identity belongs to the Integration Engine. Runtime telemetry/state belongs outside 004.';
-
 
 comment on table public.device_configurations is
     'Static provisioning configuration only. Do not store runtime telemetry, live state, provider identity, or provider webhook data.';
 
-
 comment on column public.devices.parent_device_id is
     'Local device hierarchy only. Provider-side device identity is owned by the Integration Engine.';
-
 
 
 -- =====================================================
@@ -280,7 +261,6 @@ exception
 end $$;
 
 
-
 do $$
 begin
 
@@ -293,7 +273,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
 
 
 do $$
@@ -310,11 +289,9 @@ exception
 end $$;
 
 
-
 comment on constraint fk_device_commands_device
 on platform.device_commands is
     'Domain device registry (004) is SSOT; restrict delete while commands may exist.';
-
 
 
 -- =====================================================
@@ -347,21 +324,16 @@ end;
 $$;
 
 
-
 drop trigger if exists trg_properties_tenant_immutable
 on public.properties;
-
 
 create trigger trg_properties_tenant_immutable
 before update on public.properties
 for each row
 execute function public.prevent_tenant_id_change();
 
-
-
 drop trigger if exists trg_devices_tenant_immutable
 on public.devices;
-
 
 create trigger trg_devices_tenant_immutable
 before update on public.devices
@@ -497,7 +469,7 @@ $$;
 --
 -- INTERNAL DOMAIN FUNCTION.
 --
--- 019 deliberately revokes authenticated EXECUTE
+-- 022 deliberately revokes authenticated EXECUTE
 -- from *_domain functions.
 --
 -- public.devices_api() below is the approved external
@@ -980,7 +952,6 @@ begin
         v_result := to_jsonb(v_row);
 
 
-
     when 'delete_room' then
 
         perform public.edge_require_manager();
@@ -1012,7 +983,6 @@ begin
         );
 
 
-
     -- =================================================
     -- DEVICE CATEGORIES
     -- =================================================
@@ -1040,7 +1010,6 @@ begin
             from public.device_categories dc
             where dc.is_active = true
         ) t;
-
 
 
     -- =================================================
@@ -1188,7 +1157,6 @@ begin
         end if;
 
 
-
     when 'get_device' then
 
         v_tid := platform.current_tenant_id();
@@ -1288,7 +1256,6 @@ begin
         end if;
 
 
-
     when 'create_device' then
 
         perform public.edge_require_manager();
@@ -1367,7 +1334,6 @@ begin
 
 
         v_result := to_jsonb(v_row);
-
 
 
     when 'update_device' then
@@ -1483,7 +1449,6 @@ begin
         v_result := to_jsonb(v_row);
 
 
-
     when 'delete_device' then
 
         perform public.edge_require_manager();
@@ -1513,7 +1478,6 @@ begin
         );
 
 
-
     when 'assign_device' then
 
         perform public.edge_require_manager();
@@ -1530,7 +1494,6 @@ begin
                 (p_payload->>'device_id')::uuid,
                 (p_payload->>'room_id')::uuid
             );
-
 
 
     when 'unassign_device' then
@@ -1566,7 +1529,6 @@ begin
             'device_id',
             p_payload->>'device_id'
         );
-
 
 
     when 'get_device_config' then
@@ -1608,7 +1570,6 @@ begin
         if v_result is null then
             v_result := 'null'::jsonb;
         end if;
-
 
 
     when 'upsert_device_config' then
@@ -1680,11 +1641,10 @@ end;
 $$;
 
 
-
 -- =====================================================
 -- 15. APPROVED PUBLIC DEVICE API BOUNDARY
 --
--- 019 grants authenticated EXECUTE to this function.
+-- 022 grants authenticated EXECUTE to this function.
 --
 -- devices_domain remains internal.
 --
@@ -1709,15 +1669,13 @@ as $$
 $$;
 
 
-
 comment on function public.devices_api(text, jsonb) is
     'Approved authenticated API boundary for the Property & Device Engine. Delegates to internal devices_domain().';
 
 
 
 comment on function public.devices_domain(text, jsonb) is
-    'Internal Property & Device domain function. Not an authenticated API surface. EXECUTE boundary controlled by 019.';
-
+    'Internal Property & Device domain function. Not an authenticated API surface. EXECUTE boundary controlled by 022.';
 
 
 -- =====================================================
@@ -1768,7 +1726,6 @@ begin
 
 end;
 $$;
-
 
 
 -- =====================================================
@@ -1875,7 +1832,6 @@ end;
 $$;
 
 
-
 -- =====================================================
 -- 18. DEVICE HIERARCHY CHILD INVARIANT
 --
@@ -1953,17 +1909,13 @@ $$;
 drop trigger if exists trg_properties_updated_at
 on public.properties;
 
-
 create trigger trg_properties_updated_at
 before update on public.properties
 for each row
 execute function platform.set_updated_at();
 
-
-
 drop trigger if exists trg_devices_hierarchy
 on public.devices;
-
 
 create trigger trg_devices_hierarchy
 before insert or update
@@ -1971,11 +1923,8 @@ on public.devices
 for each row
 execute function public.enforce_device_hierarchy();
 
-
-
 drop trigger if exists trg_devices_gateway_demotion
 on public.devices;
-
 
 create trigger trg_devices_gateway_demotion
 before update
@@ -1983,11 +1932,8 @@ on public.devices
 for each row
 execute function public.prevent_gateway_demotion_with_children();
 
-
-
 drop trigger if exists trg_device_assignment_tenant_consistency
 on public.device_assignments;
-
 
 create trigger trg_device_assignment_tenant_consistency
 before insert or update
@@ -1995,11 +1941,8 @@ on public.device_assignments
 for each row
 execute function public.enforce_device_assignment_tenant_consistency();
 
-
-
 drop trigger if exists trg_device_configurations_updated_at
 on public.device_configurations;
-
 
 create trigger trg_device_configurations_updated_at
 before update
@@ -2007,32 +1950,13 @@ on public.device_configurations
 for each row
 execute function platform.set_updated_at();
 
-
-
-
-
-
 -- =====================================================
 -- 27. MIGRATION REGISTRATION
 -- =====================================================
 
-insert into platform.schema_migrations
-(
-    migration_name,
-    version,
-    rollback_available
-)
-values
-(
-    '004_property_device_engine',
-    'REV22.PROPERTY.DEVICE',
-    false
-)
-
-on conflict (version)
-do nothing;
-
-
+insert into platform.schema_migrations (migration_name, version, rollback_available)
+values ('004_property_device_engine', 'REV1.PROPERTY.DEVICE', false)
+on conflict (version) do nothing;
 
 -- =====================================================
 -- END 004 PROPERTY & DEVICE ENGINE

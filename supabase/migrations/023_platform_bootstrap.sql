@@ -1,20 +1,20 @@
--- REV22 greenfield baseline: 020_platform_bootstrap.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
 -- =====================================================
--- 020 PLATFORM BOOTSTRAP FINALE (REV19)
--- Mandatory production gate — runs after full domain stack (002–019)
+-- REV1 GREENFIELD BASELINE
+-- 023_PLATFORM_BOOTSTRAP.SQL
+-- =====================================================
+--
+-- Mandatory production gate — runs after full domain stack (002–022)
 -- =====================================================
 --
 -- Responsibilities:
 -- 1. Post-domain column/type binds (001 SSOT → 000 platform columns)
 -- 2. Safety-net generic tenant RLS for uncovered public.tenant_id tables only
 -- 3. pg_cron wiring for platform maintenance workers (platform.ensure_pg_cron_jobs)
--- 4. Commerce ↔ platform cross-schema binds (011/006 → 000)
--- 5. Authenticated grants + default privileges for post-021 migrations
+-- 4. Commerce ↔ platform cross-schema binds (012/006 → 000)
+-- 5. Authenticated grants + default privileges for post-024 migrations
 --
 -- RLS precedence:
--- - Domain modules (002–015) MUST define explicit policies where role gates differ
+-- - Domain modules (002–016) MUST define explicit policies where role gates differ
 -- - This file applies public._apply_public_tenant_rls() ONLY when zero policies exist
 -- =====================================================
 
@@ -28,10 +28,10 @@ select platform.bind_operation_context_type_column();
 
 -- =====================================================
 -- 2. PLATFORM NOTIFICATION DELIVERY WORKERS
--- Domain dependency: 008 Operations Engine
+-- Domain dependency: 009 Operations Engine
 --
 -- These functions are platform execution workers.
--- The notification domain objects are owned by module 008.
+-- The notification domain objects are owned by module 009.
 -- =====================================================
 
 create or replace function platform.complete_notification_delivery(
@@ -304,7 +304,7 @@ begin
         perform public._apply_public_tenant_rls(
             format('public.%I', v_row.table_name)::regclass
         );
-        raise notice '020 bootstrap: applied generic tenant RLS to public.%', v_row.table_name;
+        raise notice '023 bootstrap: applied generic tenant RLS to public.%', v_row.table_name;
     end loop;
 end $$;
 
@@ -336,7 +336,7 @@ grant update on table platform.profiles to authenticated;
 
 -- =====================================================
 -- 10. DEFAULT PRIVILEGES
--- Applies to tables created by migrations after 021, e.g. 015+
+-- Applies to tables created by migrations after 024, e.g. 015+
 -- =====================================================
 
 alter default privileges for role postgres in schema public
@@ -425,7 +425,7 @@ begin
         order by c.table_name
     loop
         raise warning
-            '020 bootstrap: public.% has tenant_id but RLS is disabled or has no policies',
+            '023 bootstrap: public.% has tenant_id but RLS is disabled or has no policies',
             v_row.table_name;
     end loop;
 end $$;
@@ -436,10 +436,10 @@ end $$;
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('020_platform_bootstrap_finale', 'REV22.PLATFORM.BOOTSTRAP', false)
+values ('023_platform_bootstrap_finale', 'REV1.PLATFORM.BOOTSTRAP', false)
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 020 PLATFORM BOOTSTRAP FINALE
+-- END 023 PLATFORM BOOTSTRAP FINALE
 -- =====================================================

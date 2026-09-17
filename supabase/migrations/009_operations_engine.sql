@@ -1,10 +1,10 @@
--- REV22 greenfield baseline: 008_operations_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
 -- =====================================================
--- 008 OPERATIONS ENGINE (REV19)
--- DEFINITION LAYER + SUPPORT CASE DOMAIN
--- Operational blueprints only — advisory rules live in 012.optimization_rules.
+-- REV1 GREENFIELD BASELINE
+-- 009_OPERATIONS_ENGINE.SQL
+-- =====================================================
+--
+-- Operational blueprints only 
+-- — advisory rules live in 015.optimization_rules.
 -- NO EXECUTION / NO LOGGING / NO RUNTIME STATE
 -- =====================================================
 
@@ -1294,10 +1294,10 @@ for each row execute function platform.set_updated_at();
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('008_operations_engine', 'REV22.OPERATIONS', false)
+values ('009_operations_engine', 'REV1.OPERATIONS', false)
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 008 OPERATIONS ENGINE
+-- END 009 OPERATIONS ENGINE
 -- =====================================================

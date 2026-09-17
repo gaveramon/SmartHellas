@@ -1,15 +1,14 @@
--- REV22 greenfield baseline: 010_logistics_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 010 LOGISTICS ENGINE
+-- REV1 GREENFIELD BASELINE
+-- 011_LOGISTICS_ENGINE.SQL
+-- =====================================================
+--
 -- CLEAN FULFILMENT DEFINITION & DOMAIN LAYER
 -- NO SHIPPING EXECUTION / NO TRACKING / NO EVENTS / NO LABEL GENERATION
 -- =====================================================
 --
 -- SSOT HIERARCHY
--- device_bundles (009)     — hardware BOM (package contents live there)
+-- device_bundles (010)     — hardware BOM (package contents live there)
 -- logistics_templates      — delivery blueprint per tenant or platform
 -- package_definitions      — shipment package = template + device_bundle
 -- shipping_carriers       — carrier catalog
@@ -170,7 +169,7 @@ create table if not exists shipping_rules (
 -- =====================================================
 -- 6. PACKAGE DEFINITIONS
 -- SHIPMENT PACKAGE = LOGISTICS TEMPLATE + DEVICE BUNDLE
--- BOM CONTENTS REMAIN IN 009 device_bundles
+-- BOM CONTENTS REMAIN IN 010 device_bundles
 -- =====================================================
 
 create table if not exists package_definitions (
@@ -278,7 +277,7 @@ on fulfilment_orders (property_id);
 -- =====================================================
 
 comment on table public.package_definitions is
-    'Shipment package definition. BOM contents come from 009 device_bundles / bundle_devices.';
+    'Shipment package definition. BOM contents come from 010 device_bundles / bundle_devices.';
 
 
 comment on table public.shipping_carriers is
@@ -437,7 +436,7 @@ end $$;
 
 
 comment on constraint fk_shipment_dispatch_fulfilment_order on platform.shipment_dispatch_queue is
-    'Domain fulfilment intent (010) is SSOT; restrict delete while dispatch may exist.';
+    'Domain fulfilment intent (011) is SSOT; restrict delete while dispatch may exist.';
 
 
 -- =====================================================
@@ -1870,10 +1869,10 @@ for each row execute function public.enforce_fulfilment_order_consistency();
 
 
 -- =====================================================
--- END 010 LOGISTICS ENGINE
+-- END 011 LOGISTICS ENGINE
 -- CLEAN DOMAIN ONLY
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('010_logistics_engine', 'REV22.LOGISTICS', false)
+values ('011_logistics_engine', 'REV1.LOGISTICS', false)
 on conflict (version) do nothing;

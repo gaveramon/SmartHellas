@@ -1,7 +1,8 @@
--- REV22 greenfield baseline: 002_core_saas.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
+-- =====================================================
+-- REV1 GREENFIELD BASELINE
+-- 002_CORE_SAAS.SQL
+-- =====================================================
+--
 -- =====================================================
 -- 1. TENANTS (CORE MULTI-TENANCY ENTITY)
 -- =====================================================
@@ -1400,5 +1401,5 @@ alter function platform.current_tenant_id() set search_path = '';
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('002_core_saas', 'REV22.CORE.SAAS', false)
+values ('002_core_saas', 'REV1.CORE.SAAS', false)
 on conflict (version) do nothing;

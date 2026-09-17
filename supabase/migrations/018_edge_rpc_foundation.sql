@@ -1,4 +1,8 @@
--- REV22 greenfield baseline: 017_edge_rpc_foundation.sql
+-- =====================================================
+-- REV1 GREENFIELD BASELINE 
+-- 018_EDGE_RPC_FOUNDATION.SQL
+-- =====================================================
+--
 -- Consolidated / hardened API foundation
 --
 -- SECURITY MODEL
@@ -30,16 +34,16 @@
 -- A function is portal-accessible only when:
 --   1. it is explicitly classified as an approved *_api contract;
 --   2. its operation is authorized by edge_require_*;
---   3. 020 explicitly grants authenticated execution.
+--   3. 022 explicitly grants authenticated execution.
 --
 -- Backend-only functions:
 --   - are not portal APIs;
 --   - are not authenticated grants;
 --   - are intended for service_role / workers;
 --   - may use edge_require_backend() for defense-in-depth;
---   - receive their final execution privileges exclusively in 020.
+--   - receive their final execution privileges exclusively in 022.
 --
--- 018b RESPONSIBILITY
+-- 020 RESPONSIBILITY
 -- =====================================================
 -- 1. Legacy public privilege hardening
 -- 2. Tenant authority
@@ -50,11 +54,11 @@
 -- 7. Domain API contracts
 -- 8. Migration registration
 --
--- 019 RESPONSIBILITY
+-- 020 RESPONSIBILITY
 -- =====================================================
 -- RLS policies only.
 --
--- 020 RESPONSIBILITY
+-- 022 RESPONSIBILITY
 -- =====================================================
 -- GRANT / REVOKE only.
 -- Authenticated portal access is an explicit allowlist.
@@ -65,7 +69,7 @@
 -- =====================================================
 -- This migration intentionally contains NO GRANT / REVOKE
 -- statements for the final security model.
--- Final execution privileges are owned by 020.
+-- Final execution privileges are owned by 022.
 --
 -- All portal business access must go through an approved
 -- {module}_api RPC.
@@ -311,7 +315,7 @@ $$;
 -- Optional compatibility/helper surface.
 --
 -- NOT a portal API.
--- 020 must keep execution restricted.
+-- 022 must keep execution restricted.
 
 create or replace function public.is_platform_admin()
 returns boolean
@@ -334,7 +338,7 @@ $$;
 -- must only be executed by Supabase service_role / trusted
 -- backend workers.
 --
--- Primary protection remains 020:
+-- Primary protection remains 022:
 --
 --     authenticated  -> NO GRANT
 --     anon           -> NO GRANT
@@ -410,7 +414,7 @@ $$;
 --       019
 --
 --   GRANT / REVOKE:
---       020
+--       022
 --
 -- The existence of a function in public schema does NOT
 -- create a portal contract.
@@ -525,7 +529,7 @@ $$;
 --
 -- These named functions therefore remain INTERNAL / BACKEND
 -- contracts unless explicitly registered as an approved
--- authenticated API exception in 020.
+-- authenticated API exception in 022.
 --
 -- DEFAULT SECURITY CLASS:
 --
@@ -973,7 +977,7 @@ $$;
 --
 -- This is defense-in-depth.
 --
--- The primary execution boundary remains 020.
+-- The primary execution boundary remains 022.
 --
 -- =====================================================
 
@@ -990,7 +994,7 @@ $$;
 -- level before calling the domain/service layer.
 --
 -- ONLY THESE API FUNCTIONS are candidates for authenticated
--- portal execution in 020.
+-- portal execution in 022.
 --
 -- =====================================================
 
@@ -2238,10 +2242,10 @@ $$;
 
 
 -- =====================================================
--- 7.19 SECURITY CONTRACT FOR 020
+-- 7.19 SECURITY CONTRACT FOR 022
 -- =====================================================
 --
--- 020 must treat this migration as the source of truth for
+-- 022 must treat this migration as the source of truth for
 -- the execution boundary:
 --
 -- AUTHENTICATED ALLOWLIST:
@@ -2297,8 +2301,8 @@ $$;
 --
 -- Security/API foundation only.
 --
--- RLS belongs to 019.
--- Grants/revokes belong to 020.
+-- RLS belongs to 020.
+-- Grants/revokes belong to 022.
 -- =====================================================
 
 insert into platform.schema_migrations (
@@ -2307,13 +2311,13 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '017_edge_rpc_foundation',
-    'REV22.EDGE.RPC.FOUNDATION',
+    '018_edge_rpc_foundation',
+    'REV1.EDGE.RPC.FOUNDATION',
     false
 )
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 017 EDGE RPC FOUNDATION
+-- END 018 EDGE RPC FOUNDATION
 -- =====================================================

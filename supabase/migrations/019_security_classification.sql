@@ -1,6 +1,8 @@
 -- =====================================================
--- REV22 greenfield baseline: 019_security_classification.sql
+-- REV1 GREENFIELD BASELINE
+-- 019_SECURITY_CLASSIFICATION.SQL
 -- =====================================================
+--
 -- SECURITY REGISTRY INPUT
 -- =====================================================
 --
@@ -2282,7 +2284,7 @@ insert into platform.schema_migrations (
 )
 values (
     '019_security_classification',
-    'REV22.SECURITY.CLASSIFICATION',
+    'REV1.SECURITY.CLASSIFICATION',
     false
 )
 on conflict (version) do nothing;

@@ -1,6 +1,6 @@
 -- =====================================================
--- REV22 GREENFIELD BASELINE
--- 022_grant_matrix.sql
+-- REV1 GREENFIELD BASELINE
+-- 022_GRANT_MATRIX.SQL
 -- =====================================================
 --
 -- ENTERPRISE SECURITY GRANT BOUNDARY
@@ -1599,7 +1599,7 @@ insert into platform.schema_migrations (
 )
 values (
     '022_grant_matrix',
-    'REV22.GRANT.MATRIX',
+    'REV1.GRANT.MATRIX',
     false
 )
 on conflict (version)

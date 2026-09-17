@@ -1,16 +1,15 @@
--- REV22 greenfield baseline: 012_service_portal_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 012 SERVICE & PORTAL ENGINE
+-- REV1 GREENFIELD BASELINE
+-- 013_SERVICE_PORTAL_ENGINE.SQL
+-- =====================================================
+--
 -- CLEAN UI / PORTAL LAYER
 -- =====================================================
 --
 -- NO LOGS / NO EVENTS / NO DOMAIN TRUTH / NO SUPPORT CASES
 --
 -- Tenant config SSOT: tenant_portal_settings.
--- Plan entitlements SSOT: feature_entitlements (009).
+-- Plan entitlements SSOT: feature_entitlements (010).
 -- Support cases SSOT: support_tickets / support_messages (006).
 -- Runtime logs SSOT: platform.event_log, operation_log, audit_log (000).
 --
@@ -92,7 +91,7 @@ create table if not exists portal_user_preferences (
 -- UI-ONLY FEATURE VISIBILITY CONTROL
 --
 -- Keys MUST use ui_ prefix — never overlap
--- feature_entitlements (009).
+-- feature_entitlements (010).
 -- =====================================================
 
 create table if not exists portal_feature_flags (
@@ -141,7 +140,7 @@ comment on table public.tenant_portal_settings is
     'Tenant portal UI configuration SSOT. Platform infra must not duplicate tenant config.';
 
 comment on table public.portal_feature_flags is
-    'Portal UI visibility only (ui_* keys). Plan entitlements SSOT: feature_entitlements (011).';
+    'Portal UI visibility only (ui_* keys). Plan entitlements SSOT: feature_entitlements (012).';
 
 -- =====================================================
 -- 7. PORTAL DOMAIN & CONSISTENCY FUNCTIONS
@@ -420,9 +419,9 @@ for each row execute function public.enforce_portal_user_preference_membership()
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('012_service_portal_engine', 'REV22.SERVICE.PORTAL', false)
+values ('013_service_portal_engine', 'REV1.SERVICE.PORTAL', false)
 on conflict (version) do nothing;
 
 -- =====================================================
--- END 012 SERVICE & PORTAL ENGINE
+-- END 013 SERVICE & PORTAL ENGINE
 -- =====================================================

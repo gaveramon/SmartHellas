@@ -1,8 +1,8 @@
--- REV22 greenfield baseline: 003_crm_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
 -- =====================================================
--- 003 CRM ENGINE (CLEAN CUSTOMER RELATIONSHIP DOMAIN)
+-- REV1 GREENFIELD BASELINE
+-- 003_CRM_ENGINE.SQL
+-- =====================================================
+--
 -- NO EXECUTION / NO RUNTIME STATE / NO PLATFORM LOGIC
 -- =====================================================
 --
@@ -11,9 +11,9 @@
 --
 -- References only: tenants, profiles (002/000), customer tenants via FK.
 -- Does NOT own: orders, subscriptions, payments, bookings, devices,
--- portal, onboarding, support cases (008).
+-- portal, onboarding, support cases (009).
 -- Campaign SSOT: crm_campaigns (marketing acquisition) only.
--- In-product upsells → 013.upsell_campaigns. Plan upsells → 011.upsell_rules.
+-- In-product upsells → 015.upsell_campaigns. Plan upsells → 012.upsell_rules.
 -- CRM domain enums SSOT: 001_core_types_rev19.sql (section 14).
 -- =====================================================
 
@@ -688,359 +688,228 @@ create table if not exists crm_custom_field_values (
 );
 
 
-
-
-
-
-
 -- ==========================
 --  Triggers
 -- ==========================
 
-
 create index if not exists idx_crm_pipelines_tenant_created
 on crm_pipelines (tenant_id, created_at desc);
-
-
 
 create unique index if not exists uq_crm_pipelines_default_per_tenant
 on crm_pipelines (tenant_id)
 where is_default = true and deleted_at is null;
 
-
-
 comment on table public.crm_pipelines is
     'Generic sales pipeline definitions (Sales, Partners, Enterprise, Upsell, etc.).';
-
-
 
 create index if not exists idx_crm_pipeline_stages_pipeline
 on crm_pipeline_stages (pipeline_id);
 
-
-
 create index if not exists idx_crm_pipeline_stages_tenant_created
 on crm_pipeline_stages (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_crm_campaigns_tenant_created
 on crm_campaigns (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_campaigns_tenant_status
 on crm_campaigns (tenant_id, status)
 where deleted_at is null;
 
-
-
 comment on table public.crm_campaigns is
     'Marketing campaign definitions. Owns no contacts; relationships via leads and list membership.';
 
-
-
 create index if not exists idx_crm_tags_tenant_created
 on crm_tags (tenant_id, created_at desc);
-
-
 
 create unique index if not exists uq_crm_tags_tenant_name
 on crm_tags (tenant_id, lower(name))
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_companies_tenant_created
 on crm_companies (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_companies_owner
 on crm_companies (tenant_id, owner_user_id)
 where owner_user_id is not null and deleted_at is null;
 
-
-
 comment on table public.crm_companies is
     'CRM company records. Customer tenant links via crm_company_tenants (M:N).';
 
-
-
 create index if not exists idx_crm_contacts_tenant_created
 on crm_contacts (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_contacts_tenant_email
 on crm_contacts (tenant_id, lower(email))
 where email is not null and deleted_at is null;
 
-
-
 create index if not exists idx_crm_contacts_owner
 on crm_contacts (tenant_id, owner_user_id)
 where owner_user_id is not null and deleted_at is null;
 
-
-
 comment on table public.crm_contacts is
     'CRM contact SSOT. Free-text notes live in crm_notes; no duplicated tenant data.';
 
-
-
 create index if not exists idx_crm_leads_tenant_created
 on crm_leads (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_leads_tenant_status
 on crm_leads (tenant_id, status)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_leads_campaign
 on crm_leads (campaign_id)
 where campaign_id is not null;
-
-
 
 create index if not exists idx_crm_leads_converted_tenant
 on crm_leads (converted_tenant_id)
 where converted_tenant_id is not null;
 
-
-
 comment on table public.crm_leads is
     'Prospect leads. May convert to contact, company, and/or customer tenant. CRM does not create tenants.';
 
-
-
 comment on column public.crm_leads.converted_tenant_id is
     'Reference to 002 tenants after conversion. Set by application layer; CRM stores FK only.';
-
-
 
 create index if not exists idx_crm_contact_company_contact
 on crm_contact_company (contact_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_contact_company_company
 on crm_contact_company (company_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_contact_company_tenant_created
 on crm_contact_company (tenant_id, created_at desc);
-
-
 
 create unique index if not exists uq_crm_contact_company_primary
 on crm_contact_company (contact_id, company_id)
 where is_primary = true and deleted_at is null;
 
-
-
 create index if not exists idx_crm_company_tenants_company
 on crm_company_tenants (company_id)
 where deleted_at is null and linked_tenant_id is not null;
-
-
 
 create index if not exists idx_crm_company_tenants_linked_tenant
 on crm_company_tenants (linked_tenant_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_company_tenants_tenant_created
 on crm_company_tenants (tenant_id, created_at desc);
 
-
-
 comment on table public.crm_company_tenants is
     'Links CRM companies to customer tenants (002). Required M:N; not duplicated on crm_companies.';
-
-
 
 create index if not exists idx_crm_contact_tenants_contact
 on crm_contact_tenants (contact_id)
 where deleted_at is null and linked_tenant_id is not null;
 
-
-
 create index if not exists idx_crm_contact_tenants_linked_tenant
 on crm_contact_tenants (linked_tenant_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_contact_tenants_tenant_created
 on crm_contact_tenants (tenant_id, created_at desc);
-
-
 
 comment on table public.crm_contact_tenants is
     'Links CRM contacts to customer tenants (002) they manage. Required M:N.';
 
-
-
 create index if not exists idx_crm_opportunities_tenant_created
 on crm_opportunities (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_opportunities_pipeline_stage
 on crm_opportunities (pipeline_id, stage_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_opportunities_owner
 on crm_opportunities (tenant_id, owner_user_id)
 where owner_user_id is not null and deleted_at is null;
-
-
 
 create index if not exists idx_crm_opportunities_linked_tenant
 on crm_opportunities (linked_tenant_id)
 where linked_tenant_id is not null;
 
-
-
 comment on column public.crm_opportunities.linked_tenant_id is
     'Optional reference to 002 customer tenant associated with this deal.';
 
-
-
 create index if not exists idx_crm_tasks_tenant_created
 on crm_tasks (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_tasks_target
 on crm_tasks (tenant_id, target_type, target_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_tasks_owner_due
 on crm_tasks (tenant_id, owner_user_id, due_at)
 where deleted_at is null and status in ('pending', 'in_progress');
 
-
-
 comment on table public.crm_tasks is
     'Follow-up tasks bound to exactly one CRM or customer tenant target.';
 
-
-
 create index if not exists idx_crm_interactions_tenant_created
 on crm_interactions (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_interactions_contact
 on crm_interactions (contact_id, occurred_at desc)
 where contact_id is not null;
 
-
-
 create index if not exists idx_crm_interactions_lead
 on crm_interactions (lead_id, occurred_at desc)
 where lead_id is not null;
-
-
 
 create index if not exists idx_crm_interactions_opportunity
 on crm_interactions (opportunity_id, occurred_at desc)
 where opportunity_id is not null;
 
-
-
 comment on table public.crm_interactions is
     'Immutable interaction history. Metadata only — no email bodies. Append-only; soft-delete via deleted_at.';
 
-
-
 create index if not exists idx_crm_notes_tenant_created
 on crm_notes (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_notes_entity
 on crm_notes (tenant_id, entity_type, entity_id, created_at desc)
 where deleted_at is null;
 
-
-
 comment on column public.crm_notes.version is
     'Increment on edit for versioning-ready note history at application layer.';
-
-
 
 create index if not exists idx_crm_tag_assignments_entity
 on crm_tag_assignments (tenant_id, entity_type, entity_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_tag_assignments_tenant_created
 on crm_tag_assignments (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_crm_lists_tenant_created
 on crm_lists (tenant_id, created_at desc);
-
-
 
 create unique index if not exists uq_crm_lists_tenant_name
 on crm_lists (tenant_id, lower(name))
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_list_members_list
 on crm_list_members (list_id)
 where deleted_at is null;
-
-
 
 create index if not exists idx_crm_list_members_contact
 on crm_list_members (contact_id)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_list_members_tenant_created
 on crm_list_members (tenant_id, added_at desc);
 
-
-
 create index if not exists idx_crm_custom_fields_tenant_created
 on crm_custom_fields (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_crm_custom_fields_applies_to
 on crm_custom_fields (tenant_id, applies_to)
 where deleted_at is null;
 
-
-
 create index if not exists idx_crm_custom_field_values_entity
 on crm_custom_field_values (tenant_id, entity_type, entity_id);
 
-
-
 create index if not exists idx_crm_custom_field_values_tenant_created
 on crm_custom_field_values (tenant_id, created_at desc);
-
 
 
 -- =====================================================
@@ -3158,7 +3027,6 @@ end;
 $$;
 
 
-
 create or replace function public.enforce_crm_tag_assignment_entity()
 returns trigger
 language plpgsql
@@ -3201,7 +3069,6 @@ begin
     return new;
 end;
 $$;
-
 
 
 create or replace function public.enforce_crm_task_target()
@@ -3248,7 +3115,6 @@ end;
 $$;
 
 
-
 -- -----------------------------------------------------
 -- 003 CRM: domain triggers (lifecycle timestamps / versioning)
 -- -----------------------------------------------------
@@ -3284,8 +3150,6 @@ begin
 end;
 $$;
 
-
-
 create or replace function public.trg_crm_leads_conversion_timestamp()
 returns trigger
 language plpgsql
@@ -3304,8 +3168,6 @@ begin
 end;
 $$;
 
-
-
 create or replace function public.trg_crm_notes_version_increment()
 returns trigger
 language plpgsql
@@ -3319,220 +3181,149 @@ begin
 end;
 $$;
 
-
-
 create trigger trg_crm_pipelines_updated_at
 before update on crm_pipelines
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_crm_pipeline_stages_updated_at
 before update on crm_pipeline_stages
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_crm_campaigns_updated_at
 before update on crm_campaigns
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_crm_companies_updated_at
 before update on crm_companies
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_crm_contacts_updated_at
 before update on crm_contacts
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_crm_leads_updated_at
 before update on crm_leads
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_crm_opportunities_updated_at
 before update on crm_opportunities
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_crm_tasks_updated_at
 before update on crm_tasks
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_crm_notes_updated_at
 before update on crm_notes
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_crm_lists_updated_at
 before update on crm_lists
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_crm_custom_fields_updated_at
 before update on crm_custom_fields
 for each row execute function platform.set_updated_at();
-
-
 
 create trigger trg_crm_custom_field_values_updated_at
 before update on crm_custom_field_values
 for each row execute function platform.set_updated_at();
 
-
-
 create trigger trg_crm_contacts_owner_membership
 before insert or update on public.crm_contacts
 for each row execute function public.enforce_crm_owner_membership();
-
-
 
 create trigger trg_crm_companies_owner_membership
 before insert or update on public.crm_companies
 for each row execute function public.enforce_crm_owner_membership();
 
-
-
 create trigger trg_crm_leads_owner_membership
 before insert or update on public.crm_leads
 for each row execute function public.enforce_crm_owner_membership();
-
-
 
 create trigger trg_crm_opportunities_owner_membership
 before insert or update on public.crm_opportunities
 for each row execute function public.enforce_crm_owner_membership();
 
-
-
 create trigger trg_crm_tasks_owner_membership
 before insert or update on public.crm_tasks
 for each row execute function public.enforce_crm_owner_membership();
-
-
 
 create trigger trg_crm_opportunities_pipeline_stage_scope
 before insert or update on public.crm_opportunities
 for each row execute function public.enforce_crm_pipeline_stage_scope();
 
-
-
 create trigger trg_crm_pipeline_stages_tenant_consistency
 before insert or update on public.crm_pipeline_stages
 for each row execute function public.enforce_crm_child_tenant_consistency();
-
-
 
 create trigger trg_crm_contact_company_tenant_consistency
 before insert or update on public.crm_contact_company
 for each row execute function public.enforce_crm_child_tenant_consistency();
 
-
-
 create trigger trg_crm_company_tenants_tenant_consistency
 before insert or update on public.crm_company_tenants
 for each row execute function public.enforce_crm_child_tenant_consistency();
-
-
 
 create trigger trg_crm_contact_tenants_tenant_consistency
 before insert or update on public.crm_contact_tenants
 for each row execute function public.enforce_crm_child_tenant_consistency();
 
-
-
 create trigger trg_crm_list_members_tenant_consistency
 before insert or update on public.crm_list_members
 for each row execute function public.enforce_crm_child_tenant_consistency();
-
-
 
 create trigger trg_crm_tag_assignments_tenant_consistency
 before insert or update on public.crm_tag_assignments
 for each row execute function public.enforce_crm_child_tenant_consistency();
 
-
-
 create trigger trg_crm_custom_field_values_tenant_consistency
 before insert or update on public.crm_custom_field_values
 for each row execute function public.enforce_crm_child_tenant_consistency();
-
-
 
 create trigger trg_crm_leads_campaign_scope
 before insert or update on public.crm_leads
 for each row execute function public.enforce_crm_lead_campaign_scope();
 
-
-
 create trigger trg_crm_leads_conversion_scope
 before insert or update on public.crm_leads
 for each row execute function public.enforce_crm_lead_conversion_scope();
-
-
 
 create trigger trg_crm_opportunities_party_scope
 before insert or update on public.crm_opportunities
 for each row execute function public.enforce_crm_opportunity_party_scope();
 
-
-
 create trigger trg_crm_interactions_scope
 before insert on public.crm_interactions
 for each row execute function public.enforce_crm_interaction_scope();
-
-
 
 create trigger trg_crm_interactions_immutability
 before update or delete on public.crm_interactions
 for each row execute function public.enforce_crm_interaction_immutability();
 
-
-
 create trigger trg_crm_tasks_target
 before insert or update on public.crm_tasks
 for each row execute function public.enforce_crm_task_target();
-
-
 
 create trigger trg_crm_notes_entity
 before insert or update on public.crm_notes
 for each row execute function public.enforce_crm_note_entity();
 
-
-
 create trigger trg_crm_tag_assignments_entity
 before insert or update on public.crm_tag_assignments
 for each row execute function public.enforce_crm_tag_assignment_entity();
-
-
 
 create trigger trg_crm_custom_field_values_shape
 before insert or update on public.crm_custom_field_values
 for each row execute function public.enforce_crm_custom_field_value_shape();
 
-
 create trigger trg_crm_contacts_consent_timestamps
 before insert or update on public.crm_contacts
 for each row execute function public.trg_crm_contacts_consent_timestamps();
 
-
 create trigger trg_crm_leads_conversion_timestamp
 before update of status on public.crm_leads
 for each row execute function public.trg_crm_leads_conversion_timestamp();
-
 
 create trigger trg_crm_notes_version_increment
 before update of body on public.crm_notes
@@ -3544,5 +3335,5 @@ for each row execute function public.trg_crm_notes_version_increment();
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('003_crm_engine', 'REV22.CRM', false)
+values ('003_crm_engine', 'REV1.CRM', false)
 on conflict (version) do nothing;

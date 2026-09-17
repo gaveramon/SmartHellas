@@ -1,13 +1,12 @@
--- REV22 greenfield baseline: 014_optimization_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 014 OPTIMIZATION ENGINE
+-- REV1 GREENFIELD BASELINE
+-- 015_OPTIMIZATION_ENGINE.SQL
+-- =====================================================
+-- 
 -- CLEAN INTELLIGENCE LAYER
 -- NO EXECUTION / NO ACTIONS / NO SIDE EFFECTS
 -- Advisory outputs only; execution via 000 operation_contexts after explicit approval.
--- Not operational blueprints — those live in 008.operation_templates / operation_workflows.
+-- Not operational blueprints — those live in 009.operation_templates / operation_workflows.
 -- =====================================================
 
 
@@ -513,11 +512,11 @@ $$;
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('014_optimization_engine', 'REV22.OPTIMIZATION', false)
+values ('015_optimization_engine', 'REV1.OPTIMIZATION', false)
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 014 OPTIMIZATION ENGINE
+-- END 015 OPTIMIZATION ENGINE
 -- CLEAN INTELLIGENCE ONLY
 -- =====================================================

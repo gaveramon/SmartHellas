@@ -1,5 +1,14 @@
--- REV22 greenfield baseline: 000_supabase_platform.sql
--- Consolidated from migrations_archive_rev19 (000-053)
+-- =====================================================
+-- REV1 GREENFIELD BASELINE
+-- 000_SUPABASE_PLATFORM.SQL
+-- =====================================================
+--
+
+-- =====================================================
+-- 01 CREATING SCHEMAS AND EXTENSIONS
+-- =====================================================
+
+
 
 create schema if not exists platform;
 create extension if not exists pgcrypto;
@@ -19,7 +28,7 @@ with schema pg_catalog;
 create extension if not exists pg_net;
 
 -- =====================================================
--- 000.04 AUDIT LOG (IMMUTABLE COMPLIANCE LAYER)
+-- 04 AUDIT LOG (IMMUTABLE COMPLIANCE LAYER)
 -- =====================================================
 
 create table if not exists platform.audit_log (
@@ -45,7 +54,7 @@ create table if not exists platform.audit_log (
 
 
 -- =====================================================
--- 000.04 GLOBAL CONSTANTS (SYSTEM ONLY)
+-- 04 GLOBAL CONSTANTS (SYSTEM ONLY)
 -- =====================================================
 
 create table if not exists platform.constants (
@@ -85,16 +94,7 @@ create table if not exists platform.dead_letter_archive (
 
 
 -- =====================================================
--- END PART 4 (FINAL ENTERPRISE v2)
--- =====================================================
-
--- =====================================================
--- REV19 SUPABASE PLATFORM LAYER
--- PART 5 - FULL FAULT-TOLERANT EXECUTION ENGINE
--- =====================================================
-
--- =====================================================
--- 000.05 COMMAND QUEUE (WITH PRIORITY + TIMEOUT SUPPORT)
+-- 05 COMMAND QUEUE (WITH PRIORITY + TIMEOUT SUPPORT)
 -- device_id FK to public.devices added in 004
 -- =====================================================
 
@@ -140,7 +140,7 @@ create table if not exists platform.device_commands (
 
 
 -- =====================================================
--- 000.05 DEAD LETTER QUEUE
+-- 05B DEAD LETTER QUEUE
 -- =====================================================
 
 create table if not exists platform.device_commands_dlq (
@@ -162,7 +162,7 @@ create table if not exists platform.device_commands_dlq (
 
 
 -- =====================================================
--- 000.04 ERROR LOG (SUPPORT + DEBUGGING)
+-- 04 ERROR LOG (SUPPORT + DEBUGGING)
 -- =====================================================
 
 create table if not exists platform.error_log (
@@ -205,7 +205,7 @@ create table if not exists platform.event_lag_monitor (
 
 
 -- =====================================================
--- 000.04 EVENT LOG (HIGH-VOLUME STREAM)
+-- 04 EVENT LOG (HIGH-VOLUME STREAM)
 -- =====================================================
 
 create table if not exists platform.event_log (
@@ -231,7 +231,7 @@ create table if not exists platform.event_log (
 
 
 -- =====================================================
--- 5. EVENT OUTBOX (CONSISTENCY BUFFER ONLY)
+-- 06 EVENT OUTBOX (CONSISTENCY BUFFER ONLY)
 -- =====================================================
 
 create table if not exists platform.event_outbox (
@@ -251,7 +251,7 @@ create table if not exists platform.event_outbox (
 
 
 -- =====================================================
--- 000.05 EXECUTION SUPERVISOR (SYSTEM HEALTH)
+-- 05 EXECUTION SUPERVISOR (SYSTEM HEALTH)
 -- =====================================================
 
 create table if not exists platform.execution_supervisor (
@@ -300,7 +300,7 @@ create table if not exists platform.index_usage_stats (
 
 
 -- =====================================================
--- 000.05 INTEGRATION QUEUE (RELIABILITY + DELIVERY TRACKING)
+-- 05 INTEGRATION QUEUE (RELIABILITY + DELIVERY TRACKING)
 -- =====================================================
 
 create table if not exists platform.integration_queue (
@@ -529,7 +529,7 @@ $$;
 
 
 -- =====================================================
--- 000.04 OPERATION LOG (COMMAND EXECUTION ENGINE)
+-- 04 OPERATION LOG (COMMAND EXECUTION ENGINE)
 -- =====================================================
 
 create table if not exists platform.operation_log (
@@ -633,7 +633,7 @@ create table if not exists platform.payment_provider_refs (
     id uuid primary key default gen_random_uuid(),
 
     provider text not null,
-    -- stripe | vivawallet → FK to public.integration_providers(code) in 011
+    -- stripe | vivawallet → FK to public.integration_providers(code) in 012
 
     ref_type text not null,
     -- plan_pricing | product_plan
@@ -668,16 +668,7 @@ create table if not exists platform.performance_snapshots (
 
 
 -- =====================================================
--- END PART 1 - FINAL
--- =====================================================
-
--- =====================================================
--- REV19 SUPABASE PLATFORM LAYER
--- PART 2 - FINAL IMPROVED IDENTITY FOUNDATION
--- =====================================================
-
--- =====================================================
--- 000.02 PROFILES (PURE IDENTITY LAYER ONLY)
+-- 02 PROFILES (PURE IDENTITY LAYER ONLY)
 -- =====================================================
 
 create table if not exists platform.profiles (
@@ -696,7 +687,7 @@ create table if not exists platform.profiles (
 
 
 -- =====================================================
--- 000.02.04 PLATFORM ADMIN (SERVICE_ROLE MANAGED)
+-- 02.04 PLATFORM ADMIN (SERVICE_ROLE MANAGED)
 -- =====================================================
 
 create table if not exists platform.platform_admins (
@@ -772,7 +763,7 @@ create table if not exists platform.queue_processor_logs (
 -- PURPOSE
 -- -------
 -- Central registry for tables that are subject to the
--- portal security boundary enforced by 018b.
+-- portal security boundary enforced by 020.
 --
 -- SECURITY MODEL
 -- --------------
@@ -793,19 +784,19 @@ create table if not exists platform.queue_processor_logs (
 -- No portal-facing table in this registry receives direct
 -- authenticated table access.
 --
--- 018b uses this registry for:
+-- 020 uses this registry for:
 --   - RLS enablement
 --   - FORCE RLS
 --   - removal of legacy direct-table policies
 --   - security classification validation
 --
--- 019 uses this registry as security metadata for the
+-- 022 uses this registry as security metadata for the
 -- final GRANT / REVOKE / privilege matrix.
 -- =====================================================
 
 
 -- =====================================================
--- 000.SECURITY.01 TABLE SECURITY REGISTRY
+-- SECURITY.01 TABLE SECURITY REGISTRY
 -- =====================================================
 
 create table if not exists platform.security_table_registry (
@@ -872,7 +863,7 @@ create table if not exists platform.security_table_registry (
 
 
 comment on table platform.security_table_registry is
-'Security control-plane registry for tables governed by the portal API/RPC-only security boundary. Registry metadata is enforced by 018b and consumed by 019.';
+'Security control-plane registry for tables governed by the portal API/RPC-only security boundary. Registry metadata is enforced by 020 and consumed by 022.';
 
 
 comment on column platform.security_table_registry.security_class is
@@ -997,8 +988,8 @@ create table if not exists platform.schema_migrations (
 
 
 -- =====================================================
--- 000.05B SHIPMENT DISPATCH QUEUE (CARRIER EXECUTION — 008 DOMAIN LINK IN 010)
--- Label generation and carrier API calls. fulfilment_order_id FK added in 010.
+-- 05B SHIPMENT DISPATCH QUEUE (CARRIER EXECUTION — 008 DOMAIN LINK IN 011)
+-- Label generation and carrier API calls. fulfilment_order_id FK added in 011.
 -- =====================================================
 
 create table if not exists platform.shipment_dispatch_queue (
@@ -1034,7 +1025,7 @@ create table if not exists platform.shipment_dispatch_queue (
 
 
 -- =====================================================
--- 000.05C SHIPMENT TRACKING EVENTS (CARRIER SCAN INGEST)
+-- 05C SHIPMENT TRACKING EVENTS (CARRIER SCAN INGEST)
 -- =====================================================
 
 create table if not exists platform.shipment_tracking_events (
@@ -1087,7 +1078,7 @@ create table if not exists platform.slow_query_flags (
 
 
 -- =====================================================
--- 000.04 SOFT DELETE LOG (RECOVERY LAYER)
+-- 04 SOFT DELETE LOG (RECOVERY LAYER)
 -- =====================================================
 
 create table if not exists platform.soft_delete_log (
@@ -1152,8 +1143,8 @@ create table if not exists platform.system_metrics_aggregated (
 -- =====================================================
 -- 000 SUPABASE PLATFORM LAYER
 -- =====================================================
--- 000.06 PLATFORM CONTRACT (ARCHITECTURE ENFORCEMENT BASE)
--- Tenant UI/config SSOT: public.tenant_portal_settings (012)
+-- 06 PLATFORM CONTRACT (ARCHITECTURE ENFORCEMENT BASE)
+-- Tenant UI/config SSOT: public.tenant_portal_settings (013)
 -- =====================================================
 
 create table if not exists platform.table_contracts (
@@ -1210,7 +1201,7 @@ create table if not exists platform.webhook_provider_tenant_map (
 );
 
 -- =====================================================
--- 000.01 REQUIRED EXTENSIONS (SUPABASE SAFE)
+-- 01 REQUIRED EXTENSIONS (SUPABASE SAFE)
 -- =====================================================
 
 do $$
@@ -1247,7 +1238,7 @@ end $$;
 
 
 -- =====================================================
--- 000.07 PLATFORM GUARANTEES (HARD RULES)
+-- 07 PLATFORM GUARANTEES (HARD RULES)
 -- =====================================================
 
 comment on schema platform is '
@@ -1288,7 +1279,7 @@ as $$
 $$;
 
 -- =====================================================
--- 000.03.01 TENANT / RBAC STUBS (SAFE UNTIL 002)
+-- 03.01 TENANT / RBAC STUBS (SAFE UNTIL 002)
 -- =====================================================
 
 create or replace function platform.current_tenant_id()
@@ -1359,7 +1350,7 @@ as $$
 $$;
 
 -- =====================================================
--- 000.03.02 PUBLIC TENANT ACCESS STUB (BOUND IN 002)
+-- 03.02 PUBLIC TENANT ACCESS STUB (BOUND IN 002)
 -- =====================================================
 
 create or replace function public.has_tenant_access(p_public_tenant_id uuid)
@@ -1371,7 +1362,7 @@ as $$
 $$;
 
 -- =====================================================
--- 000.03.03 RLS CORE PATTERNS
+-- 03.03 RLS CORE PATTERNS
 -- =====================================================
 
 create or replace function platform.rls_tenant_match(record_tenant_id uuid)
@@ -1418,7 +1409,7 @@ comment on function platform.rls_allow() is
 
 
 -- =====================================================
--- 000.02.07 ARCHITECTURE GUARANTEES
+-- 02.07 ARCHITECTURE GUARANTEES
 -- =====================================================
 
 comment on table platform.profiles is '
@@ -1431,9 +1422,8 @@ REV19 RULE:
 ';
 
 
-
 -- =====================================================
--- 000.03.05 SECURITY CONTRACT
+-- 03.05 SECURITY CONTRACT
 -- =====================================================
 
 comment on schema platform is '
@@ -1445,7 +1435,6 @@ REV19 TENANT + RBAC RULES:
 4. RLS must use platform.rls_allow(tenant_id) which requires JWT tenant match via 002
 5. public._apply_public_tenant_rls uses platform.rls_allow(tenant_id) (020 bootstrap)
 ';
-
 
 
 -- =====================================================
@@ -1541,7 +1530,7 @@ create index if not exists idx_shipment_dispatch_fulfilment
 on platform.shipment_dispatch_queue (fulfilment_order_id);
 
 comment on table platform.shipment_dispatch_queue is
-    'Carrier label/dispatch execution queue. Domain intent lives in public.fulfilment_orders (010).';
+    'Carrier label/dispatch execution queue. Domain intent lives in public.fulfilment_orders (011).';
 
 comment on column platform.shipment_dispatch_queue.label_artifact_ref is
     'Storage or vault reference to generated label PDF/ZPL — never inline binary.';
@@ -1619,7 +1608,7 @@ create index if not exists idx_payment_provider_refs_lookup
 on platform.payment_provider_refs (provider, external_id);
 
 comment on table platform.payment_provider_refs is
-    'Provider ID map for catalog rows (011 plan_pricing / product_plans). Not a business catalog.';
+    'Provider ID map for catalog rows (012 plan_pricing / product_plans). Not a business catalog.';
 
 create index if not exists idx_retry_tasks_schedule
 on platform.retry_tasks (status, next_retry_at);
@@ -1637,7 +1626,7 @@ comment on schema platform is '
 1. internal_events = immutable system event log
 2. external_webhooks = idempotent ingestion layer only
 3. payment_intents + payment_events = durable charge/checkout execution state
-4. payment_provider_refs = Stripe/Viva ID map for 011 catalog rows
+4. payment_provider_refs = Stripe/Viva ID map for 012 catalog rows
 5. retry_tasks = execution abstraction (worker-driven)
 6. dead_letter_archive = final failure sink only
 7. event_outbox = consistency buffer only
@@ -1693,7 +1682,6 @@ comment on schema platform is '
 8. realtime_streams = declarative config only
 9. all execution logic must exist outside this layer
 ';
-
 
 
 create index if not exists idx_query_perf_time
@@ -1819,7 +1807,7 @@ comment on schema platform is '
 4. get_vault_secret = service_role vault read wrapper
 5. enqueue_http_delivery = durable outbound HTTP via integration_queue
 6. dispatch_http_request = direct pg_net stub for workers/cron
-7. shipment_dispatch_queue + shipment_tracking_events = carrier execution (010 domain link)
+7. shipment_dispatch_queue + shipment_tracking_events = carrier execution (011 domain link)
 ';
 
 -- =====================================================
@@ -1888,7 +1876,6 @@ from platform.event_log e
 where e.tenant_id is not null;
 
 
-
 -- =====================================================
 -- 9. DEAD LETTER ARCHIVE WRITER (FINAL FAILURE ONLY)
 -- =====================================================
@@ -1929,12 +1916,8 @@ end;
 $$;
 
 
-
-
-
-
 -- =====================================================
--- 000.05 RETRY BACKOFF CALCULATION
+-- 05 RETRY BACKOFF CALCULATION
 -- =====================================================
 
 create or replace function platform.calculate_backoff(retry_count int)
@@ -1947,19 +1930,8 @@ as $$
 $$;
 
 
-
-
 -- =====================================================
--- END PART 3
--- =====================================================
-
--- =====================================================
--- REV19 SUPABASE PLATFORM LAYER
--- PART 4 - FINAL ENTERPRISE OBSERVABILITY BACKBONE
--- =====================================================
-
--- =====================================================
--- 000.04 PARTITION MANAGEMENT (AUTO-SAFE DESIGN)
+-- 04 PARTITION MANAGEMENT (AUTO-SAFE DESIGN)
 -- =====================================================
 
 create or replace function platform.create_monthly_partition(
@@ -2033,7 +2005,7 @@ $$;
 
 
 -- =====================================================
--- 000.02.02 IDENTITY LAYER (ONLY ACCESS POINT FOR 001–014)
+-- 02.02 IDENTITY LAYER (ONLY ACCESS POINT FOR 001–017)
 -- =====================================================
 
 create or replace function platform.current_user_id()
@@ -2415,7 +2387,7 @@ $$;
 
 
 -- =====================================================
--- 000.05 EXECUTION WATCHDOG (TIMEOUT SYSTEM)
+-- 05 EXECUTION WATCHDOG (TIMEOUT SYSTEM)
 -- =====================================================
 
 create or replace function platform.execution_watchdog()
@@ -2502,7 +2474,7 @@ $$;
 
 
 -- =====================================================
--- 000.05 FETCH NEXT COMMAND (FULL SAFE WORKER MODEL)
+-- 05 FETCH NEXT COMMAND (FULL SAFE WORKER MODEL)
 -- =====================================================
 
 create or replace function platform.fetch_next_command()
@@ -2713,7 +2685,7 @@ $$;
 
 
 -- =====================================================
--- 000.02.05 IDENTITY CONTEXT OBJECT (RLS READY)
+-- 02.05 IDENTITY CONTEXT OBJECT (RLS READY)
 -- =====================================================
 
 create or replace function platform.get_identity()
@@ -2769,7 +2741,7 @@ comment on function platform.get_vault_secret(text) is
 
 
 -- =====================================================
--- 000.02.01 AUTH USER HOOK (SAFE + SUPABASE CORRECT)
+-- 02.01 AUTH USER HOOK (SAFE + SUPABASE CORRECT)
 -- =====================================================
 
 create or replace function platform.handle_new_auth_user()
@@ -2929,7 +2901,7 @@ $$;
 
 
 -- =====================================================
--- 000.02.03 AUTH STATE HELPERS
+-- 02.03 AUTH STATE HELPERS
 -- =====================================================
 
 create or replace function platform.is_authenticated()
@@ -3006,7 +2978,7 @@ $$;
 
 
 -- =====================================================
--- 000.04 SAFE LOGGING FUNCTIONS (TENANT-AUTO BINDING)
+-- 04 SAFE LOGGING FUNCTIONS (TENANT-AUTO BINDING)
 -- =====================================================
 
 create or replace function platform.log_event(
@@ -3371,7 +3343,7 @@ $$;
 
 
 -- =====================================================
--- 000.05 MOVE TO DLQ (SAFE FAILURE HANDLING)
+-- 05 MOVE TO DLQ (SAFE FAILURE HANDLING)
 -- =====================================================
 
 create or replace function platform.move_to_dlq(
@@ -4243,7 +4215,7 @@ $$;
 
 
 -- =====================================================
--- 000.05 INTEGRATION PUSH (WITH RETRY SUPPORT)
+-- 05 INTEGRATION PUSH (WITH RETRY SUPPORT)
 -- =====================================================
 
 create or replace function platform.push_integration_event(
@@ -4399,7 +4371,7 @@ $$;
 
 
 -- =====================================================
--- 000.03.03 RLS CORE PATTERNS
+-- 03.03 RLS CORE PATTERNS
 -- =====================================================
 
 create or replace function platform.rls_tenant_match(record_tenant_id uuid)
@@ -4533,7 +4505,7 @@ $$;
 
 
 -- =====================================================
--- 000.03 UPDATED_AT FUNCTION (SINGLE SOURCE OF TRUTH)
+-- 03 UPDATED_AT FUNCTION (SINGLE SOURCE OF TRUTH)
 -- =====================================================
 
 create or replace function platform.set_updated_at()
@@ -4667,9 +4639,9 @@ $$;
 
 
 -- =====================================================
--- 5. SERVICE ACTIVATION PROJECTION SYNC (012 SSOT → WORKER)
+-- 5. SERVICE ACTIVATION PROJECTION SYNC (013 SSOT → WORKER)
 -- Writes service_activation_state (013) only via service_role.
--- SSOT remains subscriptions (002) + feature_entitlements (009).
+-- SSOT remains subscriptions (002) + feature_entitlements (010).
 -- =====================================================
 
 create or replace function platform.sync_service_activation_state()
@@ -4736,7 +4708,7 @@ $$;
 
 
 -- =====================================================
--- 000.05 UPDATE COMMAND STATUS (ENHANCED STATE MACHINE)
+-- 05 UPDATE COMMAND STATUS (ENHANCED STATE MACHINE)
 -- =====================================================
 
 create or replace function platform.update_device_command_status(
@@ -5126,7 +5098,7 @@ on conflict (key) do nothing;
 
 
 
--- Example contract baseline (used by 001–013 validation later)
+-- Example contract baseline (used by 001–017 validation later)
 insert into platform.table_contracts (
     table_name,
     requires_tenant_id,
@@ -5179,5 +5151,5 @@ on conflict (id) do nothing;
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('000_supabase_platform', 'REV22.SUPABASE.PLATFORM', false)
+values ('000_supabase_platform', 'REV1.SUPABASE.PLATFORM', false)
 on conflict (version) do nothing;

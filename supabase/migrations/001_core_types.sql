@@ -1,7 +1,6 @@
 -- =====================================================
--- =====================================================
--- REV22 greenfield baseline: 001_core_types.sql
--- =====================================================
+-- REV1 GREENFIELD BASELINE
+-- 001_CORE_TYPES.SQL
 -- =====================================================
 --
 -- CORE TYPE SSOT
@@ -33,7 +32,6 @@
 -- =====================================================
 
 
-
 -- =====================================================
 -- 1. TENANCY & PLATFORM CORE
 -- =====================================================
@@ -43,7 +41,6 @@ create type public.tenant_status as enum (
     'suspended',
     'deleted'
 );
-
 
 
 create type public.platform_event_type as enum (
@@ -70,7 +67,6 @@ create type public.platform_event_type as enum (
 );
 
 
-
 create type public.operation_context_type as enum (
     'booking_event',
     'device_event',
@@ -84,7 +80,6 @@ create type public.operation_context_type as enum (
 );
 
 
-
 create type public.priority_level as enum (
     'low',
     'normal',
@@ -92,7 +87,6 @@ create type public.priority_level as enum (
     'urgent',
     'critical'
 );
-
 
 
 -- =====================================================
@@ -108,7 +102,6 @@ create type public.user_role as enum (
 );
 
 
-
 create type public.access_credential_status as enum (
     'pending',
     'active',
@@ -116,7 +109,6 @@ create type public.access_credential_status as enum (
     'expired',
     'failed'
 );
-
 
 
 create type public.access_rule_type as enum (
@@ -127,7 +119,6 @@ create type public.access_rule_type as enum (
 );
 
 
-
 create type public.access_type as enum (
     'guest',
     'owner',
@@ -135,7 +126,6 @@ create type public.access_type as enum (
     'emergency',
     'scheduled'
 );
-
 
 
 -- =====================================================
@@ -155,7 +145,6 @@ create type public.property_type as enum (
 );
 
 
-
 create type public.room_type as enum (
     'living_room',
     'bedroom',
@@ -172,7 +161,6 @@ create type public.room_type as enum (
 );
 
 
-
 -- =====================================================
 -- 4. BOOKING DOMAIN TYPES
 -- =====================================================
@@ -184,7 +172,6 @@ create type public.booking_status as enum (
     'checked_out',
     'cancelled'
 );
-
 
 
 -- =====================================================
@@ -203,14 +190,12 @@ create type public.device_protocol as enum (
 );
 
 
-
 create type public.device_usage_score_category as enum (
     'efficiency',
     'usage',
     'energy',
     'reliability'
 );
-
 
 
 -- =====================================================
@@ -240,7 +225,6 @@ create type public.integration_provider_category as enum (
 );
 
 
-
 -- =====================================================
 -- 7. AUTOMATION & WORKFLOW TYPES
 -- =====================================================
@@ -255,7 +239,6 @@ create type public.automation_action_type as enum (
 );
 
 
-
 create type public.automation_run_status as enum (
     'pending',
     'running',
@@ -263,7 +246,6 @@ create type public.automation_run_status as enum (
     'failed',
     'cancelled'
 );
-
 
 
 create type public.automation_step_status as enum (
@@ -275,7 +257,6 @@ create type public.automation_step_status as enum (
 );
 
 
-
 create type public.automation_trigger_type as enum (
     'booking_created',
     'booking_started',
@@ -284,7 +265,6 @@ create type public.automation_trigger_type as enum (
     'manual_trigger',
     'schedule_based'
 );
-
 
 
 -- =====================================================
@@ -303,7 +283,6 @@ create type public.onboarding_lifecycle_state as enum (
 );
 
 
-
 create type public.onboarding_status as enum (
     'not_started',
     'in_progress',
@@ -311,7 +290,6 @@ create type public.onboarding_status as enum (
     'completed',
     'blocked'
 );
-
 
 
 create type public.onboarding_step_status as enum (
@@ -323,7 +301,6 @@ create type public.onboarding_step_status as enum (
 );
 
 
-
 create type public.onboarding_step_type as enum (
     'wifi_setup',
     'device_assignment',
@@ -332,7 +309,6 @@ create type public.onboarding_step_type as enum (
     'testing',
     'finalization'
 );
-
 
 
 -- =====================================================
@@ -372,7 +348,6 @@ begin
 end $$;
 
 
-
 -- =====================================================
 -- 10. CRM DOMAIN TYPES
 -- =====================================================
@@ -386,7 +361,6 @@ create type public.crm_campaign_status as enum (
 );
 
 
-
 create type public.crm_campaign_type as enum (
     'google_ads',
     'facebook',
@@ -397,14 +371,12 @@ create type public.crm_campaign_type as enum (
 );
 
 
-
 create type public.crm_contact_status as enum (
     'active',
     'inactive',
     'archived',
     'unqualified'
 );
-
 
 
 create type public.crm_custom_field_type as enum (
@@ -418,7 +390,6 @@ create type public.crm_custom_field_type as enum (
 );
 
 
-
 create type public.crm_entity_type as enum (
     'lead',
     'opportunity',
@@ -426,7 +397,6 @@ create type public.crm_entity_type as enum (
     'company',
     'tenant'
 );
-
 
 
 create type public.crm_interaction_type as enum (
@@ -440,7 +410,6 @@ create type public.crm_interaction_type as enum (
 );
 
 
-
 create type public.crm_lead_status as enum (
     'new',
     'contacted',
@@ -451,7 +420,6 @@ create type public.crm_lead_status as enum (
 );
 
 
-
 create type public.crm_lead_temperature as enum (
     'cold',
     'warm',
@@ -459,12 +427,10 @@ create type public.crm_lead_temperature as enum (
 );
 
 
-
 create type public.crm_list_type as enum (
     'static',
     'dynamic'
 );
-
 
 
 create type public.crm_opportunity_status as enum (
@@ -475,14 +441,12 @@ create type public.crm_opportunity_status as enum (
 );
 
 
-
 create type public.crm_task_status as enum (
     'pending',
     'in_progress',
     'completed',
     'cancelled'
 );
-
 
 
 create type public.crm_task_target_type as enum (
@@ -494,12 +458,10 @@ create type public.crm_task_target_type as enum (
 );
 
 
-
 create type public.crm_terminal_outcome as enum (
     'won',
     'lost'
 );
-
 
 
 -- =====================================================
@@ -513,7 +475,6 @@ create type public.support_sender_type as enum (
 );
 
 
-
 create type public.support_ticket_status as enum (
     'open',
     'in_progress',
@@ -521,7 +482,6 @@ create type public.support_ticket_status as enum (
     'resolved',
     'closed'
 );
-
 
 
 create type public.service_activation_status as enum (
@@ -534,14 +494,12 @@ create type public.service_activation_status as enum (
 );
 
 
-
 create type public.service_type as enum (
     'managed_service',
     'auto_door_code',
     'energy_optimization',
     'security_monitoring'
 );
-
 
 
 -- =====================================================
@@ -558,13 +516,11 @@ create type public.optimization_category as enum (
 );
 
 
-
 create type public.optimization_insight_type as enum (
     'anomaly_detected',
     'optimization_opportunity',
     'usage_pattern'
 );
-
 
 
 create type public.optimization_recommendation_type as enum (
@@ -578,13 +534,11 @@ create type public.optimization_recommendation_type as enum (
 );
 
 
-
 create type public.recommendation_severity as enum (
     'low',
     'medium',
     'high'
 );
-
 
 
 create type public.recommendation_status as enum (
@@ -594,7 +548,6 @@ create type public.recommendation_status as enum (
     'converted_to_proposal',
     'implemented'
 );
-
 
 
 -- =====================================================
@@ -610,13 +563,11 @@ create type public.fulfilment_status as enum (
 );
 
 
-
 create type public.package_type as enum (
     'hardware',
     'service',
     'hybrid'
 );
-
 
 
 create type public.payment_status as enum (
@@ -631,7 +582,6 @@ create type public.payment_status as enum (
 );
 
 
-
 create type public.subscription_status as enum (
     'trial',
     'pending',
@@ -644,13 +594,11 @@ create type public.subscription_status as enum (
 );
 
 
-
 create type public.subscription_tier as enum (
     'basic',
     'pro',
     'enterprise'
 );
-
 
 
 -- =====================================================
@@ -669,13 +617,11 @@ create type public.conversion_event_type as enum (
 );
 
 
-
 create type public.proposal_item_type as enum (
     'device_package',
     'subscription',
     'service'
 );
-
 
 
 create type public.proposal_status as enum (
@@ -685,7 +631,6 @@ create type public.proposal_status as enum (
     'rejected',
     'expired'
 );
-
 
 
 -- =====================================================
@@ -704,8 +649,6 @@ create type public.upsell_package_trigger as enum (
     'usage_threshold',
     'manual_review'
 );
-
-
 
 create type public.upsell_plan_trigger as enum (
     'onboarding_completed',
@@ -730,23 +673,13 @@ create type public.upsell_plan_trigger as enum (
 select platform.bind_operation_context_type_column();
 
 
-
 -- =====================================================
 -- MIGRATION REGISTRATION
 -- =====================================================
 
-insert into platform.schema_migrations (
-    migration_name,
-    version,
-    rollback_available
-)
-values (
-    '001_core_types',
-    'REV22.CORE.TYPES',
-    false
-)
+insert into platform.schema_migrations ( migration_name, version, rollback_available)
+values ('001_core_types', 'REV1.CORE.TYPES', false)
 on conflict (version) do nothing;
-
 
 
 -- =====================================================

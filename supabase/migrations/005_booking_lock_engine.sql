@@ -1,9 +1,8 @@
--- REV22 greenfield baseline: 005_booking_lock_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 005. BOOKING & LOCK ENGINE
+-- REV1 GREENFIELD BASELINE
+-- 005_BOOKING_LOCK_ENGINE.SQL
+-- =====================================================
+--
 -- CLEAN DOMAIN RULE LAYER
 -- NO EXECUTION / NO QUEUES / NO NOTIFICATIONS / NO CODE GENERATION
 -- =====================================================
@@ -21,7 +20,7 @@
 
 
 -- =====================================================
--- 005.1 BOOKINGS (CORE RESERVATION MODEL)
+-- 1 BOOKINGS (CORE RESERVATION MODEL)
 -- =====================================================
 
 create table if not exists bookings (
@@ -50,7 +49,7 @@ create table if not exists bookings (
 
 
 -- =====================================================
--- 005.2 PROPERTY ACCESS SCHEDULE (GUEST WINDOW TEMPLATE — SSOT)
+-- 2 PROPERTY ACCESS SCHEDULE (GUEST WINDOW TEMPLATE — SSOT)
 -- One row per property: default check-in/out times for guest stays.
 -- =====================================================
 
@@ -85,7 +84,7 @@ create table if not exists property_access_schedules (
 
 
 -- =====================================================
--- 005.3 BOOKING ACCESS (RESOLVED GUEST WINDOW PER BOOKING)
+-- 3 BOOKING ACCESS (RESOLVED GUEST WINDOW PER BOOKING)
 -- Populated when a booking is confirmed — not generated here.
 -- =====================================================
 
@@ -115,7 +114,7 @@ create table if not exists booking_access (
 
 
 -- =====================================================
--- 005.4 ACCESS POLICIES (NON-GUEST GRANTS ONLY)
+-- 4 ACCESS POLICIES (NON-GUEST GRANTS ONLY)
 -- Owner, emergency, temporary, and scheduled access outside bookings.
 -- =====================================================
 
@@ -145,7 +144,7 @@ create table if not exists access_policies (
 
 
 -- =====================================================
--- 005.5 ACCESS RULES (PROPERTY EXCEPTIONS ONLY)
+-- 5 ACCESS RULES (PROPERTY EXCEPTIONS ONLY)
 -- Overrides and emergency rules — not the default guest schedule.
 -- =====================================================
 
@@ -171,7 +170,7 @@ create table if not exists access_rules (
 
 
 -- =====================================================
--- 005.6 LOCK DEVICE MAPPING (NO EXECUTION)
+-- 6 LOCK DEVICE MAPPING (NO EXECUTION)
 -- =====================================================
 
 create table if not exists lock_devices (
@@ -192,7 +191,7 @@ create table if not exists lock_devices (
 
 
 -- =====================================================
--- 005.7 ACCESS CREDENTIALS (ISSUED GRANT METADATA — NO GENERATION)
+-- 7 ACCESS CREDENTIALS (ISSUED GRANT METADATA — NO GENERATION)
 -- Records what was issued to which lock for a booking. PIN stored in vault (000).
 -- =====================================================
 
@@ -234,7 +233,7 @@ create table if not exists access_credentials (
 
 
 -- =====================================================
--- 005.8 INDEXES
+-- 8 INDEXES
 -- =====================================================
 
 create index if not exists idx_bookings_property
@@ -365,7 +364,7 @@ where status in ('pending', 'active');
 
 
 -- =====================================================
--- 005.9 TABLE & COLUMN COMMENTS
+-- 9 TABLE & COLUMN COMMENTS
 -- =====================================================
 
 comment on table public.property_access_schedules is
@@ -413,7 +412,7 @@ comment on column public.access_credentials.external_credential_id is
 
 
 -- =====================================================
--- 005.10 TENANT FOREIGN KEYS
+-- 10 TENANT FOREIGN KEYS
 -- Deferred — tenants exist from 002.
 -- =====================================================
 
@@ -494,11 +493,11 @@ end $$;
 
 
 -- =====================================================
--- 005.11 CORE TENANT / PROPERTY / DEVICE CONSISTENCY FUNCTIONS
+-- 11 CORE TENANT / PROPERTY / DEVICE CONSISTENCY FUNCTIONS
 -- =====================================================
 
 -- =====================================================
--- 005.11A. BOOKING TENANT CONSISTENCY (PROPERTY ↔ TENANT)
+-- 11A. BOOKING TENANT CONSISTENCY (PROPERTY ↔ TENANT)
 -- =====================================================
 
 create or replace function public.enforce_booking_tenant_consistency()
@@ -528,7 +527,7 @@ $$;
 
 
 -- =====================================================
--- 005.11B. PROPERTY TENANT CONSISTENCY (PROPERTY-SCOPED TABLES)
+-- 11B. PROPERTY TENANT CONSISTENCY (PROPERTY-SCOPED TABLES)
 -- =====================================================
 
 create or replace function public.enforce_property_tenant_consistency()
@@ -562,7 +561,7 @@ $$;
 
 
 -- =====================================================
--- 005.11C. BOOKING ACCESS CONSISTENCY (GUEST-ONLY)
+-- 11C. BOOKING ACCESS CONSISTENCY (GUEST-ONLY)
 -- =====================================================
 
 create or replace function public.enforce_booking_access_consistency()
@@ -594,7 +593,7 @@ $$;
 
 
 -- =====================================================
--- 005.11D. LOCK DEVICE INTEGRITY (CATEGORY + TENANT)
+-- 11D. LOCK DEVICE INTEGRITY (CATEGORY + TENANT)
 -- =====================================================
 
 create or replace function public.enforce_lock_device_integrity()
@@ -649,7 +648,7 @@ $$;
 
 
 -- =====================================================
--- 005.11E. ACCESS CREDENTIAL CONSISTENCY (BOOKING ↔ LOCK)
+-- 11E. ACCESS CREDENTIAL CONSISTENCY (BOOKING ↔ LOCK)
 -- =====================================================
 
 create or replace function public.enforce_access_credential_consistency()
@@ -730,11 +729,11 @@ $$;
 
 
 -- =====================================================
--- 005.12 BOOKING ACCESS CALCULATION
+-- 12 BOOKING ACCESS CALCULATION
 -- =====================================================
 
 -- =====================================================
--- 005.12A. CORE CALCULATION (005 SSOT)
+-- 12A. CORE CALCULATION (005 SSOT)
 -- =====================================================
 
 create or replace function public.booking_compute_access_window(p_booking_id uuid)
@@ -848,7 +847,7 @@ $$;
 
 
 -- =====================================================
--- 005.12B. ACCESS WINDOW CALCULATION RPC HELPER
+-- 12B. ACCESS WINDOW CALCULATION RPC HELPER
 -- =====================================================
 
 create or replace function public.booking_calculate_access_window(p_booking_id uuid)
@@ -875,7 +874,7 @@ $$;
 
 
 -- =====================================================
--- 005.12C. BOOKING ACCESS GENERATION
+-- 12C. BOOKING ACCESS GENERATION
 -- =====================================================
 
 create or replace function public.booking_generate_booking_access(p_booking_id uuid)
@@ -921,7 +920,7 @@ $$;
 
 
 -- =====================================================
--- 005.12D. BOOKING ACCESS REGENERATION
+-- 12D. BOOKING ACCESS REGENERATION
 -- =====================================================
 
 create or replace function public.booking_regenerate_booking_access(p_booking_id uuid)
@@ -973,7 +972,7 @@ $$;
 
 
 -- =====================================================
--- 005.12E. MANUAL BOOKING ACCESS CREATION
+-- 12E. MANUAL BOOKING ACCESS CREATION
 -- =====================================================
 
 create or replace function public.booking_create_booking_access(p_payload jsonb)
@@ -1045,7 +1044,7 @@ $$;
 
 
 -- =====================================================
--- 005.13 BOOKING DOMAIN RPC
+-- 13 BOOKING DOMAIN RPC
 -- =====================================================
 
 create or replace function public.booking_domain(
@@ -1660,7 +1659,7 @@ $$;
 
 
 -- =====================================================
--- 005.14 LOCKS DOMAIN RPC
+-- 14 LOCKS DOMAIN RPC
 -- =====================================================
 
 create or replace function public.locks_domain(
@@ -2097,7 +2096,7 @@ $$;
 
 
 -- =====================================================
--- 005.15 BOOKING OVERVIEW VIEW
+-- 15 BOOKING OVERVIEW VIEW
 -- =====================================================
 
 create or replace view public.v_bookings_overview
@@ -2127,7 +2126,7 @@ left join public.access_credentials ac on ac.booking_id = b.id;
 
 
 -- =====================================================
--- 005.18 TRIGGERS
+-- 18 TRIGGERS
 -- =====================================================
 
 create trigger trg_bookings_updated_at
@@ -2180,9 +2179,9 @@ for each row execute function public.enforce_property_tenant_consistency();
 
 
 -- =====================================================
--- 005.19 END 005 BOOKING & LOCK ENGINE
+-- 19 END 005 BOOKING & LOCK ENGINE
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('005_booking_lock_engine', 'REV22.BOOKING.LOCK', false)
+values ('005_booking_lock_engine', 'REV1.BOOKING.LOCK', false)
 on conflict (version) do nothing;

@@ -1,7 +1,8 @@
--- REV22 greenfield baseline: 006_integration_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
+-- =====================================================
+-- REV1 GREENFIELD BASELINE
+-- 006_INTEGRRATION_ENGINE.SQL
+-- =====================================================
+--
 -- =====================================================
 -- 1. INTEGRATION PROVIDERS (CATALOG / SSOT)
 -- =====================================================
@@ -3715,7 +3716,7 @@ $$;
 -- - Resolve tenant
 -- - Resolve SmartHellas device
 -- - Resolve event timestamp
--- - Route resolved telemetry to 007a
+-- - Route resolved telemetry to 007
 --
 -- 006 MUST NOT:
 -- - interpret telemetry metrics
@@ -3730,13 +3731,13 @@ $$;
 --   webhook processing lifecycle
 --   retry handling
 --
--- 007a owns:
+-- 007 owns:
 --   device_telemetry_raw
 --   immutable raw telemetry storage
 --
--- 007b owns:
+-- 008 owns:
 --   device_telemetry_processing
---   processed raw data from 007a 
+--   processed raw data from 007
 --
 -- =====================================================
 
@@ -4016,7 +4017,7 @@ begin
 
 
         -- -------------------------------------------------
-        -- 8C. Send resolved raw event to 007a
+        -- 8C. Send resolved raw event to 007
         -- -------------------------------------------------
 
         v_telemetry_result :=
@@ -4070,7 +4071,7 @@ comment on function public.process_integration_webhook(uuid)
 is
 'Integration Engine webhook processor. 
  Resolves provider, event, tenant and device identity and routes 
- resolved device telemetry to the Device Telemetry Raw module (007a). 
+ resolved device telemetry to the Device Telemetry Raw module (007). 
  Does not own raw telemetry storage or platform webhook lifecycle.';
 
 
@@ -4088,5 +4089,5 @@ set search_path = '';
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('006_integration_engine', 'REV22.INTEGRATION', false)
+values ('006_integration_engine', 'REV1.INTEGRATION', false)
 on conflict (version) do nothing;

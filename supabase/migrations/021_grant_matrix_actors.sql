@@ -1,6 +1,7 @@
 -- =====================================================
--- REV22 GREENFIELD BASELINE
+-- REV1 GREENFIELD BASELINE
 -- 021_GRANT_MATRIX.SQL
+-- =====================================================
 --
 -- Enterprise Security Grant Boundary
 --
@@ -2265,7 +2266,7 @@ insert into platform.schema_migrations (
 )
 values (
     '021_grant_matrix_actors',
-    'REV22.GRANT.MATRIX.ACTORS
+    'REV1.GRANT.MATRIX.ACTORS
     false
 )
 on conflict (version) do nothing;

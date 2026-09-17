@@ -1,10 +1,9 @@
--- REV22 greenfield baseline: 016_automation_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 016 AUTOMATION ENGINE (RUNTIME EXECUTION LAYER)
--- Event-driven workflow execution — definitions live in 008
+-- REV1 GREENFIELD BASELINE
+-- 017 AUTOMATION ENGINE (RUNTIME EXECUTION LAYER)
+-- =====================================================
+--
+-- Event-driven workflow execution — definitions live in 009
 -- Platform queues / device commands live in 000
 -- NO business rule duplication — triggers dispatch via RPC only
 -- =====================================================
@@ -683,9 +682,9 @@ join public.operation_workflows ow on ow.id = ar.workflow_id;
 
 
 -- =====================================================
--- END 016 AUTOMATION ENGINE
+-- END 017 AUTOMATION ENGINE
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('016_automation_engine', 'REV22.AUTOMATION.ENGINE', false)
+values ('017_automation_engine', 'REV1.AUTOMATION.ENGINE', false)
 on conflict (version) do nothing;

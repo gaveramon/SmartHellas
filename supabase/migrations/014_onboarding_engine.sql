@@ -1,9 +1,8 @@
--- REV22 greenfield baseline: 013_onboarding_engine.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 013 ONBOARDING ENGINE
+-- REV1 GREENFIELD BASELINE
+-- 014_ONBOARDING_ENGINGE.SQL
+-- =====================================================
+--
 -- CLEAN DOMAIN STATE / PROGRESS / LIFECYCLE TRACKING
 -- NO EXECUTION / NO AUTOMATION / NO SIDE EFFECTS
 -- =====================================================
@@ -11,7 +10,7 @@
 -- Wizard state, QR pairing outcomes, room/device mapping input,
 -- lifecycle state, and progress tracking only.
 -- QR minting and step orchestration → 000.
--- Flow definition → 009 onboarding_blueprints / preconfig_templates.
+-- Flow definition → 010 onboarding_blueprints / preconfig_templates.
 -- =====================================================
 
 
@@ -299,11 +298,11 @@ create index if not exists idx_onboarding_lifecycle_transitions_tenant_created
 -- =====================================================
 
 comment on column public.onboarding_sessions.preconfig_template_id is
-    'Links wizard to global 009 preconfig_templates / onboarding_blueprints. Tenant selection only — no tenant-owned templates.';
+    'Links wizard to global 010 preconfig_templates / onboarding_blueprints. Tenant selection only — no tenant-owned templates.';
 
 
 comment on column public.onboarding_sessions.onboarding_blueprint_id is
-    'Optional traceability FK to 009 onboarding_blueprints. May mirror preconfig_templates.onboarding_blueprint_id.';
+    'Optional traceability FK to 010 onboarding_blueprints. May mirror preconfig_templates.onboarding_blueprint_id.';
 
 
 comment on column public.onboarding_sessions.current_step is
@@ -744,7 +743,7 @@ $$;
 
 -- =====================================================
 -- 17. DOMAIN READ FUNCTIONS
--- 013 — no Edge guards
+-- 014 — no Edge guards
 -- =====================================================
 
 create or replace function public.onboarding_lifecycle_get(p_property_id uuid)
@@ -1341,10 +1340,10 @@ drop trigger if exists trg_onboarding_lifecycle_transitions_consistency on publi
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('013_onboarding_engine', 'REV22.ONBOARDING.ENGINE', false)
+values ('014_onboarding_engine', 'REV1.ONBOARDING.ENGINE', false)
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 013 ONBOARDING ENGINE
+-- END 014 ONBOARDING ENGINE
 -- =====================================================

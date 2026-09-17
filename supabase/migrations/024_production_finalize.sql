@@ -1,6 +1,7 @@
 -- =====================================================
--- REV22 GREENFIELD BASELINE
+-- REV1 GREENFIELD BASELINE
 -- 024_PRODUCTION_FINALIZE.SQL
+-- =====================================================
 --
 -- Purpose:
 -- Production readiness verification gate
@@ -413,7 +414,7 @@ jsonb_build_object
 
 
 insert into platform.schema_migrations( migration_name, version, rollback_available)
-values( '024_production_finalize', 'REV22.PRODUCTION.FINALIZE', false)
+values( '024_production_finalize', 'REV1.PRODUCTION.FINALIZE', false)
 on conflict(version) do nothing;
 
 commit;

@@ -1,11 +1,11 @@
--- REV22 greenfield baseline: 011_commerce_engine.sql
-
-
 -- =====================================================
--- 011 COMMERCE ENGINE (CLEAN COMMERCIAL DOMAIN ONLY)
+-- REV1 GREENFIELD BASELINE
+-- 012_COMMERCE_ENGINE.SQL
+-- =====================================================
+--
 -- NO PAYMENT EXECUTION / NO WEBHOOKS / NO TRANSACTIONS
 -- Campaign SSOT: upsell_rules (plan upgrades) only.
--- Package upsells → 014.upsell_campaigns. Marketing → 003.crm_campaigns.
+-- Package upsells → 015.upsell_campaigns. Marketing → 003.crm_campaigns.
 -- =====================================================
 
 
@@ -87,7 +87,7 @@ create table if not exists feature_entitlements (
 -- 4. UPSELL RULE DEFINITIONS
 -- =====================================================
 -- Defines subscription/plan upgrade recommendations only.
--- Package upsells live in 014.upsell_campaigns.
+-- Package upsells live in 015.upsell_campaigns.
 -- =====================================================
 
 create table if not exists upsell_rules (
@@ -1280,5 +1280,5 @@ for each row execute function public.enforce_subscription_plan_required();
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('011_commerce_engine', 'REV22.COMMERCE', false)
+values ('012_commerce_engine', 'REV1.COMMERCE', false)
 on conflict (version) do nothing;

@@ -1,6 +1,7 @@
 -- =====================================================
--- REV22 GREENFIELD BASELINE
--- 007a_DEVICE_TELEMETRY.SQL
+-- REV1 GREENFIELD BASELINE
+-- 007_DEVICE_TELEMETRY_RAW.SQL
+-- =====================================================
 --
 -- Purpose:
 -- Raw device telemetry ingestion and immutable storage
@@ -16,7 +17,7 @@
 --   after integration identity has been resolved.
 -- - Provide the single raw telemetry ingest boundary.
 --
--- 007a MUST NOT:
+-- 007 MUST NOT:
 -- - resolve providers
 -- - resolve tenants
 -- - resolve SmartHellas devices
@@ -33,7 +34,7 @@
 -- - provider_event_id
 -- - observed_at
 --
--- 007b Device Telemetry Processing owns:
+-- 008 Device Telemetry Processing owns:
 -- - normalization
 -- - metric extraction
 -- - validation beyond raw ingest
@@ -405,8 +406,8 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '007_a_device_telemetry_raw',
-    'REV22.DEVICE.TELEMETRY.RAW',
+    '007_device_telemetry_raw',
+    'REV1.DEVICE.TELEMETRY.RAW',
     false
 )
 on conflict (version) do nothing;
@@ -416,12 +417,12 @@ commit;
 
 
 -- =====================================================
--- END 007a DEVICE TELEMETRY
+-- END 007 DEVICE TELEMETRY RAW
 --
 -- SSOT BOUNDARY:
 --
 -- 004 = Device/domain registry SSOT
--- 007a = Raw telemetry input SSOT
+-- 007 = Raw telemetry input SSOT
 --
 -- Future modules may derive:
 -- - normalized measurements

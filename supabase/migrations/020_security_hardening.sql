@@ -1,5 +1,6 @@
 -- =====================================================
--- REV22 greenfield baseline: 020_security_hardening.sql
+-- REV1 GREENFIELD BASELINE
+-- 020_SECURITY_HARDENING.SQL
 -- =====================================================
 -- SECURITY HARDENING
 --
@@ -940,7 +941,7 @@ insert into platform.schema_migrations (
 )
 values (
     '020_security_hardening',
-    'REV22.SECURITY.HARDENING',
+    'REV1.SECURITY.HARDENING',
     false
 )
 on conflict (version) do nothing;

@@ -1,13 +1,12 @@
--- REV22 greenfield baseline: 015_customer_proposal_monetization.sql
--- Consolidated from migrations_archive_rev19 (000-053)
-
-
 -- =====================================================
--- 015 CUSTOMER PROPOSAL & MONETIZATION ENGINE
+-- REV1 GREENFIELD BASELINE
+-- 016_CUSTOMER_PROPOSAL_MONETIZATION.SQL
+-- =====================================================
+--
 -- CLEAN COMMERCIAL + CONVERSION LOGIC LAYER
 -- NO EXECUTION / NO PAYMENT / NO COMMUNICATION SIDE EFFECTS
 -- Campaign SSOT: upsell_campaigns (in-product package upsells) only.
--- Plan upsells → 011.upsell_rules. Marketing → 003.crm_campaigns.
+-- Plan upsells → 012.upsell_rules. Marketing → 003.crm_campaigns.
 -- =====================================================
 
 
@@ -41,9 +40,9 @@ create table if not exists customer_proposals (
 
 -- =====================================================
 -- 2. MONETIZATION PACKAGES
--- COMMERCIAL PACKAGING OVER 009 DEVICE BUNDLES
--- Hardware BOM SSOT: device_bundles (009).
--- Subscription tiers: product_plans (011).
+-- COMMERCIAL PACKAGING OVER 010 DEVICE BUNDLES
+-- Hardware BOM SSOT: device_bundles (010).
+-- Subscription tiers: product_plans (012).
 -- =====================================================
 
 create table if not exists monetization_packages (
@@ -116,7 +115,7 @@ create table if not exists proposal_items (
 -- =====================================================
 -- 4. UPSELL CAMPAIGNS
 -- COMMERCIAL CONVERSION LOGIC ONLY
--- Subscription/plan upgrades live in 009 upsell_rules.
+-- Subscription/plan upgrades live in 010 upsell_rules.
 -- =====================================================
 
 create table if not exists upsell_campaigns (
@@ -139,7 +138,7 @@ create table if not exists upsell_campaigns (
 -- =====================================================
 -- 5. SERVICE ACTIVATION STATE
 -- WORKER-MAINTAINED ACTIVATION PROJECTION
--- SSOT: subscriptions (002) + feature_entitlements (009).
+-- SSOT: subscriptions (002) + feature_entitlements (010).
 -- Not app-writable truth.
 -- =====================================================
 
@@ -239,7 +238,7 @@ where device_bundle_id is not null;
 
 
 comment on table public.monetization_packages is
-    'Commercial packaging layer for proposals. Hardware contents SSOT: 009 device_bundles via device_bundle_id.';
+    'Commercial packaging layer for proposals. Hardware contents SSOT: 010 device_bundles via device_bundle_id.';
 
 
 create index if not exists idx_proposal_items_proposal
@@ -251,11 +250,11 @@ on proposal_items (tenant_id, created_at desc);
 
 
 comment on column public.proposal_items.plan_id is
-    'Required when item_type=subscription. References 011 product_plans.';
+    'Required when item_type=subscription. References 012 product_plans.';
 
 
 comment on column public.proposal_items.monetization_package_id is
-    'Required when item_type=device_package. References 015 monetization_packages (linked to 009 device_bundles).';
+    'Required when item_type=device_package. References 016 monetization_packages (linked to 010 device_bundles).';
 
 
 comment on column public.proposal_items.reference_id is
@@ -1113,10 +1112,10 @@ for each row execute function public.trg_customer_proposals_status_timestamps();
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('015_customer_proposal_monetization', 'REV22.MONETIZATION', false)
+values ('016_customer_proposal_monetization', 'REV1.MONETIZATION', false)
 on conflict (version) do nothing;
 
 
 -- =====================================================
--- END 015 MONETIZATION ENGINE (CLEAN DOMAIN ONLY)
+-- END 016 MONETIZATION ENGINE (CLEAN DOMAIN ONLY)
 -- =====================================================

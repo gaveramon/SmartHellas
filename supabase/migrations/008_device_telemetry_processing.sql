@@ -1,5 +1,8 @@
 -- =====================================================
--- 7B. DEVICE TELEMETRY PROCESSING
+-- REV1 GREENFIELD BASELINE
+-- 008_DEVICE_TELEMETRY_PROCESSING.SQL
+-- =====================================================
+--
 -- =====================================================
 -- TODO
 
@@ -14,8 +17,8 @@ insert into platform.schema_migrations (
     rollback_available
 )
 values (
-    '007_b_device_telemetry_processing',
-    'REV22.DEVICE.TELEMETRY.PROCESSING\\',
+    '008_device_telemetry_processing',
+    'REV1.DEVICE.TELEMETRY.PROCESSING',
     false
 )
 on conflict (version) do nothing;
@@ -23,7 +26,6 @@ on conflict (version) do nothing;
 
 commit;
 
-
 -- =====================================================
--- END 007a DEVICE TELEMETRY
---
+-- END 008 DEVICE TELEMETRY PROCESSING
+-- =====================================================
