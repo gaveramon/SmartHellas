@@ -1,0 +1,4 @@
+.temp/
+node_modules/
+supabase/
+backup migrations 12-9/

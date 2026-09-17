@@ -8,8 +8,9 @@ create extension if not exists pg_trgm;
 create extension if not exists btree_gin;
 create extension if not exists btree_gist;
 create extension if not exists pg_stat_statements;
-create extension if not exists pg_partman;
-with schema extensions;
+CREATE SCHEMA IF NOT EXISTS extensions;
+
+CREATE EXTENSION IF NOT EXISTS pg_partman;
 
 create extension if not exists pg_cron
 with schema pg_catalog;
@@ -573,7 +574,7 @@ create table if not exists platform.payment_intents (
     tenant_id uuid not null,
 
     provider text not null,
-    -- stripe | vivawallet → FK to public.integration_providers(code) in 007
+    -- stripe | vivawallet → FK to public.integration_providers(code) in 006
 
     external_intent_id text,
 
@@ -771,7 +772,7 @@ create table if not exists platform.queue_processor_logs (
 -- PURPOSE
 -- -------
 -- Central registry for tables that are subject to the
--- portal security boundary enforced by 018.
+-- portal security boundary enforced by 018b.
 --
 -- SECURITY MODEL
 -- --------------
@@ -792,7 +793,7 @@ create table if not exists platform.queue_processor_logs (
 -- No portal-facing table in this registry receives direct
 -- authenticated table access.
 --
--- 018 uses this registry for:
+-- 018b uses this registry for:
 --   - RLS enablement
 --   - FORCE RLS
 --   - removal of legacy direct-table policies
@@ -839,7 +840,7 @@ create table if not exists platform.security_table_registry (
         check (
             security_class in (
                 'business',
-                'backend_only'
+                'backend'
             )
         ),
 
@@ -871,7 +872,7 @@ create table if not exists platform.security_table_registry (
 
 
 comment on table platform.security_table_registry is
-'Security control-plane registry for tables governed by the portal API/RPC-only security boundary. Registry metadata is enforced by 018 and consumed by 019.';
+'Security control-plane registry for tables governed by the portal API/RPC-only security boundary. Registry metadata is enforced by 018b and consumed by 019.';
 
 
 comment on column platform.security_table_registry.security_class is
@@ -887,11 +888,11 @@ comment on column platform.security_table_registry.direct_authenticated_access i
 
 
 comment on column platform.security_table_registry.rls_required is
-'Whether 018 must require RLS on this table.';
+'Whether 018b must require RLS on this table.';
 
 
 comment on column platform.security_table_registry.force_rls_required is
-'Whether 018 must require FORCE RLS on this table.';
+'Whether 018b must require FORCE RLS on this table.';
 
 
 create index if not exists idx_security_table_registry_active
@@ -3505,7 +3506,7 @@ $$;
 -- RESPONSIBILITY:
 -- - Lock and load the webhook
 -- - Protect against duplicate processing
--- - Delegate processing to integration engine (007)
+-- - Delegate processing to integration engine (006)
 -- - Maintain generic processing state
 --
 -- 000 MUST NOT:
@@ -3516,7 +3517,7 @@ $$;
 -- - write telemetry
 -- - contain provider-specific logic
 --
--- 007 is responsible for:
+-- 006 is responsible for:
 -- - provider resolution
 -- - provider category resolution
 -- - tenant integration resolution
@@ -3591,7 +3592,7 @@ begin
     begin
 
         -- =================================================
-        -- 4. DELEGATE TO INTEGRATION ENGINE (007)
+        -- 4. DELEGATE TO INTEGRATION ENGINE (006)
         --
         -- 000 does not determine:
         -- - provider
@@ -3601,7 +3602,7 @@ begin
         -- - lock event
         -- - smart-home event
         --
-        -- 007 owns that routing decision.
+        -- 006 owns that routing decision.
         -- =================================================
 
         v_result := public.process_integration_webhook(

@@ -20,7 +20,7 @@
 --   004 does NOT contain provider-specific integration logic.
 --
 -- SECURITY BOUNDARY:
---   018 = security hardening
+--   018b = security hardening
 --   019 = EXECUTE/API grant boundary
 --
 -- PUBLIC API:

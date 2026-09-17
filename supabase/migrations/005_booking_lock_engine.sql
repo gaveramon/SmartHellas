@@ -2138,6 +2138,7 @@ create trigger trg_bookings_tenant_consistency
 before insert or update on public.bookings
 for each row execute function public.enforce_booking_tenant_consistency();
 
+create trigger trg_property_access_schedules_updated_at
 before update on property_access_schedules
 for each row execute function platform.set_updated_at();
 
