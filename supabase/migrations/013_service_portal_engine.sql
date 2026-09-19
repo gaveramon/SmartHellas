@@ -21,7 +21,7 @@
 -- TENANT-LEVEL PORTAL UI CONFIGURATION SSOT
 -- =====================================================
 
-create table if not exists tenant_portal_settings (
+create table if not exists public.tenant_portal_settings (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -44,7 +44,7 @@ create table if not exists tenant_portal_settings (
 -- TENANT DASHBOARD LAYOUT DEFINITIONS
 -- =====================================================
 
-create table if not exists dashboard_configs (
+create table if not exists public.dashboard_configs (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -65,7 +65,7 @@ create table if not exists dashboard_configs (
 -- PER-USER PORTAL UI STATE
 -- =====================================================
 
-create table if not exists portal_user_preferences (
+create table if not exists public.portal_user_preferences (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -94,7 +94,7 @@ create table if not exists portal_user_preferences (
 -- feature_entitlements (010).
 -- =====================================================
 
-create table if not exists portal_feature_flags (
+create table if not exists public.portal_feature_flags (
     id uuid primary key default gen_random_uuid(),
     tenant_id uuid not null references tenants(id) on delete cascade,
     feature_key text not null,
@@ -110,26 +110,26 @@ create table if not exists portal_feature_flags (
 -- =====================================================
 
 create index if not exists idx_portal_settings_tenant_created
-on tenant_portal_settings (tenant_id, created_at desc);
+on public.tenant_portal_settings (tenant_id, created_at desc);
 
 create unique index if not exists idx_dashboard_configs_one_default_per_tenant
-on dashboard_configs (tenant_id)
+on public.dashboard_configs (tenant_id)
 where is_default = true;
 
 create index if not exists idx_dashboard_configs_tenant_created
-on dashboard_configs (tenant_id, created_at desc);
+on public.dashboard_configs (tenant_id, created_at desc);
 
 create index if not exists idx_portal_user_preferences_tenant_created
-on portal_user_preferences (tenant_id, created_at desc);
+on public.portal_user_preferences (tenant_id, created_at desc);
 
 create index if not exists idx_portal_user_preferences_user
-on portal_user_preferences (tenant_id, user_id);
+on public.portal_user_preferences (tenant_id, user_id);
 
 create index if not exists idx_portal_feature_flags_tenant
-on portal_feature_flags (tenant_id);
+on public.portal_feature_flags (tenant_id);
 
 create index if not exists idx_portal_feature_flags_tenant_created
-on portal_feature_flags (tenant_id, created_at desc);
+on public.portal_feature_flags (tenant_id, created_at desc);
 
 -- =====================================================
 -- 6. TABLE DOCUMENTATION

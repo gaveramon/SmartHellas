@@ -11,16 +11,8 @@
 -- 1. SCHEMA MIGRATION REGISTRATION
 -- =====================================================
 
-insert into platform.schema_migrations (
-    migration_name,
-    version,
-    rollback_available
-)
-values (
-    '008_device_telemetry_processing',
-    'REV1.DEVICE.TELEMETRY.PROCESSING',
-    false
-)
+insert into platform.schema_migrations ( migration_name, version, rollback_available)
+values ( '008_device_telemetry_processing', 'REV1.DEVICE.TELEMETRY.PROCESSING',false)
 on conflict (version) do nothing;
 
 

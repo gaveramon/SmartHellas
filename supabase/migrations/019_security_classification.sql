@@ -51,6 +51,34 @@ insert into platform.security_table_registry (
     description
 )
 values
+    -- =================================================
+    -- SUPABASE TABLES
+    -- =================================================
+
+    (
+        'public',
+        'part_config',
+        'backend',
+        'none',
+        false,
+        false,
+        true,
+        false,
+        true,
+        'pg_partman-managed backend configuration table. No portal or direct authenticated access. RLS is enabled as a public-schema security boundary.'
+    ),
+    (
+        'public',
+        'part_config_sub',
+        'backend',
+        'none',
+        false,
+        false,
+        true,
+        false,
+        true,
+        'pg_partman-managed backend configuration table. No portal or direct authenticated access. RLS is enabled as a public-schema security boundary.'
+    ),
 
     -- =================================================
     -- 000 PLATFORM / IDENTITY
@@ -357,7 +385,7 @@ values
         'platform',
         'payment_intents',
         'backend',
-        'rpc',
+        'none',
         true,
         false,
         true,
@@ -370,7 +398,7 @@ values
         'platform',
         'payment_events',
         'backend',
-        'rpc',
+        'none',
         true,
         false,
         true,
@@ -1206,6 +1234,19 @@ values
 
     (
         'public',
+        'integration_webhook_mappings',
+        'backend',
+        'none',
+        false,
+        false,
+        true,
+        true,
+        true,
+        'Backend integration mapping table used to resolve external webhook identities to internal integrations. No direct portal or authenticated access.'
+    ),
+
+    (
+        'public',
         'device_integration_map',
         'business',
         'rpc',
@@ -1330,7 +1371,7 @@ values
         'public',
         'notification_queue',
         'backend',
-        'rpc',
+        'none',
         true,
         false,
         true,
@@ -1343,7 +1384,7 @@ values
         'public',
         'notification_history',
         'backend',
-        'rpc',
+        'none',
         true,
         false,
         true,
@@ -2074,15 +2115,15 @@ values
 -- =====================================================
 
 (
-    'public',
+     'public',
     'tenant_user_context',
     'security',
     false,
     false,
     false,
+    false,
     true,
-    true,
-    'Tenant membership and role context used for authorization and tenant resolution. Security-sensitive context; not directly accessible by authenticated portal clients.'
+    'Tenant membership and role context used internally for authorization and tenant resolution. Security-sensitive view; not directly accessible by authenticated portal clients. Security is enforced through security_invoker semantics and RLS on underlying tables.'
 ),
 
 -- =====================================================
@@ -2265,7 +2306,29 @@ values (
     'p_table regclass',
     'approved',
     'Dynamic identifier is supplied as regclass and used only for controlled realtime configuration.'
+),
+(
+    'platform',
+    'drop_old_log_partitions',
+    'p_base_table text, p_retention interval',
+    'approved',
+    'Validated identifier, restricted to safe characters and used with %I for dynamic SQL.'
+),
+ (
+    'platform',
+    'create_monthly_partition',
+    'base_table text, start_date date',
+    'approved',
+    'Identifiers use %I and date values use %L; no raw SQL fragments are interpolated.'
+),
+ (
+    'public',
+    'crm_soft_delete_row',
+    'p_table regclass, p_id uuid',
+    'approved',
+    'Table is restricted to a fixed CRM allowlist; row values use parameterized USING.'
 )
+
 on conflict (
     function_schema,
     function_name,

@@ -15,7 +15,7 @@
 -- COMMERCIAL PROPOSAL DATA MODEL
 -- =====================================================
 
-create table if not exists customer_proposals (
+create table if not exists public.customer_proposals (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -45,7 +45,7 @@ create table if not exists customer_proposals (
 -- Subscription tiers: product_plans (012).
 -- =====================================================
 
-create table if not exists monetization_packages (
+create table if not exists public.monetization_packages (
     id uuid primary key default gen_random_uuid(),
 
     name text not null,
@@ -75,7 +75,7 @@ create table if not exists monetization_packages (
 -- OFFERED PRODUCTS, SUBSCRIPTIONS AND SERVICES
 -- =====================================================
 
-create table if not exists proposal_items (
+create table if not exists public.proposal_items (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -118,7 +118,7 @@ create table if not exists proposal_items (
 -- Subscription/plan upgrades live in 010 upsell_rules.
 -- =====================================================
 
-create table if not exists upsell_campaigns (
+create table if not exists public.upsell_campaigns (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid references tenants(id) on delete cascade,
@@ -142,7 +142,7 @@ create table if not exists upsell_campaigns (
 -- Not app-writable truth.
 -- =====================================================
 
-create table if not exists service_activation_state (
+create table if not exists public.service_activation_state (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -172,7 +172,7 @@ create table if not exists service_activation_state (
 -- FUNNEL EVENT DATA ONLY
 -- =====================================================
 
-create table if not exists conversion_events (
+create table if not exists public.conversion_events (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -196,7 +196,7 @@ create table if not exists conversion_events (
 -- ANALYTICAL / SCORING DATA ONLY
 -- =====================================================
 
-create table if not exists conversion_scores (
+create table if not exists public.conversion_scores (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -217,11 +217,11 @@ create table if not exists conversion_scores (
 -- =====================================================
 
 create index if not exists idx_customer_proposals_tenant_created
-on customer_proposals (tenant_id, created_at desc);
+on public.customer_proposals (tenant_id, created_at desc);
 
 
 create index if not exists idx_customer_proposals_tenant_status
-on customer_proposals (tenant_id, status);
+on public.customer_proposals (tenant_id, status);
 
 
 comment on table public.customer_proposals is
@@ -233,7 +233,7 @@ comment on column public.customer_proposals.accepted_at is
 
 
 create index if not exists idx_monetization_packages_bundle
-on monetization_packages (device_bundle_id)
+on public.monetization_packages (device_bundle_id)
 where device_bundle_id is not null;
 
 
@@ -242,11 +242,11 @@ comment on table public.monetization_packages is
 
 
 create index if not exists idx_proposal_items_proposal
-on proposal_items (proposal_id);
+on public.proposal_items (proposal_id);
 
 
 create index if not exists idx_proposal_items_tenant_created
-on proposal_items (tenant_id, created_at desc);
+on public.proposal_items (tenant_id, created_at desc);
 
 
 comment on column public.proposal_items.plan_id is
@@ -262,7 +262,7 @@ comment on column public.proposal_items.reference_id is
 
 
 create index if not exists idx_upsell_campaigns_tenant_created
-on upsell_campaigns (tenant_id, created_at desc);
+on public.upsell_campaigns (tenant_id, created_at desc);
 
 
 alter table public.customer_proposals
@@ -270,40 +270,40 @@ alter table public.customer_proposals
 
 
 create index if not exists idx_customer_proposals_source_campaign
-on customer_proposals (source_campaign_id)
+on public.customer_proposals (source_campaign_id)
 where source_campaign_id is not null;
 
 
 create unique index if not exists uq_service_activation_state_property
-on service_activation_state (tenant_id, property_id, service_type)
+on public.service_activation_state (tenant_id, property_id, service_type)
 where property_id is not null;
 
 
 create unique index if not exists uq_service_activation_state_tenant
-on service_activation_state (tenant_id, service_type)
+on public.service_activation_state (tenant_id, service_type)
 where property_id is null;
 
 
 create index if not exists idx_service_activation_state_tenant_created
-on service_activation_state (tenant_id, created_at desc);
+on public.service_activation_state (tenant_id, created_at desc);
 
 
 create index if not exists idx_service_activation_state_source_subscription
-on service_activation_state (source_subscription_id)
+on public.service_activation_state (source_subscription_id)
 where source_subscription_id is not null;
 
 
 create index if not exists idx_conversion_events_tenant_created
-on conversion_events (tenant_id, created_at desc);
+on public.conversion_events (tenant_id, created_at desc);
 
 
 create index if not exists idx_conversion_events_proposal
-on conversion_events (proposal_id, created_at desc)
+on public.conversion_events (proposal_id, created_at desc)
 where proposal_id is not null;
 
 
 create index if not exists idx_conversion_events_type
-on conversion_events (tenant_id, event_type, created_at desc);
+on public.conversion_events (tenant_id, event_type, created_at desc);
 
 
 comment on table public.conversion_events is
@@ -311,7 +311,7 @@ comment on table public.conversion_events is
 
 
 create index if not exists idx_conversion_scores_tenant_created
-on conversion_scores (tenant_id, calculated_at desc);
+on public.conversion_scores (tenant_id, calculated_at desc);
 
 
 alter table public.fulfilment_orders
@@ -332,118 +332,9 @@ on public.optimization_recommendations (customer_proposal_id)
 where customer_proposal_id is not null;
 
 
--- =====================================================
--- 9. ROW LEVEL SECURITY
--- RLS CONFIGURATION & POLICY RESET
--- =====================================================
-
-alter table public.monetization_packages enable row level security;
-
-
-drop policy if exists monetization_packages_select on public.monetization_packages;
-
-
-drop policy if exists monetization_packages_insert on public.monetization_packages;
-
-
-drop policy if exists monetization_packages_update on public.monetization_packages;
-
-
-drop policy if exists monetization_packages_delete on public.monetization_packages;
-
-
-alter table public.upsell_campaigns enable row level security;
-
-
-drop policy if exists upsell_campaigns_select on public.upsell_campaigns;
-
-
-drop policy if exists upsell_campaigns_insert on public.upsell_campaigns;
-
-
-drop policy if exists upsell_campaigns_update on public.upsell_campaigns;
-
-
-drop policy if exists upsell_campaigns_delete on public.upsell_campaigns;
-
-
-alter table public.customer_proposals enable row level security;
-
-
-drop policy if exists customer_proposals_select on public.customer_proposals;
-
-
-drop policy if exists customer_proposals_insert on public.customer_proposals;
-
-
-drop policy if exists customer_proposals_update on public.customer_proposals;
-
-
-drop policy if exists customer_proposals_delete on public.customer_proposals;
-
-
-alter table public.proposal_items enable row level security;
-
-
-drop policy if exists proposal_items_select on public.proposal_items;
-
-
-drop policy if exists proposal_items_insert on public.proposal_items;
-
-
-drop policy if exists proposal_items_update on public.proposal_items;
-
-
-drop policy if exists proposal_items_delete on public.proposal_items;
-
-
-alter table public.service_activation_state enable row level security;
-
-
-drop policy if exists service_activation_state_select on public.service_activation_state;
-
-
-drop policy if exists service_activation_state_insert on public.service_activation_state;
-
-
-drop policy if exists service_activation_state_update on public.service_activation_state;
-
-
-drop policy if exists service_activation_state_delete on public.service_activation_state;
-
-
-alter table public.conversion_events enable row level security;
-
-
-drop policy if exists conversion_events_select on public.conversion_events;
-
-
-drop policy if exists conversion_events_insert on public.conversion_events;
-
-
-drop policy if exists conversion_events_update on public.conversion_events;
-
-
-drop policy if exists conversion_events_delete on public.conversion_events;
-
-
-alter table public.conversion_scores enable row level security;
-
-
-drop policy if exists conversion_scores_select on public.conversion_scores;
-
-
-drop policy if exists conversion_scores_insert on public.conversion_scores;
-
-
-drop policy if exists conversion_scores_update on public.conversion_scores;
-
-
-drop policy if exists conversion_scores_delete on public.conversion_scores;
-
 
 -- =====================================================
--- 10. DOMAIN FUNCTIONS
+-- 9. DOMAIN FUNCTIONS
 -- TENANT CONSISTENCY & MONETIZATION DOMAIN API
 -- =====================================================
 
@@ -810,7 +701,7 @@ $$;
 
 
 -- =====================================================
--- 11. PROPOSAL STATUS TIMESTAMP FUNCTION
+-- 10. PROPOSAL STATUS TIMESTAMP FUNCTION
 -- =====================================================
 
 create or replace function public.trg_customer_proposals_status_timestamps()
@@ -832,275 +723,36 @@ $$;
 
 
 -- =====================================================
--- 12. RLS POLICIES
--- TENANT AND PLATFORM ACCESS CONTROL
--- =====================================================
-
-create policy conversion_events_delete on public.conversion_events
-    for delete to authenticated
-    using (platform.is_platform_admin());
-
-
-create policy conversion_events_insert on public.conversion_events
-    for insert to authenticated
-    with check (platform.is_platform_admin());
-
-
-create policy conversion_events_select on public.conversion_events
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-create policy conversion_events_update on public.conversion_events
-    for update to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-create policy conversion_scores_delete on public.conversion_scores
-    for delete to authenticated
-    using (platform.is_platform_admin());
-
-
-create policy conversion_scores_insert on public.conversion_scores
-    for insert to authenticated
-    with check (platform.is_platform_admin());
-
-
-create policy conversion_scores_select on public.conversion_scores
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-create policy conversion_scores_update on public.conversion_scores
-    for update to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-create policy customer_proposals_delete on public.customer_proposals
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy customer_proposals_insert on public.customer_proposals
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy customer_proposals_select on public.customer_proposals
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-create policy customer_proposals_update on public.customer_proposals
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy monetization_packages_delete on public.monetization_packages
-    for delete to authenticated
-    using (platform.is_platform_admin());
-
-
-create policy monetization_packages_insert on public.monetization_packages
-    for insert to authenticated
-    with check (platform.is_platform_admin());
-
-
-create policy monetization_packages_select on public.monetization_packages
-    for select to authenticated
-    using (true);
-
-
-create policy monetization_packages_update on public.monetization_packages
-    for update to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-create policy proposal_items_delete on public.proposal_items
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy proposal_items_insert on public.proposal_items
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy proposal_items_select on public.proposal_items
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-create policy proposal_items_update on public.proposal_items
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy service_activation_state_delete on public.service_activation_state
-    for delete to authenticated
-    using (platform.is_platform_admin());
-
-
-create policy service_activation_state_insert on public.service_activation_state
-    for insert to authenticated
-    with check (platform.is_platform_admin());
-
-
-create policy service_activation_state_select on public.service_activation_state
-    for select to authenticated
-    using (platform.is_platform_admin() or public.has_tenant_access(tenant_id));
-
-
-create policy service_activation_state_update on public.service_activation_state
-    for update to authenticated
-    using (platform.is_platform_admin())
-    with check (platform.is_platform_admin());
-
-
-create policy upsell_campaigns_delete on public.upsell_campaigns
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            tenant_id is not null
-            and public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy upsell_campaigns_insert on public.upsell_campaigns
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            tenant_id is not null
-            and public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
-create policy upsell_campaigns_select on public.upsell_campaigns
-    for select to authenticated
-    using (
-        platform.is_platform_admin()
-        or tenant_id is null
-        or public.has_tenant_access(tenant_id)
-    );
-
-
-create policy upsell_campaigns_update on public.upsell_campaigns
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            tenant_id is not null
-            and public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            tenant_id is not null
-            and public.has_tenant_access(tenant_id)
-            and (platform.is_admin() or platform.has_role('manager'))
-        )
-    );
-
-
--- =====================================================
--- 13. TRIGGERS & DATA CONSISTENCY
+-- 11. TRIGGERS & DATA CONSISTENCY
 -- =====================================================
 
 create trigger trg_customer_proposals_updated_at
 before update on customer_proposals
 for each row execute function platform.set_updated_at();
 
-
 create trigger trg_monetization_packages_updated_at
 before update on monetization_packages
 for each row execute function platform.set_updated_at();
-
 
 create trigger trg_proposal_items_tenant_consistency
 before insert or update on public.proposal_items
 for each row execute function public.enforce_proposal_items_tenant_consistency();
 
-
 create trigger trg_service_activation_state_updated_at
 before update on service_activation_state
 for each row execute function platform.set_updated_at();
-
 
 create trigger trg_customer_proposals_property_tenant
 before insert or update on public.customer_proposals
 for each row execute function public.enforce_property_tenant_consistency();
 
-
 create trigger trg_service_activation_state_property_tenant
 before insert or update on public.service_activation_state
 for each row execute function public.enforce_property_tenant_consistency();
 
-
 create trigger trg_conversion_events_property_tenant
 before insert or update on public.conversion_events
 for each row execute function public.enforce_property_tenant_consistency();
-
 
 create trigger trg_customer_proposals_status_timestamps
 before update of status on public.customer_proposals
@@ -1108,7 +760,7 @@ for each row execute function public.trg_customer_proposals_status_timestamps();
 
 
 -- =====================================================
--- 14. MODULE REGISTRATION
+-- 12. MODULE REGISTRATION
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)

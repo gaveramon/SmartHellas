@@ -285,10 +285,15 @@ begin
         end if;
 
 
-        if r.force_rls_required is distinct from true then
+        -- -------------------------------------------------
+-- FORCE RLS requirements
+-- -------------------------------------------------
+
+        if r.security_class = 'business'
+        and r.force_rls_required is distinct from true then
 
             raise exception
-                '020 security hardening failed: registered table %.% must require FORCE RLS',
+                '020 security hardening failed: business table %.% must require FORCE RLS',
                 r.table_schema,
                 r.table_name;
 
@@ -752,7 +757,7 @@ begin
             p.proconfig
         from pg_proc p
         join pg_namespace n
-          on n.oid = p.pronamespace
+            on n.oid = p.pronamespace
         where p.prokind = 'f'
           and p.prosecdef = true
           and n.nspname in ('public', 'platform')
@@ -766,7 +771,7 @@ begin
                     array[]::text[]
                 )
             ) cfg
-            where cfg = 'search_path='
+            where cfg = 'search_path=""'
         ) then
 
             raise exception
@@ -781,7 +786,6 @@ begin
 
 end;
 $$;
-
 
 -- =====================================================
 -- 13. TENANT AUTHORITY VALIDATION
@@ -800,18 +804,17 @@ begin
     where n.nspname = 'public'
       and p.proname = 'resolve_active_tenant'
       and pg_get_function_identity_arguments(p.oid)
-            = 'uuid';
+            = 'p_user_id uuid, p_verify_tenant_id uuid';
 
     if v_function_count = 0 then
 
         raise exception
-            '020 security hardening failed: public.resolve_active_tenant(uuid) not found';
+            '020 security hardening failed: public.resolve_active_tenant(uuid, uuid) not found';
 
     end if;
 
 end;
 $$;
-
 
 -- =====================================================
 -- 14. REGISTRY / SECURITY CONSISTENCY VALIDATION
@@ -820,7 +823,7 @@ $$;
 -- Every active registered table must:
 --   - exist
 --   - have RLS
---   - have FORCE RLS
+--   - satisfy its declared FORCE RLS requirement
 --   - have no anon/authenticated policy
 --   - deny direct authenticated access by contract
 -- =====================================================
@@ -837,7 +840,9 @@ begin
         select
             s.table_schema,
             s.table_name,
-            s.direct_authenticated_access
+            s.direct_authenticated_access,
+            s.rls_required,
+            s.force_rls_required
         from platform.security_table_registry s
         where s.is_active = true
     loop
@@ -866,7 +871,12 @@ begin
         end if;
 
 
-        if v_rls is distinct from true then
+        -- -------------------------------------------------
+        -- RLS requirement
+        -- -------------------------------------------------
+
+        if r.rls_required
+           and v_rls is distinct from true then
 
             raise exception
                 '020 security hardening failed: registry table %.% has RLS disabled',
@@ -876,15 +886,24 @@ begin
         end if;
 
 
-        if v_force_rls is distinct from true then
+        -- -------------------------------------------------
+        -- FORCE RLS requirement
+        -- -------------------------------------------------
+
+        if r.force_rls_required
+           and v_force_rls is distinct from true then
 
             raise exception
-                '020 security hardening failed: registry table %.% has FORCE RLS disabled',
+                '020 security hardening failed: FORCE RLS disabled on %.%',
                 r.table_schema,
                 r.table_name;
 
         end if;
 
+
+        -- -------------------------------------------------
+        -- Direct authenticated access
+        -- -------------------------------------------------
 
         if r.direct_authenticated_access is distinct from false then
 
@@ -895,6 +914,10 @@ begin
 
         end if;
 
+
+        -- -------------------------------------------------
+        -- Direct anon/authenticated policies
+        -- -------------------------------------------------
 
         select count(*)
         into v_policy_count
@@ -920,7 +943,6 @@ begin
 
 end;
 $$;
-
 
 -- =====================================================
 -- 15. SECURITY MODEL DOCUMENTATION

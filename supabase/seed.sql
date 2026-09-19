@@ -609,28 +609,50 @@ insert into public.integration_oauth_configs (
 )
 values
 (
+    -- =================================================
+    -- AQARA - EU
+    -- =================================================
     'aqara',
-    '<AQARA_AUTHORIZATION_URL>',
-    '<AQARA_TOKEN_URL>',
-    array['<AQARA_SCOPES>']::text[],
+    'https://open-ger.aqara.com/v3.0/open/authorize',
+    'https://open-ger.aqara.com/v3.0/open/access_token',
+    array[]::text[],
     'code',
     'authorization_code',
     'client_secret_post',
-    true,
-    'S256',
+    false,
+    null,
     'supabase_function',
     true
 ),
 (
-    'ttlock',
-    '<TTLOCK_AUTHORIZATION_URL>',
-    '<TTLOCK_TOKEN_URL>',
-    array['<TTLOCK_SCOPES>']::text[],
+    -- =================================================
+    -- SHELLY - CENTRAL OAUTH
+    -- =================================================
+    'shelly',
+    'https://shelly.cloud',
+    'https://shelly.cloud',
+    array[]::text[],
     'code',
     'authorization_code',
     'client_secret_post',
-    true,
-    'S256',
+    false,
+    null,
+    'supabase_function',
+    true
+),
+(
+    -- =================================================
+    -- TTLOCK - RESOURCE OWNER PASSWORD CREDENTIALS
+    -- =================================================
+    'ttlock',
+    null,
+    '<TTLOCK_TOKEN_URL>',
+    array[]::text[],
+    'none',
+    'password',
+    'client_secret_post',
+    false,
+    null,
     'supabase_function',
     true
 )

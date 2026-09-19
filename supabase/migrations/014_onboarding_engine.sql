@@ -46,7 +46,7 @@ end $$;
 -- Per-tenant property onboarding session
 -- =====================================================
 
-create table if not exists onboarding_sessions (
+create table if not exists public.onboarding_sessions (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -72,7 +72,7 @@ create table if not exists onboarding_sessions (
 -- Progress tracking only
 -- =====================================================
 
-create table if not exists onboarding_step_state (
+create table if not exists public.onboarding_step_state (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -94,7 +94,7 @@ create table if not exists onboarding_step_state (
 -- User-defined room structure during onboarding
 -- =====================================================
 
-create table if not exists onboarding_room_mapping (
+create table if not exists public.onboarding_room_mapping (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -118,7 +118,7 @@ create table if not exists onboarding_room_mapping (
 -- No execution
 -- =====================================================
 
-create table if not exists onboarding_device_mapping (
+create table if not exists public.onboarding_device_mapping (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -148,7 +148,7 @@ create table if not exists onboarding_device_mapping (
 -- Business validation state
 -- =====================================================
 
-create table if not exists onboarding_checklist (
+create table if not exists public.onboarding_checklist (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -171,7 +171,7 @@ create table if not exists onboarding_checklist (
 -- Support + context only
 -- =====================================================
 
-create table if not exists onboarding_notes (
+create table if not exists public.onboarding_notes (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -191,7 +191,7 @@ create table if not exists onboarding_notes (
 -- Property-level lifecycle state
 -- =====================================================
 
-create table if not exists onboarding_lifecycle (
+create table if not exists public.onboarding_lifecycle (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -215,7 +215,7 @@ create table if not exists onboarding_lifecycle (
 -- Immutable lifecycle transition history
 -- =====================================================
 
-create table if not exists onboarding_lifecycle_transitions (
+create table if not exists public.onboarding_lifecycle_transitions (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -237,44 +237,44 @@ create table if not exists onboarding_lifecycle_transitions (
 -- =====================================================
 
 create index if not exists idx_onboarding_sessions_tenant_created
-on onboarding_sessions (tenant_id, created_at desc);
+on public.onboarding_sessions (tenant_id, created_at desc);
 
 create index if not exists idx_onboarding_sessions_property
-on onboarding_sessions (property_id);
+on public.onboarding_sessions (property_id);
 
 create unique index if not exists uq_onboarding_sessions_property_active
-on onboarding_sessions (property_id)
+on public.onboarding_sessions (property_id)
 where status in ('not_started', 'in_progress', 'waiting_user');
 
 create index if not exists idx_onboarding_step_state_session
-on onboarding_step_state (session_id);
+on public.onboarding_step_state (session_id);
 
 create index if not exists idx_onboarding_step_state_tenant
-on onboarding_step_state (tenant_id);
+on public.onboarding_step_state (tenant_id);
 
 create index if not exists idx_onboarding_room_mapping_session
-on onboarding_room_mapping (session_id);
+on public.onboarding_room_mapping (session_id);
 
 create index if not exists idx_onboarding_room_mapping_tenant_created
-on onboarding_room_mapping (tenant_id, created_at desc);
+on public.onboarding_room_mapping (tenant_id, created_at desc);
 
 create index if not exists idx_onboarding_device_mapping_session
-on onboarding_device_mapping (session_id);
+on public.onboarding_device_mapping (session_id);
 
 create index if not exists idx_onboarding_device_mapping_tenant_created
-on onboarding_device_mapping (tenant_id, created_at desc);
+on public.onboarding_device_mapping (tenant_id, created_at desc);
 
 create index if not exists idx_onboarding_checklist_session
-on onboarding_checklist (session_id);
+on public.onboarding_checklist (session_id);
 
 create index if not exists idx_onboarding_checklist_tenant
-on onboarding_checklist (tenant_id);
+on public.onboarding_checklist (tenant_id);
 
 create index if not exists idx_onboarding_notes_session
-on onboarding_notes (session_id);
+on public.onboarding_notes (session_id);
 
 create index if not exists idx_onboarding_notes_tenant_created
-on onboarding_notes (tenant_id, created_at desc);
+on public.onboarding_notes (tenant_id, created_at desc);
 
 
 -- =====================================================
@@ -282,11 +282,11 @@ on onboarding_notes (tenant_id, created_at desc);
 -- =====================================================
 
 create index if not exists idx_onboarding_lifecycle_tenant
-    on onboarding_lifecycle (tenant_id, updated_at desc);
+    on public.onboarding_lifecycle (tenant_id, updated_at desc);
 
 
 create index if not exists idx_onboarding_lifecycle_transitions_lifecycle
-    on onboarding_lifecycle_transitions (lifecycle_id, created_at desc);
+    on public.onboarding_lifecycle_transitions (lifecycle_id, created_at desc);
 
 
 create index if not exists idx_onboarding_lifecycle_transitions_tenant_created

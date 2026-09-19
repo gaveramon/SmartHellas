@@ -7,7 +7,7 @@
 -- 1. TENANTS (CORE MULTI-TENANCY ENTITY)
 -- =====================================================
 
-create table if not exists tenants (
+create table if not exists public.tenants (
     id uuid primary key default gen_random_uuid(),
 
     name text not null,
@@ -24,7 +24,7 @@ create table if not exists tenants (
 -- user_id → platform.profiles (auth-linked identity)
 -- =====================================================
 
-create table if not exists tenant_memberships (
+create table if not exists public.tenant_memberships (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -49,7 +49,7 @@ create table if not exists tenant_memberships (
 -- 3. SERVICE ACCOUNTS (SYSTEM INTEGRATIONS)
 -- =====================================================
 
-create table if not exists service_accounts (
+create table if not exists public.service_accounts (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -68,7 +68,7 @@ create table if not exists service_accounts (
 -- 4. SUBSCRIPTIONS (COMMERCIAL STATE ONLY)
 -- =====================================================
 
-create table if not exists subscriptions (
+create table if not exists public.subscriptions (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -133,7 +133,7 @@ on subscriptions (tenant_id);
 -- Internal membership resolution (ONLY table access point)
 -- -----------------------------------------------------
 
-create or replace function platform._rev21_resolve_membership(
+create or replace function platform._resolve_membership(
     p_user_id uuid,
     p_verify_tenant_id uuid default null
 )
@@ -196,7 +196,7 @@ security definer
 set search_path = ''
 as $$
     select m.tenant_id
-    from platform._rev21_resolve_membership(p_user_id, p_verify_tenant_id) m
+    from platform._resolve_membership(p_user_id, p_verify_tenant_id) m
     limit 1;
 $$;
 
@@ -218,7 +218,7 @@ security definer
 set search_path = ''
 as $$
     select m.role
-    from platform._rev21_resolve_membership((select auth.uid()), null) m
+    from platform._resolve_membership((select auth.uid()), null) m
     limit 1;
 $$;
 
@@ -252,7 +252,7 @@ set search_path = ''
 as $$
     select exists (
         select 1
-        from platform._rev21_resolve_membership((select auth.uid()), null) m
+        from platform._resolve_membership((select auth.uid()), null) m
         where m.role = required_role
     );
 $$;
@@ -278,15 +278,18 @@ $$;
 -- 8. USER-TO-TENANT CONTEXT VIEW
 -- =====================================================
 
-create or replace view tenant_user_context as
+create or replace view public.tenant_user_context
+with (security_invoker = true)
+as
 select
     tm.user_id,
     tm.tenant_id,
     tm.role,
     tm.is_active,
     t.status as tenant_status
-from tenant_memberships tm
-join tenants t on t.id = tm.tenant_id;
+from public.tenant_memberships tm
+join public.tenants t
+    on t.id = tm.tenant_id;
 
 
 -- =====================================================
@@ -318,7 +321,7 @@ begin
 
     select m.tenant_id, m.role, m.tenant_status
     into v_row
-    from platform._rev21_resolve_membership(p_user_id, p_target_tid) m
+    from platform._resolve_membership(p_user_id, p_target_tid) m
     limit 1;
 
     if v_row.tenant_id is null then
@@ -1010,226 +1013,16 @@ $$;
 
 
 -- =====================================================
--- 12. PUBLIC DOMAIN RLS (002 TABLES)
--- RLS activation and policy definitions
--- =====================================================
-
-alter table public.tenants enable row level security;
-
-alter table public.tenants force row level security;
-
-drop policy if exists tenants_select on public.tenants;
-
-drop policy if exists tenants_insert on public.tenants;
-
-drop policy if exists tenants_update on public.tenants;
-
-
-alter table public.tenant_memberships enable row level security;
-
-alter table public.tenant_memberships force row level security;
-
-drop policy if exists tenant_memberships_select on public.tenant_memberships;
-
-drop policy if exists tenant_memberships_insert on public.tenant_memberships;
-
-drop policy if exists tenant_memberships_update on public.tenant_memberships;
-
-drop policy if exists tenant_memberships_delete on public.tenant_memberships;
-
-
-alter table public.subscriptions enable row level security;
-
-alter table public.subscriptions force row level security;
-
-drop policy if exists subscriptions_select on public.subscriptions;
-
-drop policy if exists subscriptions_insert on public.subscriptions;
-
-drop policy if exists subscriptions_update on public.subscriptions;
-
-
-alter table public.service_accounts enable row level security;
-
-alter table public.service_accounts force row level security;
-
-drop policy if exists service_accounts_select on public.service_accounts;
-
-drop policy if exists service_accounts_insert on public.service_accounts;
-
-drop policy if exists service_accounts_update on public.service_accounts;
-
-drop policy if exists service_accounts_delete on public.service_accounts;
-
-
--- -----------------------------------------------------
--- Tenant policies
--- -----------------------------------------------------
-
-create policy tenants_insert on public.tenants
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            (select auth.uid()) is not null
-            and not exists (
-                select 1
-                from public.tenant_memberships tm
-                where tm.user_id = (select auth.uid())
-                  and tm.role = 'owner'
-                  and tm.is_active
-            )
-        )
-    );
-
-
-create policy tenants_select on public.tenants
-    for select to authenticated
-    using (public.has_tenant_access(id) or platform.is_platform_admin());
-
-
-create policy tenants_update on public.tenants
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(id) and platform.is_admin())
-    )
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(id) and platform.is_admin())
-    );
-
-
--- -----------------------------------------------------
--- Tenant membership policies
--- -----------------------------------------------------
-
-create policy tenant_memberships_delete on public.tenant_memberships
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and platform.is_admin()
-        )
-        or user_id = (select auth.uid())
-    );
-
-
-create policy tenant_memberships_insert on public.tenant_memberships
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and platform.is_admin()
-        )
-    );
-
-
-create policy tenant_memberships_select on public.tenant_memberships
-    for select to authenticated
-    using (
-        public.has_tenant_access(tenant_id)
-        or platform.is_platform_admin()
-    );
-
-
-create policy tenant_memberships_update on public.tenant_memberships
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and platform.is_admin()
-        )
-    )
-    with check (
-        platform.is_platform_admin()
-        or (
-            public.has_tenant_access(tenant_id)
-            and platform.is_admin()
-        )
-    );
-
-
--- -----------------------------------------------------
--- Subscription policies
--- -----------------------------------------------------
-
-create policy subscriptions_insert on public.subscriptions
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
-create policy subscriptions_select on public.subscriptions
-    for select to authenticated
-    using (public.has_tenant_access(tenant_id) or platform.is_platform_admin());
-
-
-create policy subscriptions_update on public.subscriptions
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    )
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
--- -----------------------------------------------------
--- Service account policies
--- -----------------------------------------------------
-
-create policy service_accounts_delete on public.service_accounts
-    for delete to authenticated
-    using (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
-create policy service_accounts_insert on public.service_accounts
-    for insert to authenticated
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
-create policy service_accounts_select on public.service_accounts
-    for select to authenticated
-    using (public.has_tenant_access(tenant_id) or platform.is_platform_admin());
-
-
-create policy service_accounts_update on public.service_accounts
-    for update to authenticated
-    using (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    )
-    with check (
-        platform.is_platform_admin()
-        or (public.has_tenant_access(tenant_id) and platform.is_admin())
-    );
-
-
--- =====================================================
 -- 13. CORE UPDATED_AT AND PROVISIONING TRIGGERS
 -- =====================================================
 
 create trigger trg_tenants_updated_at
-before update on tenants
+before update on public.tenants
 for each row execute function platform.set_updated_at();
 
 
 create trigger trg_memberships_updated_at
-before update on tenant_memberships
+before update on public.tenant_memberships
 for each row execute function platform.set_updated_at();
 
 
@@ -1244,7 +1037,7 @@ for each row execute function public.enforce_tenant_owner_invariant();
 
 
 create trigger trg_subscriptions_updated_at
-before update on subscriptions
+before update on public.subscriptions
 for each row execute function platform.set_updated_at();
 
 
@@ -1361,7 +1154,7 @@ comment on function public.resolve_active_tenant(uuid, uuid) is
 
 alter function public.resolve_active_tenant(uuid, uuid) set search_path = '';
 
-alter function platform._rev21_resolve_membership(uuid, uuid) set search_path = '';
+alter function platform._resolve_membership(uuid, uuid) set search_path = '';
 
 alter function platform.current_role() set search_path = '';
 

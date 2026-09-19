@@ -26,7 +26,7 @@
 -- GLOBAL CARRIER CATALOG
 -- =====================================================
 
-create table if not exists shipping_carriers (
+create table if not exists public.shipping_carriers (
     id uuid primary key default gen_random_uuid(),
 
     name text not null,
@@ -46,7 +46,7 @@ create table if not exists shipping_carriers (
 -- CARRIER-SPECIFIC LABEL FORMAT DEFINITIONS
 -- =====================================================
 
-create table if not exists shipping_label_templates (
+create table if not exists public.shipping_label_templates (
     id uuid primary key default gen_random_uuid(),
 
     carrier_id uuid not null references shipping_carriers(id) on delete cascade,
@@ -78,7 +78,7 @@ create table if not exists shipping_label_templates (
 -- DELIVERY BLUEPRINTS PER TENANT OR PLATFORM
 -- =====================================================
 
-create table if not exists logistics_templates (
+create table if not exists public.logistics_templates (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid,
@@ -107,7 +107,7 @@ create table if not exists logistics_templates (
 -- FULFILMENT ORIGIN LOCATIONS
 -- =====================================================
 
-create table if not exists warehouses (
+create table if not exists public.warehouses (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid,
@@ -140,7 +140,7 @@ create table if not exists warehouses (
 -- ROUTING / PRICING / SERVICE DEFINITIONS
 -- =====================================================
 
-create table if not exists shipping_rules (
+create table if not exists public.shipping_rules (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid,
@@ -172,7 +172,7 @@ create table if not exists shipping_rules (
 -- BOM CONTENTS REMAIN IN 010 device_bundles
 -- =====================================================
 
-create table if not exists package_definitions (
+create table if not exists public.package_definitions (
     id uuid primary key default gen_random_uuid(),
 
     template_id uuid not null references logistics_templates(id) on delete cascade,
@@ -192,7 +192,7 @@ create table if not exists package_definitions (
 -- SHIPMENT INTENT — NO TRACKING
 -- =====================================================
 
-create table if not exists fulfilment_orders (
+create table if not exists public.fulfilment_orders (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -228,48 +228,38 @@ create table if not exists fulfilment_orders (
 -- =====================================================
 
 create index if not exists idx_logistics_templates_tenant
-on logistics_templates (tenant_id);
-
+on public.logistics_templates (tenant_id);
 
 create index if not exists idx_package_definitions_template
-on package_definitions (template_id);
-
+on public.package_definitions (template_id);
 
 create index if not exists idx_package_definitions_bundle
-on package_definitions (device_bundle_id);
-
+on public.package_definitions (device_bundle_id);
 
 create index if not exists idx_warehouses_tenant
-on warehouses (tenant_id);
-
+on public.warehouses (tenant_id);
 
 create index if not exists idx_shipping_label_templates_carrier
-on shipping_label_templates (carrier_id);
-
+on public.shipping_label_templates (carrier_id);
 
 create index if not exists idx_shipping_rules_tenant
-on shipping_rules (tenant_id);
-
+on public.shipping_rules (tenant_id);
 
 create index if not exists idx_shipping_rules_carrier
-on shipping_rules (carrier_id)
+on public.shipping_rules (carrier_id)
 where carrier_id is not null;
 
-
 create index if not exists idx_fulfilment_orders_tenant
-on fulfilment_orders (tenant_id);
-
+on public.fulfilment_orders (tenant_id);
 
 create index if not exists idx_fulfilment_orders_tenant_status
-on fulfilment_orders (tenant_id, status);
-
+on public.fulfilment_orders (tenant_id, status);
 
 create index if not exists idx_fulfilment_orders_tenant_created
-on fulfilment_orders (tenant_id, created_at desc);
-
+on public.fulfilment_orders (tenant_id, created_at desc);
 
 create index if not exists idx_fulfilment_orders_property
-on fulfilment_orders (property_id);
+on public.fulfilment_orders (property_id);
 
 
 -- =====================================================
@@ -279,26 +269,20 @@ on fulfilment_orders (property_id);
 comment on table public.package_definitions is
     'Shipment package definition. BOM contents come from 010 device_bundles / bundle_devices.';
 
-
 comment on table public.shipping_carriers is
     'Carrier catalog. API dispatch and tracking ingest belong in platform layer (000).';
-
 
 comment on table public.warehouses is
     'Fulfilment origin locations. Stock movements and inventory execution belong in 000.';
 
-
 comment on table public.shipping_label_templates is
     'Label format and carrier service codes. Generated artifacts stored via platform.shipment_dispatch_queue (000).';
-
 
 comment on column public.shipping_label_templates.config is
     'Non-secret template options: { paper_size, orientation, margin_mm }.';
 
-
 comment on column public.shipping_rules.rule_config is
     'Non-secret routing rules: { country, min_weight, max_weight, service_level, priority }.';
-
 
 comment on table public.fulfilment_orders is
     'Domain shipment intent. No tracking numbers or label URLs — those belong in platform layer (000).';

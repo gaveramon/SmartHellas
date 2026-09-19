@@ -14,7 +14,7 @@
 -- System + tenant operation blueprints
 -- =====================================================
 
-create table if not exists operation_templates (
+create table if not exists public.operation_templates (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -48,7 +48,7 @@ create table if not exists operation_templates (
 -- Master workflow definitions
 -- =====================================================
 
-create table if not exists operation_workflows (
+create table if not exists public.operation_workflows (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -75,7 +75,7 @@ create table if not exists operation_workflows (
 -- Workflow pipeline definitions
 -- =====================================================
 
-create table if not exists workflow_steps (
+create table if not exists public.workflow_steps (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -105,7 +105,7 @@ create table if not exists workflow_steps (
 -- Workflow start conditions
 -- =====================================================
 
-create table if not exists workflow_triggers (
+create table if not exists public.workflow_triggers (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -224,7 +224,7 @@ create table if not exists public.notification_history (
 -- Support case master records
 -- =====================================================
 
-create table if not exists support_tickets (
+create table if not exists public.support_tickets (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -254,7 +254,7 @@ create table if not exists support_tickets (
 -- Messages belonging to support tickets
 -- =====================================================
 
-create table if not exists support_messages (
+create table if not exists public.support_messages (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -276,60 +276,60 @@ create table if not exists support_messages (
 -- Operation templates
 
 create index if not exists idx_operation_templates_tenant
-    on operation_templates (tenant_id);
+    on public.operation_templates (tenant_id);
 
 
 create index if not exists idx_operation_templates_tenant_created
-    on operation_templates (tenant_id, created_at desc);
+    on public.operation_templates (tenant_id, created_at desc);
 
 
 create index if not exists idx_operation_templates_system
-    on operation_templates (is_system);
+    on public.operation_templates (is_system);
 
 
 -- Operation workflows
 
 create index if not exists idx_operation_workflows_tenant
-    on operation_workflows (tenant_id);
+    on public.operation_workflows (tenant_id);
 
 
 create index if not exists idx_operation_workflows_created
-    on operation_workflows (tenant_id, created_at desc);
+    on public.operation_workflows (tenant_id, created_at desc);
 
 
 -- Workflow steps
 
 create index if not exists idx_workflow_steps_workflow
-    on workflow_steps (workflow_id);
+    on public.workflow_steps (workflow_id);
 
 
 create index if not exists idx_workflow_steps_tenant_created
-    on workflow_steps (tenant_id, created_at desc);
+    on public.workflow_steps (tenant_id, created_at desc);
 
 
 -- Workflow triggers
 
 create index if not exists idx_workflow_triggers_workflow
-    on workflow_triggers (workflow_id);
+    on public.workflow_triggers (workflow_id);
 
 
 create index if not exists idx_workflow_triggers_property
-    on workflow_triggers (property_id)
+    on public.workflow_triggers (property_id)
     where property_id is not null;
 
 
 create index if not exists idx_workflow_triggers_active
-    on workflow_triggers (workflow_id, trigger_type)
+    on public.workflow_triggers (workflow_id, trigger_type)
     where is_active = true;
 
 
 create index if not exists idx_workflow_triggers_property_type
-    on workflow_triggers (property_id, trigger_type)
+    on public.workflow_triggers (property_id, trigger_type)
     where property_id is not null;
 
 
 create index if not exists idx_workflow_triggers_workflow_created
-    on workflow_triggers (workflow_id, created_at desc);
+    on public.workflow_triggers (workflow_id, created_at desc);
 
 
 create index if not exists idx_workflow_triggers_tenant_created
@@ -395,11 +395,11 @@ on support_tickets (tenant_id, priority, created_at desc);
 -- Support messages
 
 create index if not exists idx_support_messages_tenant_created
-on support_messages (tenant_id, created_at desc);
+on public.support_messages (tenant_id, created_at desc);
 
 
 create index if not exists idx_support_messages_ticket_created
-on support_messages (ticket_id, created_at asc);
+on public.support_messages (ticket_id, created_at asc);
 
 
 -- =====================================================

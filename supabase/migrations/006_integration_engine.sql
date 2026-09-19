@@ -58,29 +58,54 @@ create table if not exists public.integration_providers (
 -- =====================================================
 
 create table if not exists public.integration_oauth_configs (
-
     id uuid primary key default gen_random_uuid(),
 
     provider_code text not null
         references public.integration_providers(code)
         on delete cascade,
 
-    authorization_url text not null,
+    -- OAuth authorization endpoint.
+    -- Required for authorization_code.
+    -- Not applicable to password/ROPC.
+    authorization_url text,
 
+    -- OAuth token endpoint.
     token_url text not null,
 
+    -- OAuth scopes requested from the provider.
     default_scopes text[] not null default '{}'::text[],
 
+    -- OAuth response type.
+    -- Only applicable to authorization_code.
     response_type text not null default 'code',
 
+    -- Supported OAuth 2.0 grant types.
+    --
+    -- authorization_code
+    --     OAuth 2.0 Authorization Code Grant
+    --
+    -- password
+    --     OAuth 2.0 Resource Owner Password Credentials Grant (ROPC)
     grant_type text not null default 'authorization_code',
 
+    -- Client authentication method at the token endpoint.
     client_auth_method text not null default 'client_secret_post',
 
+    -- PKCE is not used by the currently supported integrations.
     pkce_required boolean not null default false,
 
+    -- Required only when PKCE is enabled.
     pkce_method text,
 
+    api_base_url_claim text,
+
+    -- How the OAuth redirect is handled.
+    --
+    -- supabase_function:
+    --     OAuth callback is handled by a Supabase Edge Function.
+    --
+    -- configured:
+    --     Provider-specific configured redirect URI.
     redirect_uri_mode text not null default 'supabase_function',
 
     is_active boolean not null default true,
@@ -89,15 +114,39 @@ create table if not exists public.integration_oauth_configs (
 
     updated_at timestamptz not null default now(),
 
+    -- One OAuth configuration per provider.
     constraint uq_integration_oauth_config_provider
         unique (provider_code),
 
+    -- -------------------------------------------------
+    -- RESPONSE TYPE
+    -- -------------------------------------------------
+    --
+    -- Authorization Code Grant uses response_type=code.
+    -- ROPC does not use an authorization response.
     constraint chk_integration_oauth_response_type
-        check (response_type = 'code'),
+        check (
+            (grant_type = 'authorization_code'
+                and response_type = 'code')
+            or
+            (grant_type = 'password'
+                and response_type = 'none')
+        ),
 
+    -- -------------------------------------------------
+    -- GRANT TYPE
+    -- -------------------------------------------------
     constraint chk_integration_oauth_grant_type
-        check (grant_type = 'authorization_code'),
+        check (
+            grant_type in (
+                'authorization_code',
+                'password'
+            )
+        ),
 
+    -- -------------------------------------------------
+    -- CLIENT AUTHENTICATION
+    -- -------------------------------------------------
     constraint chk_integration_oauth_client_auth_method
         check (
             client_auth_method in (
@@ -107,6 +156,9 @@ create table if not exists public.integration_oauth_configs (
             )
         ),
 
+    -- -------------------------------------------------
+    -- PKCE
+    -- -------------------------------------------------
     constraint chk_integration_oauth_pkce_method
         check (
             (pkce_required = false and pkce_method is null)
@@ -114,6 +166,31 @@ create table if not exists public.integration_oauth_configs (
             (pkce_required = true and pkce_method = 'S256')
         ),
 
+    -- -------------------------------------------------
+    -- AUTHORIZATION URL
+    -- -------------------------------------------------
+    --
+    -- Authorization Code:
+    --     authorization_url is mandatory.
+    --
+    -- ROPC:
+    --     no authorization endpoint is required.
+    constraint chk_integration_oauth_authorization_url
+        check (
+            (grant_type = 'authorization_code'
+                and authorization_url is not null)
+            or
+            (grant_type = 'password'
+                and authorization_url is null)
+        ),
+
+    -- -------------------------------------------------
+    -- REDIRECT URI MODE
+    -- -------------------------------------------------
+    --
+    -- ROPC has no browser redirect.
+    -- Therefore redirect_uri_mode must be supabase_function
+    -- for the current implementation model.
     constraint chk_integration_oauth_redirect_uri_mode
         check (
             redirect_uri_mode in (
@@ -182,6 +259,8 @@ create table if not exists public.tenant_integrations (
     provider_code text not null,
 
     credentials_ref text,
+
+    provider_api_base_url text,
 
     config jsonb not null default '{}'::jsonb,
 
@@ -935,6 +1014,22 @@ comment on function public.reconcile_provider_device(
 -- -----------------------------------------------------
 -- 006 Integrations: domain authorization hardening
 -- -----------------------------------------------------
+--
+-- SSOT ownership:
+--
+-- provider_api_base_url
+--     MUST ONLY be written by:
+--         public.integrations_complete_oauth()
+--
+-- This domain function may:
+--     - read provider_api_base_url
+--     - never create it
+--     - never update it
+--     - never accept it from portal callers
+--
+-- The value is provider-confirmed connection metadata
+-- and therefore belongs to the OAuth completion flow.
+-- -----------------------------------------------------
 
 create or replace function public.integrations_domain(
     p_op text,
@@ -951,9 +1046,15 @@ declare
     v_result jsonb;
     v_existing uuid;
 begin
-    p_payload := coalesce(p_payload, '{}'::jsonb);
+
+    p_payload := coalesce(
+        p_payload,
+        '{}'::jsonb
+    );
+
 
     case p_op
+
 
     -- =================================================
     -- PROVIDERS
@@ -1011,9 +1112,12 @@ begin
             where ip.code = p_payload->>'code'
         ) t;
 
+
         if v_result is null then
+
             raise exception
                 'Integration provider not found';
+
         end if;
 
 
@@ -1054,7 +1158,9 @@ begin
 
     when 'list_tenant_integrations' then
 
-        v_tid := platform.current_tenant_id();
+        v_tid :=
+            platform.current_tenant_id();
+
 
         select
             coalesce(
@@ -1071,6 +1177,13 @@ begin
                 ti.id,
                 ti.tenant_id,
                 ti.provider_code,
+
+                -- READ ONLY FROM THE DOMAIN.
+                --
+                -- This value is written exclusively by
+                -- integrations_complete_oauth().
+                ti.provider_api_base_url,
+
                 ti.credentials_ref,
                 ti.config,
                 ti.is_enabled,
@@ -1085,7 +1198,9 @@ begin
 
     when 'get_tenant_integration' then
 
-        v_tid := platform.current_tenant_id();
+        v_tid :=
+            platform.current_tenant_id();
+
 
         select to_jsonb(t)
         into v_result
@@ -1095,6 +1210,10 @@ begin
                 ti.id,
                 ti.tenant_id,
                 ti.provider_code,
+
+                -- READ ONLY FROM THE DOMAIN.
+                ti.provider_api_base_url,
+
                 ti.credentials_ref,
                 ti.config,
                 ti.is_enabled,
@@ -1104,6 +1223,7 @@ begin
             from public.tenant_integrations ti
 
             where ti.tenant_id = v_tid
+
               and ti.provider_code =
                   p_payload->>'provider_code'
         ) t;
@@ -1117,12 +1237,29 @@ begin
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        -- provider_api_base_url is NOT accepted here.
+        --
+        -- OAuth completion owns this field.
+        if p_payload ? 'provider_api_base_url' then
+
+            raise exception
+                'provider_api_base_url is managed exclusively by OAuth completion';
+
+        end if;
+
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         if not exists (
             select 1
             from public.integration_providers ip
-            where ip.code = p_payload->>'provider_code'
+
+            where ip.code =
+                  p_payload->>'provider_code'
+
               and ip.is_active = true
         ) then
 
@@ -1138,6 +1275,7 @@ begin
         from public.tenant_integrations ti
 
         where ti.tenant_id = v_tid
+
           and ti.provider_code =
               p_payload->>'provider_code';
 
@@ -1147,6 +1285,7 @@ begin
             update public.tenant_integrations ti
 
             set
+
                 credentials_ref =
                     coalesce(
                         p_payload->>'credentials_ref',
@@ -1173,6 +1312,11 @@ begin
                 ti.id,
                 ti.tenant_id,
                 ti.provider_code,
+
+                -- Existing provider API URL is preserved.
+                -- It cannot be changed by this operation.
+                ti.provider_api_base_url,
+
                 ti.credentials_ref,
                 ti.config,
                 ti.is_enabled,
@@ -1188,6 +1332,7 @@ begin
                 v_row.id
             );
 
+
         else
 
             insert into public.tenant_integrations (
@@ -1200,12 +1345,16 @@ begin
 
             values (
                 v_tid,
+
                 p_payload->>'provider_code',
+
                 p_payload->>'credentials_ref',
+
                 coalesce(
                     p_payload->'config',
                     '{}'::jsonb
                 ),
+
                 coalesce(
                     (p_payload->>'is_enabled')::boolean,
                     true
@@ -1216,6 +1365,11 @@ begin
                 id,
                 tenant_id,
                 provider_code,
+
+                -- Will normally be NULL until OAuth completion
+                -- receives provider-confirmed metadata.
+                provider_api_base_url,
+
                 credentials_ref,
                 config,
                 is_enabled,
@@ -1238,7 +1392,8 @@ begin
         end if;
 
 
-        v_result := to_jsonb(v_row);
+        v_result :=
+            to_jsonb(v_row);
 
 
     -- =================================================
@@ -1249,11 +1404,26 @@ begin
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        -- provider_api_base_url is NOT accepted here.
+        --
+        -- This is an explicit SSOT ownership check.
+        if p_payload ? 'provider_api_base_url' then
+
+            raise exception
+                'provider_api_base_url is managed exclusively by OAuth completion';
+
+        end if;
+
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         update public.tenant_integrations ti
 
         set
+
             credentials_ref =
                 case
                     when p_payload ? 'credentials_ref'
@@ -1278,6 +1448,7 @@ begin
             updated_at = now()
 
         where ti.tenant_id = v_tid
+
           and ti.provider_code =
               p_payload->>'provider_code'
 
@@ -1285,6 +1456,10 @@ begin
             ti.id,
             ti.tenant_id,
             ti.provider_code,
+
+            -- Read only.
+            ti.provider_api_base_url,
+
             ti.credentials_ref,
             ti.config,
             ti.is_enabled,
@@ -1295,8 +1470,10 @@ begin
 
 
         if not found then
+
             raise exception
                 'Integration not found';
+
         end if;
 
 
@@ -1308,7 +1485,8 @@ begin
         );
 
 
-        v_result := to_jsonb(v_row);
+        v_result :=
+            to_jsonb(v_row);
 
 
     -- =================================================
@@ -1319,7 +1497,10 @@ begin
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         select ti.id
         into v_existing
@@ -1327,19 +1508,23 @@ begin
         from public.tenant_integrations ti
 
         where ti.tenant_id = v_tid
+
           and ti.provider_code =
               p_payload->>'provider_code';
 
 
         if not found then
+
             raise exception
                 'Integration not found';
+
         end if;
 
 
         delete from public.tenant_integrations ti
 
         where ti.tenant_id = v_tid
+
           and ti.provider_code =
               p_payload->>'provider_code';
 
@@ -1359,9 +1544,11 @@ begin
             jsonb_build_object(
                 'disconnected',
                 true,
+
                 'provider_code',
                 p_payload->>'provider_code'
             );
+
 
     -- =================================================
     -- WEBHOOK DEFINITIONS
@@ -1369,7 +1556,9 @@ begin
 
     when 'list_webhook_definitions' then
 
-        v_tid := platform.current_tenant_id();
+        v_tid :=
+            platform.current_tenant_id();
+
 
         select
             coalesce(
@@ -1409,7 +1598,10 @@ begin
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         insert into public.webhook_definitions (
             tenant_id,
@@ -1453,18 +1645,23 @@ begin
         );
 
 
-        v_result := to_jsonb(v_row);
+        v_result :=
+            to_jsonb(v_row);
 
 
     when 'update_webhook_definition' then
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         update public.webhook_definitions wd
 
         set
+
             event_type =
                 case
                     when p_payload ? 'event_type'
@@ -1515,8 +1712,10 @@ begin
 
 
         if not found then
+
             raise exception
                 'Webhook definition not found';
+
         end if;
 
 
@@ -1528,14 +1727,18 @@ begin
         );
 
 
-        v_result := to_jsonb(v_row);
+        v_result :=
+            to_jsonb(v_row);
 
 
     when 'delete_webhook_definition' then
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         delete from public.webhook_definitions wd
 
@@ -1546,8 +1749,10 @@ begin
 
 
         if not found then
+
             raise exception
                 'Webhook definition not found';
+
         end if;
 
 
@@ -1562,6 +1767,7 @@ begin
             jsonb_build_object(
                 'deleted',
                 true,
+
                 'id',
                 p_payload->>'id'
             );
@@ -1573,7 +1779,9 @@ begin
 
     when 'list_device_maps' then
 
-        v_tid := platform.current_tenant_id();
+        v_tid :=
+            platform.current_tenant_id();
+
 
         select
             coalesce(
@@ -1618,7 +1826,10 @@ begin
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         insert into public.device_integration_map (
             device_id,
@@ -1630,18 +1841,22 @@ begin
 
         values (
             (p_payload->>'device_id')::uuid,
+
             lower(
                 trim(
                     p_payload->>'provider_code'
                 )
             ),
+
             p_payload->>'external_id',
+
             nullif(
                 trim(
                     p_payload->>'hardware_id'
                 ),
                 ''
             ),
+
             coalesce(
                 p_payload->'config',
                 '{}'::jsonb
@@ -1668,18 +1883,23 @@ begin
         );
 
 
-        v_result := to_jsonb(v_row);
+        v_result :=
+            to_jsonb(v_row);
 
 
     when 'update_device_map' then
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         update public.device_integration_map dim
 
         set
+
             external_id =
                 case
                     when p_payload ? 'external_id'
@@ -1725,8 +1945,10 @@ begin
 
 
         if not found then
+
             raise exception
                 'Device map not found';
+
         end if;
 
 
@@ -1737,14 +1959,18 @@ begin
         );
 
 
-        v_result := to_jsonb(v_row);
+        v_result :=
+            to_jsonb(v_row);
 
 
     when 'delete_device_map' then
 
         perform public.edge_require_manager();
 
-        v_tid := platform.current_tenant_id();
+
+        v_tid :=
+            platform.current_tenant_id();
+
 
         delete from public.device_integration_map dim
 
@@ -1755,8 +1981,10 @@ begin
 
 
         if not found then
+
             raise exception
                 'Device map not found';
+
         end if;
 
 
@@ -1771,6 +1999,7 @@ begin
             jsonb_build_object(
                 'deleted',
                 true,
+
                 'id',
                 p_payload->>'id'
             );
@@ -1794,8 +2023,6 @@ begin
 
 end;
 $$;
-
-
 
 -- =====================================================
 -- 19. INTEGRATION DOMAIN EXTENSIONS
@@ -1912,23 +2139,28 @@ drop function if exists public.integrations_complete_oauth(
 -- =====================================================
 -- 006 Integrations: OAuth completion (SSOT hardened)
 -- =====================================================
---
+---------------------------------------------------------
+
 -- Responsibility:
 -- - Resolve OAuth transaction from state
 -- - Resolve tenant/provider from OAuth state
 -- - Derive credentials reference deterministically
 -- - Validate OAuth credentials in Vault
 -- - Derive non-secret token metadata
+-- - Resolve provider API base URL from OAuth token claim
 -- - Consume the OAuth state transaction
 -- - Upsert tenant integration
 -- - Audit successful OAuth completion
---
+-- - Audit provider API base URL changes
+---------------------------------------------------------
+
 -- SSOT:
 -- integration_oauth_states = OAuth transaction
 -- integration_providers    = provider catalog
 -- tenant_integrations      = tenant integration SSOT
 -- Vault                    = OAuth credentials/tokens
---
+---------------------------------------------------------
+
 -- MUST NOT:
 -- - accept tenant_id from caller
 -- - accept provider_code from caller
@@ -1946,6 +2178,7 @@ security definer
 set search_path = ''
 as $$
 declare
+
     v_state public.integration_oauth_states;
     v_row public.tenant_integrations;
 
@@ -1954,11 +2187,19 @@ declare
     v_credentials_ref text;
 
     v_token_response jsonb;
+
     v_expires_in bigint;
     v_token_expires_at timestamptz;
     v_token_type text;
     v_scope text;
+
     v_config jsonb;
+
+    -- OAuth provider API base URL metadata
+    v_api_base_url_claim text;
+    v_provider_api_base_url text;
+    v_previous_api_base_url text;
+
 begin
 
     -- =================================================
@@ -1987,15 +2228,10 @@ begin
 
     select *
     into v_state
-
     from public.integration_oauth_states s
-
     where s.state_token = trim(p_state_token)
-
       and s.consumed_at is null
-
       and s.expires_at > now()
-
     for update;
 
 
@@ -2014,7 +2250,7 @@ begin
     v_state :=
         public._integrations_resolve_oauth_state_internal(
             trim(p_state_token)
-    );
+        );
 
     v_tenant_id :=
         v_state.tenant_id;
@@ -2045,15 +2281,10 @@ begin
     -- =================================================
 
     if not exists (
-
         select 1
-
         from public.integration_providers ip
-
         where ip.code = v_provider_code
-
           and ip.is_active = true
-
     ) then
 
         raise exception
@@ -2064,7 +2295,30 @@ begin
 
 
     -- =================================================
-    -- 5. DERIVE CREDENTIALS REFERENCE
+    -- 5. RESOLVE OAUTH CONFIGURATION
+    --
+    -- api_base_url_claim defines which OAuth token claim
+    -- contains the provider-specific API base URL.
+    --
+    -- Example for Shelly:
+    -- api_base_url_claim = 'user_api_url'
+    --
+    -- This keeps provider-specific claim names in the
+    -- provider configuration rather than in procedural
+    -- IF/ELSE provider logic.
+    -- =================================================
+
+    select
+        c.api_base_url_claim
+    into
+        v_api_base_url_claim
+    from public.integration_oauth_configs c
+    where c.provider_code = v_provider_code
+      and c.is_active = true;
+
+
+    -- =================================================
+    -- 6. DERIVE CREDENTIALS REFERENCE
     --
     -- Never accept this from the caller.
     -- Must match the reference generated by
@@ -2080,7 +2334,7 @@ begin
 
 
     -- =================================================
-    -- 6. VERIFY CREDENTIALS EXIST IN VAULT
+    -- 7. VERIFY CREDENTIALS EXIST IN VAULT
     -- =================================================
 
     if not platform.vault_secret_exists(
@@ -2095,7 +2349,7 @@ begin
 
 
     -- =================================================
-    -- 7. READ TOKEN METADATA FROM VAULT
+    -- 8. READ TOKEN METADATA FROM VAULT
     --
     -- The complete token response remains in Vault.
     --
@@ -2118,7 +2372,7 @@ begin
 
 
     -- =================================================
-    -- 8. RESOLVE EXPIRY METADATA
+    -- 9. RESOLVE EXPIRY METADATA
     --
     -- expires_in is a relative lifetime in seconds.
     -- We convert it into an absolute timestamp.
@@ -2163,7 +2417,7 @@ begin
 
 
     -- =================================================
-    -- 9. RESOLVE NON-SECRET TOKEN METADATA
+    -- 10. RESOLVE NON-SECRET TOKEN METADATA
     -- =================================================
 
     v_token_type :=
@@ -2184,13 +2438,95 @@ begin
 
 
     -- =================================================
-    -- 10. BUILD INTEGRATION CONFIG
+    -- 11. RESOLVE PROVIDER API BASE URL
+    --
+    -- The claim name is provider configuration.
+    --
+    -- Example:
+    -- Shelly:
+    -- api_base_url_claim = 'user_api_url'
+    --
+    -- The actual URL is extracted from the provider-
+    -- issued access token.
+    --
+    -- This value is NOT a secret. It is stored as
+    -- tenant/provider connection metadata.
+    -- =================================================
+
+    v_provider_api_base_url := null;
+
+
+    if nullif(
+        btrim(v_api_base_url_claim),
+        ''
+    ) is not null then
+
+        v_provider_api_base_url :=
+            public.extract_oauth_jwt_claim(
+                v_token_response->>'access_token',
+                v_api_base_url_claim
+            );
+
+    end if;
+
+
+    -- =================================================
+    -- 12. VALIDATE / NORMALIZE PROVIDER API BASE URL
+    --
+    -- Only HTTPS host URLs are accepted.
+    --
+    -- Examples accepted:
+    -- https://shelly-31-eu.shelly.cloud
+    -- https://shelly-31-eu.shelly.cloud/
+    --
+    -- Stored canonical form:
+    -- https://shelly-31-eu.shelly.cloud
+    -- =================================================
+
+    if v_provider_api_base_url is not null then
+
+        v_provider_api_base_url :=
+            nullif(
+                btrim(v_provider_api_base_url),
+                ''
+            );
+
+
+        if v_provider_api_base_url is not null then
+
+            if v_provider_api_base_url !~ '^https://[^/?#]+/?$' then
+
+                raise exception
+                    'Invalid provider API base URL returned by provider %',
+                    v_provider_code;
+
+            end if;
+
+
+            v_provider_api_base_url :=
+                rtrim(
+                    v_provider_api_base_url,
+                    '/'
+                );
+
+        end if;
+
+    end if;
+
+
+    -- =================================================
+    -- 13. BUILD INTEGRATION CONFIG
     --
     -- NEVER copy:
     -- - access_token
     -- - refresh_token
     --
-    -- Only non-secret metadata is stored.
+    -- Only non-secret OAuth metadata is stored.
+    --
+    -- provider_api_base_url is deliberately NOT stored
+    -- in config JSONB. It has its own first-class column
+    -- in tenant_integrations because it is connection-
+    -- level routing metadata.
     -- =================================================
 
     v_config :=
@@ -2198,40 +2534,73 @@ begin
             'oauth',
             jsonb_strip_nulls(
                 jsonb_build_object(
-                    'token_type', v_token_type,
-                    'scope', v_scope,
-                    'token_expires_at', v_token_expires_at,
-                    'token_received_at', now()
+                    'token_type',
+                    v_token_type,
+
+                    'scope',
+                    v_scope,
+
+                    'token_expires_at',
+                    v_token_expires_at,
+
+                    'token_received_at',
+                    now()
                 )
             )
         );
 
 
     -- =================================================
-    -- 11. CONSUME OAUTH STATE
+    -- 14. READ PREVIOUS PROVIDER API BASE URL
+    --
+    -- This is needed to detect a provider-side URL
+    -- change.
+    --
+    -- FOR UPDATE keeps the existing tenant integration
+    -- locked until the upsert completes.
+    -- =================================================
+
+    select
+        ti.provider_api_base_url
+    into
+        v_previous_api_base_url
+    from public.tenant_integrations ti
+    where ti.tenant_id = v_tenant_id
+      and ti.provider_code = v_provider_code
+    for update;
+
+
+    -- =================================================
+    -- 15. CONSUME OAUTH STATE
     --
     -- Only after:
     -- - state validation
     -- - provider validation
     -- - Vault credential validation
     -- - token metadata validation
+    -- - provider API URL validation
     -- =================================================
 
     update public.integration_oauth_states
-
     set consumed_at = now()
-
     where id = v_state.id;
 
 
     -- =================================================
-    -- 12. UPSERT TENANT INTEGRATION
+    -- 16. UPSERT TENANT INTEGRATION
+    --
+    -- tenant_integrations is the SSOT for the current
+    -- tenant/provider connection.
+    --
+    -- If the provider returns no API base URL, preserve
+    -- an existing known URL.
     -- =================================================
 
     insert into public.tenant_integrations (
         tenant_id,
         provider_code,
         credentials_ref,
+        provider_api_base_url,
         config,
         is_enabled
     )
@@ -2240,6 +2609,7 @@ begin
         v_tenant_id,
         v_provider_code,
         v_credentials_ref,
+        v_provider_api_base_url,
         v_config,
         true
     )
@@ -2252,16 +2622,30 @@ begin
     do update
 
     set
-        credentials_ref = excluded.credentials_ref,
-        config = excluded.config,
-        is_enabled = true,
-        updated_at = now()
+        credentials_ref =
+            excluded.credentials_ref,
+
+        provider_api_base_url =
+            coalesce(
+                excluded.provider_api_base_url,
+                public.tenant_integrations.provider_api_base_url
+            ),
+
+        config =
+            excluded.config,
+
+        is_enabled =
+            true,
+
+        updated_at =
+            now()
 
     returning
         id,
         tenant_id,
         provider_code,
         credentials_ref,
+        provider_api_base_url,
         config,
         is_enabled,
         created_at,
@@ -2271,7 +2655,39 @@ begin
 
 
     -- =================================================
-    -- 13. AUDIT
+    -- 17. AUDIT PROVIDER API BASE URL CHANGE
+    --
+    -- This is separate from the generic OAuth completion
+    -- event because the URL is operational routing
+    -- metadata and may change independently over time.
+    -- =================================================
+
+    if v_provider_api_base_url is not null
+       and v_previous_api_base_url is not null
+       and v_provider_api_base_url <>
+           v_previous_api_base_url then
+
+        perform platform.log_audit(
+            'integration.provider_api_base_url_changed',
+            'tenant_integration',
+            v_row.id,
+            jsonb_build_object(
+                'provider_code',
+                v_provider_code,
+
+                'previous_provider_api_base_url',
+                v_previous_api_base_url,
+
+                'new_provider_api_base_url',
+                v_provider_api_base_url
+            )
+        );
+
+    end if;
+
+
+    -- =================================================
+    -- 18. AUDIT SUCCESSFUL OAUTH COMPLETION
     -- =================================================
 
     perform platform.log_audit(
@@ -2281,19 +2697,30 @@ begin
         jsonb_build_object(
             'provider_code',
             v_provider_code,
+
             'token_expires_at',
-            v_token_expires_at
+            v_token_expires_at,
+
+            'provider_api_base_url',
+            v_provider_api_base_url
         )
     );
 
 
     -- =================================================
-    -- 14. RETURN
+    -- 19. RETURN
     --
-    -- Never return OAuth credentials or tokens.
+    -- Never return:
+    -- - credentials_ref
+    -- - access_token
+    -- - refresh_token
+    --
+    -- provider_api_base_url is non-secret connection
+    -- metadata and may be returned.
     -- =================================================
 
     return jsonb_build_object(
+
         'id',
         v_row.id,
 
@@ -2306,9 +2733,13 @@ begin
         'is_enabled',
         v_row.is_enabled,
 
+        'provider_api_base_url',
+        v_row.provider_api_base_url,
+
         'oauth',
         jsonb_strip_nulls(
             jsonb_build_object(
+
                 'token_type',
                 v_token_type,
 
@@ -2317,13 +2748,13 @@ begin
 
                 'token_expires_at',
                 v_token_expires_at
+
             )
         )
     );
 
 end;
 $$;
-
 
 
 -- =====================================================
@@ -2459,6 +2890,7 @@ begin
         oc.client_auth_method,
         oc.pkce_required,
         oc.pkce_method,
+        oc.api_base_url_claim,
         oc.redirect_uri_mode,
         oc.is_active as oauth_config_is_active
 

@@ -276,16 +276,24 @@ where job_name in ('platform-cron-tick', 'platform-daily-maintenance');
 
 -- =====================================================
 -- 8. SAFETY-NET TENANT RLS
--- Uncovered public.tenant_id tables only
--- Existing custom domain policies are preserved
+-- =====================================================
+-- Uncovered public.tenant_id tables only.
+--
+-- Existing custom domain policies are preserved.
+--
+-- resolve_active_tenant() is the sole tenant authority.
+--
 -- =====================================================
 
 do $$
 declare
     v_row record;
+    v_policy_name text;
 begin
+
     for v_row in
-        select distinct c.table_name
+        select distinct
+            c.table_name
         from information_schema.columns c
         join information_schema.tables t
           on t.table_schema = c.table_schema
@@ -300,13 +308,60 @@ begin
                 and p.tablename = c.table_name
           )
         order by c.table_name
+
     loop
-        perform public._apply_public_tenant_rls(
-            format('public.%I', v_row.table_name)::regclass
+
+        -- -------------------------------------------------
+        -- Enable RLS
+        -- -------------------------------------------------
+
+        execute format(
+            'alter table public.%I enable row level security',
+            v_row.table_name
         );
-        raise notice '023 bootstrap: applied generic tenant RLS to public.%', v_row.table_name;
+
+
+        -- -------------------------------------------------
+        -- Force RLS
+        -- -------------------------------------------------
+
+        execute format(
+            'alter table public.%I force row level security',
+            v_row.table_name
+        );
+
+
+        -- -------------------------------------------------
+        -- Generic tenant-isolation policy
+        -- -------------------------------------------------
+
+        v_policy_name :=
+            'tenant_isolation_' || v_row.table_name;
+
+        execute format(
+            'create policy %I
+             on public.%I
+             for all
+             to authenticated
+             using (
+                 tenant_id = public.resolve_active_tenant(auth.uid())
+             )
+             with check (
+                 tenant_id = public.resolve_active_tenant(auth.uid())
+             )',
+            v_policy_name,
+            v_row.table_name
+        );
+
+
+        raise notice
+            '023 bootstrap: applied generic tenant RLS to public.%',
+            v_row.table_name;
+
     end loop;
-end $$;
+
+end
+$$;
 
 
 -- =====================================================
@@ -389,6 +444,19 @@ begin
     end loop;
 end $$;
 
+revoke all
+on function platform.complete_notification_delivery(
+    uuid,
+    boolean,
+    jsonb
+)
+from public, anon, authenticated;
+
+revoke all
+on function platform.fetch_notification_batch(
+    integer
+)
+from public, anon, authenticated;
 
 -- =====================================================
 -- 12. POST-BOOTSTRAP RLS VERIFICATION
@@ -436,7 +504,7 @@ end $$;
 -- =====================================================
 
 insert into platform.schema_migrations (migration_name, version, rollback_available)
-values ('023_platform_bootstrap_finale', 'REV1.PLATFORM.BOOTSTRAP', false)
+values ('023_platform_bootstrap', 'REV1.PLATFORM.BOOTSTRAP', false)
 on conflict (version) do nothing;
 
 

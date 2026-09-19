@@ -23,7 +23,7 @@
 -- 1 BOOKINGS (CORE RESERVATION MODEL)
 -- =====================================================
 
-create table if not exists bookings (
+create table if not exists public.bookings (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -53,7 +53,7 @@ create table if not exists bookings (
 -- One row per property: default check-in/out times for guest stays.
 -- =====================================================
 
-create table if not exists property_access_schedules (
+create table if not exists public.property_access_schedules (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -88,7 +88,7 @@ create table if not exists property_access_schedules (
 -- Populated when a booking is confirmed — not generated here.
 -- =====================================================
 
-create table if not exists booking_access (
+create table if not exists public.booking_access (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -118,7 +118,7 @@ create table if not exists booking_access (
 -- Owner, emergency, temporary, and scheduled access outside bookings.
 -- =====================================================
 
-create table if not exists access_policies (
+create table if not exists public.access_policies (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -148,7 +148,7 @@ create table if not exists access_policies (
 -- Overrides and emergency rules — not the default guest schedule.
 -- =====================================================
 
-create table if not exists access_rules (
+create table if not exists public.access_rules (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -173,7 +173,7 @@ create table if not exists access_rules (
 -- 6 LOCK DEVICE MAPPING (NO EXECUTION)
 -- =====================================================
 
-create table if not exists lock_devices (
+create table if not exists public.lock_devices (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -195,7 +195,7 @@ create table if not exists lock_devices (
 -- Records what was issued to which lock for a booking. PIN stored in vault (000).
 -- =====================================================
 
-create table if not exists access_credentials (
+create table if not exists public.access_credentials (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -239,124 +239,76 @@ create table if not exists access_credentials (
 create index if not exists idx_bookings_property
 on bookings (property_id);
 
-
-
 create index if not exists idx_bookings_tenant
 on bookings (tenant_id);
-
-
 
 create index if not exists idx_bookings_tenant_created
 on bookings (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_bookings_property_dates
 on bookings (property_id, start_date, end_date);
-
-
 
 create index if not exists idx_property_access_schedules_tenant
 on property_access_schedules (tenant_id);
 
-
-
 create index if not exists idx_property_access_schedules_tenant_created
 on property_access_schedules (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_booking_access_booking
 on booking_access (booking_id);
 
-
-
 create index if not exists idx_booking_access_tenant_created
 on booking_access (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_booking_access_window
 on booking_access (valid_from, valid_until);
 
-
-
 create index if not exists idx_access_policies_property
 on access_policies (property_id);
-
-
 
 create index if not exists idx_access_policies_property_active
 on access_policies (property_id, is_active)
 where is_active = true;
 
-
-
 create index if not exists idx_access_policies_tenant_created
 on access_policies (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_access_rules_property
 on access_rules (property_id);
 
-
-
 create index if not exists idx_access_rules_property_type
 on access_rules (property_id, rule_type);
-
-
 
 create index if not exists idx_access_rules_tenant_created
 on access_rules (tenant_id, created_at desc);
 
-
-
 create index if not exists idx_lock_devices_property
 on lock_devices (property_id);
 
-
-
 create index if not exists idx_lock_devices_tenant_created
 on lock_devices (tenant_id, created_at desc);
-
-
 
 create unique index if not exists uq_lock_devices_primary_property
 on lock_devices (property_id)
 where is_primary = true;
 
-
-
 create index if not exists idx_lock_devices_property_created
 on lock_devices (property_id, created_at desc);
-
-
 
 create index if not exists idx_access_credentials_tenant
 on access_credentials (tenant_id);
 
-
-
 create index if not exists idx_access_credentials_tenant_created
 on access_credentials (tenant_id, created_at desc);
-
-
 
 create index if not exists idx_access_credentials_booking
 on access_credentials (booking_id);
 
-
-
 create index if not exists idx_access_credentials_lock
 on access_credentials (lock_device_id);
 
-
-
 create index if not exists idx_access_credentials_status
 on access_credentials (tenant_id, status);
-
-
 
 create unique index if not exists uq_access_credentials_active_booking_lock
 on access_credentials (booking_id, lock_device_id)
@@ -370,42 +322,26 @@ where status in ('pending', 'active');
 comment on table public.property_access_schedules is
     'SSOT for guest stay window templates. Compose with booking dates to populate booking_access.';
 
-
-
 comment on table public.booking_access is
     'Resolved guest access window for a booking. valid_from/until = booking dates + property_access_schedules.';
-
-
 
 comment on table public.access_policies is
     'Non-guest access grants (owner, emergency, temporary, scheduled). Guest stays use booking_access.';
 
-
-
 comment on table public.access_rules is
     'Property-level access exceptions. Default guest windows live in property_access_schedules.';
-
-
 
 comment on column public.access_rules.rule_config is
     'Exception payload only. override: { reason, valid_from, valid_until }. emergency_access: { reason, contacts }.';
 
-
-
 comment on table public.access_credentials is
     'Issued door-code grant metadata per booking and lock. Never store plaintext PINs — use credential_ref (vault).';
-
-
 
 comment on column public.access_credentials.credential_ref is
     'Opaque vault secret name or platform handle. Plaintext codes must not be stored here.';
 
-
-
 comment on column public.access_credentials.provider_code is
     'Derived from device_integration_map via lock device. Must match integration_providers catalog (005).';
-
-
 
 comment on column public.access_credentials.external_credential_id is
     'Provider-side credential ID (e.g. TTLock keyboardPwdId) for revoke/sync in 000.';
@@ -425,8 +361,6 @@ exception
     when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.property_access_schedules
@@ -435,8 +369,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -447,8 +379,6 @@ exception
     when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.access_rules
@@ -457,8 +387,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -469,8 +397,6 @@ exception
     when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.booking_access
@@ -479,8 +405,6 @@ begin
 exception
     when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin

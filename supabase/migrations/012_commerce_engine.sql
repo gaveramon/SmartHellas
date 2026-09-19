@@ -15,7 +15,7 @@
 -- Product plans define the commercial subscription offerings.
 -- =====================================================
 
-create table if not exists product_plans (
+create table if not exists public.product_plans (
     id uuid primary key default gen_random_uuid(),
 
     name text not null,
@@ -38,7 +38,7 @@ create table if not exists product_plans (
 -- Static commercial pricing attached to product plans.
 -- =====================================================
 
-create table if not exists plan_pricing (
+create table if not exists public.plan_pricing (
     id uuid primary key default gen_random_uuid(),
 
     plan_id uuid not null references product_plans(id) on delete cascade,
@@ -69,7 +69,7 @@ create table if not exists plan_pricing (
 -- Defines which platform features a plan enables.
 -- =====================================================
 
-create table if not exists feature_entitlements (
+create table if not exists public.feature_entitlements (
     id uuid primary key default gen_random_uuid(),
 
     plan_id uuid not null references product_plans(id) on delete cascade,
@@ -90,7 +90,7 @@ create table if not exists feature_entitlements (
 -- Package upsells live in 015.upsell_campaigns.
 -- =====================================================
 
-create table if not exists upsell_rules (
+create table if not exists public.upsell_rules (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid references tenants(id) on delete cascade,
@@ -138,37 +138,29 @@ comment on column public.subscriptions.tier is
 -- =====================================================
 
 create index if not exists idx_plan_pricing_plan
-on plan_pricing (plan_id);
-
+on public.plan_pricing (plan_id);
 
 create index if not exists idx_feature_entitlements_plan
-on feature_entitlements (plan_id);
-
+on public.feature_entitlements (plan_id);
 
 create index if not exists idx_upsell_rules_tenant
-on upsell_rules (tenant_id);
-
+on public.upsell_rules (tenant_id);
 
 create index if not exists idx_upsell_rules_tenant_created
-on upsell_rules (tenant_id, created_at desc)
+on public.upsell_rules (tenant_id, created_at desc)
 where tenant_id is not null;
 
-
 create index if not exists idx_upsell_rules_trigger_active
-on upsell_rules (trigger_event)
+on public.upsell_rules (trigger_event)
 where is_active;
-
 
 create index if not exists idx_subscriptions_plan
 on public.subscriptions (plan_id);
 
-
 create index if not exists idx_subscriptions_tenant_created
 on public.subscriptions (tenant_id, created_at desc);
 
-
 drop index if exists public.uq_subscriptions_active_tenant;
-
 
 create unique index uq_subscriptions_active_tenant
 on public.subscriptions (tenant_id)

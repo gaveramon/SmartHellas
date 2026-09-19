@@ -2091,6 +2091,26 @@ comment on function platform.dispatch_http_request(text, text, jsonb, jsonb, int
     'Fire-and-forget HTTP via pg_net. service_role only. Returns net request id or null.';
 
 
+-- =====================================================
+-- DROP OLD LOG PARTITIONS
+-- =====================================================
+--
+-- Security properties:
+--   - SECURITY DEFINER
+--   - Empty search_path
+--   - Strict base-table identifier validation
+--   - Positive retention validation
+--   - Only platform schema is inspected
+--   - Only direct child partitions are considered
+--   - Partition names must follow the expected YYYY_MM pattern
+--   - Dynamic SQL uses %I for identifiers
+--   - No user-controlled SQL fragments are executed
+--
+-- Intended for controlled maintenance/worker execution.
+-- Must be explicitly approved in
+-- platform.security_dynamic_sql_review.
+-- =====================================================
+
 create or replace function platform.drop_old_log_partitions(
     p_base_table text,
     p_retention interval
@@ -2104,28 +2124,102 @@ declare
     v_partition record;
     v_cutoff date;
 begin
-    v_cutoff := (date_trunc('month', now()) - p_retention)::date;
+
+    -- =================================================
+    -- 1. Validate base table identifier
+    -- =================================================
+
+    if p_base_table is null
+       or p_base_table !~ '^[a-z_][a-z0-9_]*$'
+    then
+        raise exception
+            'Invalid base table name: %',
+            p_base_table;
+    end if;
+
+
+    -- =================================================
+    -- 2. Validate retention
+    -- =================================================
+
+    if p_retention is null
+       or p_retention <= interval '0 seconds'
+    then
+        raise exception
+            'Invalid retention interval: %',
+            p_retention;
+    end if;
+
+
+    -- =================================================
+    -- 3. Calculate retention cutoff
+    -- =================================================
+
+    v_cutoff :=
+        (
+            date_trunc('month', now())
+            - p_retention
+        )::date;
+
+
+    -- =================================================
+    -- 4. Find eligible partitions
+    -- =================================================
+    --
+    -- Only direct children of the requested parent table
+    -- in the platform schema are considered.
+    --
+    -- Expected partition naming convention:
+    --
+    --   <base_table>_YYYY_MM
+    --
+    -- Example:
+    --
+    --   audit_log_2026_01
+    --   event_log_2026_08
+    --
+    -- =================================================
 
     for v_partition in
-        select c.relname as partition_name
+        select
+            c.relname as partition_name
         from pg_inherits i
-        join pg_class c on c.oid = i.inhrelid
-        join pg_class p on p.oid = i.inhparent
-        join pg_namespace n on n.oid = p.relnamespace
+        join pg_class c
+            on c.oid = i.inhrelid
+        join pg_class p
+            on p.oid = i.inhparent
+        join pg_namespace n
+            on n.oid = p.relnamespace
         where n.nspname = 'platform'
           and p.relname = p_base_table
-          and c.relname ~ ('^' || p_base_table || '_\d{4}_\d{2}$')
+          and c.relname ~ (
+              '^'
+              || p_base_table
+              || '_[0-9]{4}_[0-9]{2}$'
+          )
     loop
-        if to_date(right(v_partition.partition_name, 7), 'YYYY_MM') < v_cutoff then
+
+        -- =============================================
+        -- 5. Drop partitions older than retention
+        -- =============================================
+
+        if to_date(
+            right(v_partition.partition_name, 7),
+            'YYYY_MM'
+        ) < v_cutoff
+        then
+
             execute format(
                 'drop table if exists platform.%I',
                 v_partition.partition_name
             );
+
         end if;
+
     end loop;
+
 end;
 $$;
-
 
 
 -- =====================================================

@@ -13,7 +13,7 @@
 -- VERSIONED HARDWARE BILL-OF-MATERIALS CATALOG
 -- =====================================================
 
-create table if not exists device_bundles (
+create table if not exists public.device_bundles (
     id uuid primary key default gen_random_uuid(),
 
     code text not null,
@@ -48,7 +48,7 @@ create table if not exists device_bundles (
 
 
 
-create table if not exists bundle_devices (
+create table if not exists public.bundle_devices (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -76,7 +76,7 @@ create table if not exists bundle_devices (
 -- GLOBAL INSTALLATION / ONBOARDING FLOW DEFINITIONS
 -- =====================================================
 
-create table if not exists onboarding_blueprints (
+create table if not exists public.onboarding_blueprints (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -104,7 +104,7 @@ create table if not exists onboarding_blueprints (
 -- ORDERED STEPS WITHIN AN ONBOARDING BLUEPRINT
 -- =====================================================
 
-create table if not exists onboarding_blueprint_steps (
+create table if not exists public.onboarding_blueprint_steps (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -131,7 +131,7 @@ create table if not exists onboarding_blueprint_steps (
 -- Tenant template selection lives in 014 onboarding_sessions.
 -- =====================================================
 
-create table if not exists preconfig_templates (
+create table if not exists public.preconfig_templates (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -161,7 +161,7 @@ create table if not exists preconfig_templates (
 -- DEVICE → ROOM INSTALLATION MAPPING
 -- =====================================================
 
-create table if not exists preconfig_device_map (
+create table if not exists public.preconfig_device_map (
 
     id uuid primary key default gen_random_uuid(),
 
@@ -187,25 +187,25 @@ create table if not exists preconfig_device_map (
 -- =====================================================
 
 create index if not exists idx_device_bundles_code
-    on device_bundles (code);
+    on public.device_bundles (code);
 
 create index if not exists idx_device_bundles_active
-    on device_bundles (is_active);
+    on public.device_bundles (is_active);
 
 create index if not exists idx_bundle_devices_bundle
-    on bundle_devices (bundle_id);
+    on public.bundle_devices (bundle_id);
 
 create index if not exists idx_onboarding_steps_blueprint
-    on onboarding_blueprint_steps (blueprint_id);
+    on public.onboarding_blueprint_steps (blueprint_id);
 
 create index if not exists idx_preconfig_templates_bundle
-    on preconfig_templates (device_bundle_id);
+    on public.preconfig_templates (device_bundle_id);
 
 comment on table public.preconfig_templates is
     'Global install blueprint catalog. Tenants select via onboarding_sessions.preconfig_template_id (012).';
 
 create index if not exists idx_preconfig_device_map_template
-    on preconfig_device_map (template_id);
+    on public.preconfig_device_map (template_id);
 
 
 -- =====================================================

@@ -21,7 +21,7 @@
 -- 1. PIPELINES
 -- =====================================================
 
-create table if not exists crm_pipelines (
+create table if not exists public.crm_pipelines (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -47,7 +47,7 @@ create table if not exists crm_pipelines (
 -- 2. PIPELINE STAGES
 -- =====================================================
 
-create table if not exists crm_pipeline_stages (
+create table if not exists public.crm_pipeline_stages (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -89,7 +89,7 @@ create table if not exists crm_pipeline_stages (
 -- 3. CAMPAIGNS
 -- =====================================================
 
-create table if not exists crm_campaigns (
+create table if not exists public.crm_campaigns (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -131,7 +131,7 @@ create table if not exists crm_campaigns (
 -- 4. TAGS
 -- =====================================================
 
-create table if not exists crm_tags (
+create table if not exists public.crm_tags (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -151,7 +151,7 @@ create table if not exists crm_tags (
 -- 5. COMPANIES
 -- =====================================================
 
-create table if not exists crm_companies (
+create table if not exists public.crm_companies (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -178,7 +178,7 @@ create table if not exists crm_companies (
 -- 6. CONTACTS
 -- =====================================================
 
-create table if not exists crm_contacts (
+create table if not exists public.crm_contacts (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -240,7 +240,7 @@ create table if not exists crm_contacts (
 -- 9. COMPANY ↔ TENANT (M:N — REQUIRED FOR NORMALIZATION)
 -- =====================================================
 
-create table if not exists crm_company_tenants (
+create table if not exists public.crm_company_tenants (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -264,7 +264,7 @@ create table if not exists crm_company_tenants (
 -- 7. LEADS
 -- =====================================================
 
-create table if not exists crm_leads (
+create table if not exists public.crm_leads (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -325,7 +325,7 @@ create table if not exists crm_leads (
 -- 8. CONTACT ↔ COMPANY (M:N WITH ROLES)
 -- =====================================================
 
-create table if not exists crm_contact_company (
+create table if not exists public.crm_contact_company (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -351,7 +351,7 @@ create table if not exists crm_contact_company (
 -- 10. CONTACT ↔ TENANT (M:N — REQUIRED FOR NORMALIZATION)
 -- =====================================================
 
-create table if not exists crm_contact_tenants (
+create table if not exists public.crm_contact_tenants (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -375,7 +375,7 @@ create table if not exists crm_contact_tenants (
 -- 11. OPPORTUNITIES
 -- =====================================================
 
-create table if not exists crm_opportunities (
+create table if not exists public.crm_opportunities (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -429,7 +429,7 @@ create table if not exists crm_opportunities (
 -- 12. TASKS
 -- =====================================================
 
-create table if not exists crm_tasks (
+create table if not exists public.crm_tasks (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -463,7 +463,7 @@ create table if not exists crm_tasks (
 -- 13. INTERACTIONS (APPEND-ONLY)
 -- =====================================================
 
-create table if not exists crm_interactions (
+create table if not exists public.crm_interactions (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -504,7 +504,7 @@ create table if not exists crm_interactions (
 -- 14. NOTES
 -- =====================================================
 
-create table if not exists crm_notes (
+create table if not exists public.crm_notes (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -535,7 +535,7 @@ create table if not exists crm_notes (
 -- 15. TAG ASSIGNMENTS
 -- =====================================================
 
-create table if not exists crm_tag_assignments (
+create table if not exists public.crm_tag_assignments (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -559,7 +559,7 @@ create table if not exists crm_tag_assignments (
 -- 16. LISTS
 -- =====================================================
 
-create table if not exists crm_lists (
+create table if not exists public.crm_lists (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -589,7 +589,7 @@ create table if not exists crm_lists (
 -- 17. LIST MEMBERS
 -- =====================================================
 
-create table if not exists crm_list_members (
+create table if not exists public.crm_list_members (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -610,7 +610,7 @@ create table if not exists crm_list_members (
 -- 18. CUSTOM FIELDS
 -- =====================================================
 
-create table if not exists crm_custom_fields (
+create table if not exists public.crm_custom_fields (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -648,7 +648,7 @@ create table if not exists crm_custom_fields (
 -- 19. CUSTOM FIELD VALUES
 -- =====================================================
 
-create table if not exists crm_custom_field_values (
+create table if not exists public.crm_custom_field_values (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -924,8 +924,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_pipeline_stages
@@ -933,8 +931,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -944,8 +940,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_tags
@@ -953,8 +947,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -964,8 +956,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_contacts
@@ -973,8 +963,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -984,8 +972,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_leads
@@ -993,8 +979,6 @@ begin
         foreign key (converted_tenant_id) references public.tenants(id) on delete set null;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1004,8 +988,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_company_tenants
@@ -1013,8 +995,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1024,8 +1004,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_contact_tenants
@@ -1033,8 +1011,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1044,8 +1020,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_opportunities
@@ -1053,8 +1027,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1064,8 +1036,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_tasks
@@ -1073,8 +1043,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1084,8 +1052,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_notes
@@ -1093,8 +1059,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1104,8 +1068,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_lists
@@ -1113,8 +1075,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1124,8 +1084,6 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
 do $$
 begin
     alter table public.crm_custom_fields
@@ -1133,8 +1091,6 @@ begin
         foreign key (tenant_id) references public.tenants(id) on delete cascade;
 exception when duplicate_object then null;
 end $$;
-
-
 
 do $$
 begin
@@ -1144,21 +1100,15 @@ begin
 exception when duplicate_object then null;
 end $$;
 
-
-
-
-
 drop trigger if exists trg_crm_contacts_consent_timestamps on public.crm_contacts;
-
-
 
 drop trigger if exists trg_crm_leads_conversion_timestamp on public.crm_leads;
 
-
-
 drop trigger if exists trg_crm_notes_version_increment on public.crm_notes;
 
-
+-- ==========================
+--  VIEW PIPELINE
+-- ==========================
 
 create or replace view public.v_crm_pipeline
 with (security_invoker = true)
@@ -1190,8 +1140,9 @@ left join public.crm_companies co on co.id = o.company_id
 left join public.crm_contacts ct on ct.id = o.contact_id
 where o.deleted_at is null;
 
-
-
+-- ==========================
+--  CRM DOMAIN
+-- ==========================
 
 create or replace function public.crm_domain(
     p_op text,
@@ -2988,8 +2939,6 @@ begin
 end;
 $$;
 
-
-
 create or replace function public.enforce_crm_pipeline_stage_scope()
 returns trigger
 language plpgsql
@@ -3025,7 +2974,6 @@ begin
     return new;
 end;
 $$;
-
 
 create or replace function public.enforce_crm_tag_assignment_entity()
 returns trigger

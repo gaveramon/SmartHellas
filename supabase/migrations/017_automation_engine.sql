@@ -14,7 +14,7 @@
 -- Runtime execution instances of operation workflows
 -- =====================================================
 
-create table if not exists automation_runs (
+create table if not exists public.automation_runs (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -45,7 +45,7 @@ create table if not exists automation_runs (
 -- Runtime execution state for individual workflow steps
 -- =====================================================
 
-create table if not exists automation_run_steps (
+create table if not exists public.automation_run_steps (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -78,7 +78,7 @@ create table if not exists automation_run_steps (
 -- Active bindings between workflow triggers and runtime
 -- =====================================================
 
-create table if not exists automation_event_subscriptions (
+create table if not exists public.automation_event_subscriptions (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null,
@@ -99,32 +99,32 @@ create table if not exists automation_event_subscriptions (
 -- =====================================================
 
 create index if not exists idx_automation_runs_tenant_created
-    on automation_runs (tenant_id, created_at desc);
+    on public.automation_runs (tenant_id, created_at desc);
 
 
 create index if not exists idx_automation_runs_workflow
-    on automation_runs (workflow_id, created_at desc);
+    on public.automation_runs (workflow_id, created_at desc);
 
 
 create index if not exists idx_automation_runs_status
-    on automation_runs (tenant_id, status, created_at desc)
+    on public.automation_runs (tenant_id, status, created_at desc)
     where status in ('pending', 'running');
 
 
 create index if not exists idx_automation_run_steps_run
-    on automation_run_steps (run_id, step_order);
+    on public.automation_run_steps (run_id, step_order);
 
 
 create index if not exists idx_automation_run_steps_tenant_created
-    on automation_run_steps (tenant_id, created_at desc);
+    on public.automation_run_steps (tenant_id, created_at desc);
 
 
 create index if not exists idx_automation_event_subscriptions_tenant
-    on automation_event_subscriptions (tenant_id, created_at desc);
+    on public.automation_event_subscriptions (tenant_id, created_at desc);
 
 
 create index if not exists idx_automation_event_subscriptions_active
-    on automation_event_subscriptions (tenant_id, is_active)
+    on public.automation_event_subscriptions (tenant_id, is_active)
     where is_active = true;
 
 
@@ -261,27 +261,21 @@ $$;
 
 drop trigger if exists trg_automation_runs_tenant_consistency on public.automation_runs;
 
-
 drop trigger if exists trg_automation_run_steps_consistency on public.automation_run_steps;
 
-
 drop trigger if exists trg_automation_event_subscriptions_consistency on public.automation_event_subscriptions;
-
 
 create trigger trg_automation_runs_updated_at
 before update on automation_runs
 for each row execute function platform.set_updated_at();
 
-
 create trigger trg_automation_runs_tenant_consistency
 before insert or update on public.automation_runs
 for each row execute function public.enforce_automation_run_tenant_consistency();
 
-
 create trigger trg_automation_run_steps_consistency
 before insert or update on public.automation_run_steps
 for each row execute function public.enforce_automation_run_step_consistency();
-
 
 create trigger trg_automation_event_subscriptions_consistency
 before insert or update on public.automation_event_subscriptions

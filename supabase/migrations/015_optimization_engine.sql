@@ -14,7 +14,7 @@
 -- 1. CORE INTELLIGENCE MODEL — OPTIMIZATION RULES
 -- =====================================================
 
-create table if not exists optimization_rules (
+create table if not exists public.optimization_rules (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -39,7 +39,7 @@ create table if not exists optimization_rules (
 -- NON-ACTIONABLE INSIGHTS ONLY
 -- =====================================================
 
-create table if not exists insight_events (
+create table if not exists public.insight_events (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -70,7 +70,7 @@ create table if not exists insight_events (
 -- NO ACTIONS
 -- =====================================================
 
-create table if not exists optimization_recommendations (
+create table if not exists public.optimization_recommendations (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -107,7 +107,7 @@ create table if not exists optimization_recommendations (
 -- ANALYTICS ONLY
 -- =====================================================
 
-create table if not exists device_usage_scores (
+create table if not exists public.device_usage_scores (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -131,7 +131,7 @@ create table if not exists device_usage_scores (
 -- ANALYTICAL ONLY
 -- =====================================================
 
-create table if not exists energy_profiles (
+create table if not exists public.energy_profiles (
     id uuid primary key default gen_random_uuid(),
 
     tenant_id uuid not null references tenants(id) on delete cascade,
@@ -165,7 +165,7 @@ create table if not exists energy_profiles (
 -- OPTIONAL
 -- =====================================================
 
-alter table insight_events
+alter table public.insight_events
     add column if not exists related_recommendation_id uuid references optimization_recommendations(id) on delete set null;
 
 
@@ -198,11 +198,11 @@ for each row execute function public.enforce_property_tenant_consistency();
 -- =====================================================
 
 create index if not exists idx_optimization_rules_tenant
-on optimization_rules (tenant_id);
+on public.optimization_rules (tenant_id);
 
 
 create index if not exists idx_optimization_rules_tenant_created
-on optimization_rules (tenant_id, created_at desc);
+on public.optimization_rules (tenant_id, created_at desc);
 
 
 comment on table public.optimization_rules is
@@ -214,20 +214,20 @@ comment on table public.optimization_rules is
 -- =====================================================
 
 create index if not exists idx_insight_events_tenant_created
-on insight_events (tenant_id, created_at desc);
+on public.insight_events (tenant_id, created_at desc);
 
 
 create index if not exists idx_insight_events_property
-on insight_events (property_id);
+on public.insight_events (property_id);
 
 
 create unique index if not exists idx_insight_events_tenant_dedup
-on insight_events (tenant_id, dedup_key)
+on public.insight_events (tenant_id, dedup_key)
 where dedup_key is not null;
 
 
 create index if not exists idx_insight_events_recommendation
-on insight_events (related_recommendation_id)
+on public.insight_events (related_recommendation_id)
 where related_recommendation_id is not null;
 
 
@@ -240,19 +240,19 @@ comment on table public.insight_events is
 -- =====================================================
 
 create index if not exists idx_optimization_recommendations_tenant_created
-on optimization_recommendations (tenant_id, created_at desc);
+on public.optimization_recommendations (tenant_id, created_at desc);
 
 
 create index if not exists idx_optimization_recommendations_property
-on optimization_recommendations (property_id);
+on public.optimization_recommendations (property_id);
 
 
 create index if not exists idx_optimization_recommendations_status
-on optimization_recommendations (tenant_id, status);
+on public.optimization_recommendations (tenant_id, status);
 
 
 create unique index if not exists idx_optimization_recommendations_tenant_dedup
-on optimization_recommendations (tenant_id, dedup_key)
+on public.optimization_recommendations (tenant_id, dedup_key)
 where dedup_key is not null;
 
 
@@ -269,11 +269,11 @@ comment on column public.optimization_recommendations.suggested_changes is
 -- =====================================================
 
 create index if not exists idx_device_usage_scores_tenant_calculated
-on device_usage_scores (tenant_id, calculated_at desc);
+on public.device_usage_scores (tenant_id, calculated_at desc);
 
 
 create index if not exists idx_device_usage_scores_device
-on device_usage_scores (device_id);
+on public.device_usage_scores (device_id);
 
 
 comment on table public.device_usage_scores is
@@ -285,15 +285,15 @@ comment on table public.device_usage_scores is
 -- =====================================================
 
 create index if not exists idx_energy_profiles_tenant_computed
-on energy_profiles (tenant_id, computed_at desc);
+on public.energy_profiles (tenant_id, computed_at desc);
 
 
 create index if not exists idx_energy_profiles_property
-on energy_profiles (property_id);
+on public.energy_profiles (property_id);
 
 
 create index if not exists idx_energy_profiles_tenant_property_period
-on energy_profiles (tenant_id, property_id, period_start desc);
+on public.energy_profiles (tenant_id, property_id, period_start desc);
 
 
 comment on table public.energy_profiles is
