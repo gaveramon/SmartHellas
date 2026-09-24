@@ -2453,4 +2453,5 @@ on conflict (version) do nothing;
 -- COMMIT
 -- =====================================================
 
-commit;
+COMMIT;
+--commit;
